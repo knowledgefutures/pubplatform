@@ -17,6 +17,7 @@ import {
 } from "ui/dropdown-menu"
 import { MoreVertical } from "ui/icon"
 
+import { ExportTemplateButton } from "./ExportTemplateButton"
 import { RemoveCommunityButton } from "./RemoveCommunityButton"
 
 export type TableCommunity = {
@@ -27,7 +28,11 @@ export type TableCommunity = {
 	created: Date
 }
 
-export const getCommunityTableColumns = () =>
+type GetCommunityTableColumnsOptions = {
+	onCreateCopy?: (template: string) => void
+}
+
+export const getCommunityTableColumns = (options?: GetCommunityTableColumnsOptions) =>
 	[
 		{
 			id: "select",
@@ -94,7 +99,13 @@ export const getCommunityTableColumns = () =>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuLabel>Menu</DropdownMenuLabel>
+							<DropdownMenuLabel>Actions</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<ExportTemplateButton
+								communityId={row.original.id}
+								communityName={row.original.name}
+								onCreateCopy={options?.onCreateCopy}
+							/>
 							<DropdownMenuSeparator />
 							<div className="w-full">
 								<RemoveCommunityButton community={row.original} />

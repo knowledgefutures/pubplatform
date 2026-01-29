@@ -982,19 +982,6 @@ export async function seedCommunity<
 		])
 	) as PubTypesByName<PT, PF>
 
-	await Promise.all(
-		Object.values(pubTypesWithPubFieldsByName).map((pubType) =>
-			insertForm(
-				{ ...pubType, fields: Object.values(pubType.fields) },
-				`${pubType.name} Editor (Default)`,
-				pubType.defaultForm.slug,
-				communityId,
-				true,
-				trx
-			).executeTakeFirst()
-		)
-	)
-
 	const newUsers = Object.entries(props.users ?? {}).filter(
 		(user): user is [string, (typeof user)[1] & { existing: false }] => !user[1].existing
 	)
@@ -1016,6 +1003,7 @@ export async function seedCommunity<
 		}))
 	)
 
+	console.log("newUserValues", newUserValues)
 	const createdUsers = newUserValues.length
 		? await trx.insertInto("users").values(newUserValues).returningAll().execute()
 		: []
@@ -1117,8 +1105,10 @@ export async function seedCommunity<
 					.execute()
 			: []
 
+	console.log("consolidatedStages", consolidatedStages)
+	console.log("stageConnectionsList", props.stageConnections)
 	const stageConnectionsList = props.stageConnections
-		? await db
+		? await trx
 				.insertInto("move_constraint")
 				.values(
 					Object.entries(props.stageConnections).flatMap(([stage, destinations]) => {
@@ -1224,6 +1214,7 @@ export async function seedCommunity<
 			}))
 	)
 
+	console.log("formList", formList)
 	const createdForms =
 		formList.length > 0
 			? await trx
@@ -1300,6 +1291,30 @@ export async function seedCommunity<
 					)
 					.execute()
 			: []
+
+	// check if we don't end up creating duplicate forms (mostly relevant when importing a template)
+
+	const toBeInsertedDefaultForms = Object.values(pubTypesWithPubFieldsByName).filter(
+		(pubType) =>
+			!createdForms.some(
+				(form) =>
+					form.pubTypeId === pubType.id &&
+					(form.isDefault || form.name === `${pubType.name} Editor (Default)`)
+			)
+	)
+
+	await Promise.all(
+		toBeInsertedDefaultForms.map((pubType) =>
+			insertForm(
+				{ ...pubType, fields: Object.values(pubType.fields) },
+				`${pubType.name} Editor (Default)`,
+				pubType.defaultForm.slug,
+				communityId,
+				true,
+				trx
+			).executeTakeFirst()
+		)
+	)
 
 	if (createdForms.length && formElementsWithRelatedPubTypes.length) {
 		const feee = createdForms.flatMap((form) =>
