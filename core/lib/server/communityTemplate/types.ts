@@ -154,6 +154,12 @@ export type TemplateApiToken = {
 	permissions?: Record<string, unknown> | true
 }
 
+// action config default definition
+export type TemplateActionConfigDefault = {
+	action: Action
+	config: Record<string, unknown>
+}
+
 // the main community template type
 export type CommunityTemplate = {
 	community: {
@@ -163,12 +169,21 @@ export type CommunityTemplate = {
 	}
 	pubFields?: Record<string, TemplatePubField>
 	pubTypes?: Record<string, Record<string, TemplatePubTypeField>>
+	// users are optional - if not provided, memberships are skipped
 	users?: Record<string, TemplateUser>
 	stages?: Record<string, TemplateStage>
 	stageConnections?: TemplateStageConnections
 	pubs?: TemplatePub[]
 	forms?: Record<string, TemplateForm>
 	apiTokens?: Record<string, TemplateApiToken>
+	actionConfigDefaults?: TemplateActionConfigDefault[]
+}
+
+// options for exporting a community template
+export type TemplateExportOptions = {
+	includePubs?: boolean
+	includeApiTokens?: boolean
+	includeActionConfigDefaults?: boolean
 }
 
 // minimal template for starting from scratch
@@ -179,7 +194,7 @@ export const MINIMAL_TEMPLATE: CommunityTemplate = {
 	},
 }
 
-// example template with common structure
+// example template with common structure (no users - memberships skipped)
 export const EXAMPLE_TEMPLATE: CommunityTemplate = {
 	community: {
 		name: "Example Community",
@@ -195,20 +210,8 @@ export const EXAMPLE_TEMPLATE: CommunityTemplate = {
 			Content: { isTitle: false },
 		},
 	},
-	users: {
-		admin: {
-			email: "admin@example.com",
-			firstName: "Admin",
-			lastName: "User",
-			role: "admin" as MemberRole,
-		},
-	},
 	stages: {
-		Draft: {
-			members: {
-				admin: "admin" as MemberRole,
-			},
-		},
+		Draft: {},
 		Published: {},
 	},
 	stageConnections: {

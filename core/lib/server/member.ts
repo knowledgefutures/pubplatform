@@ -244,7 +244,10 @@ export const insertCommunityMembershipsOverrideRole = (
 export const insertStageMemberships = (
 	membership: NewStageMemberships & { userId: UsersId; forms: FormsId[] },
 	trx = db
-) => autoRevalidate(trx.insertInto("stage_memberships").values(getMembershipRows(membership)))
+) =>
+	autoRevalidate(
+		trx.insertInto("stage_memberships").values(getMembershipRows(membership)).returningAll()
+	)
 
 export const deleteStageMemberships = (
 	params: { communityId: CommunitiesId; userId: UsersId },

@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 
 import { MemberRole } from "db/public"
 
-import type { CommunityTemplate } from "~/lib/server/communityTemplate"
+import type { CommunityTemplate, TemplateExportOptions } from "~/lib/server/communityTemplate"
 
 import { db } from "~/kysely/database"
 import { isUniqueConstraintError } from "~/kysely/errors"
@@ -22,7 +22,13 @@ import { logger } from "logger"
 import { maybeWithTrx } from "~/lib/server/maybeWithTrx"
 
 export const exportCommunityTemplateAction = defineServerAction(
-	async function exportCommunityTemplateAction({ communityId }: { communityId: CommunitiesId }) {
+	async function exportCommunityTemplateAction({
+		communityId,
+		options = {},
+	}: {
+		communityId: CommunitiesId
+		options?: TemplateExportOptions
+	}) {
 		const { user } = await getLoginData()
 
 		if (!user) {
@@ -40,7 +46,7 @@ export const exportCommunityTemplateAction = defineServerAction(
 		}
 
 		try {
-			const template = await exportTemplate(communityId)
+			const template = await exportTemplate(communityId, options)
 			return { template: JSON.stringify(template, null, 2) }
 		} catch (error) {
 			logger.error({ msg: "Failed to export template", err: error })
@@ -158,7 +164,10 @@ function transformTemplateToSeedInput(template: CommunityTemplate, _currentUserI
 	const pubs = template.pubs ?? []
 	const apiTokens = template.apiTokens ?? {}
 
+	const hasUsers = Object.keys(users).length > 0
+
 	// transform users - add passwords if not provided
+	// if no users are specified, we skip user/membership creation entirely
 	const transformedUsers: Record<string, any> = {}
 	for (const [slug, user] of Object.entries(users)) {
 		transformedUsers[slug] = {
@@ -168,18 +177,8 @@ function transformTemplateToSeedInput(template: CommunityTemplate, _currentUserI
 		}
 	}
 
-	// // ensure there's at least one admin user
-	// if (Object.keys(transformedUsers).length === 0) {
-	// 	transformedUsers["template-admin"] = {
-	// 		email: `template-admin-${crypto.randomUUID()}@temp.local`,
-	// 		firstName: "Template",
-	// 		lastName: "Admin",
-	// 		role: MemberRole.admin,
-	// 		password: `temp-${crypto.randomUUID()}`,
-	// 	}
-	// }
-
 	// transform stages with automations
+	// skip stage members if no users defined in template
 	const transformedStages: Record<string, any> = {}
 	for (const [name, stage] of Object.entries(stages)) {
 		const transformedAutomations: Record<string, any> = {}
@@ -200,18 +199,21 @@ function transformTemplateToSeedInput(template: CommunityTemplate, _currentUserI
 		}
 
 		transformedStages[name] = {
-			members: stage.members ?? {},
+			// only include members if users are defined in the template
+			...(hasUsers && stage.members ? { members: stage.members } : {}),
 			...(Object.keys(transformedAutomations).length > 0
 				? { automations: transformedAutomations }
 				: {}),
 		}
 	}
 
-	// transform forms
+	// transform forms - skip form members if no users defined
 	const transformedForms: Record<string, any> = {}
 	for (const [name, form] of Object.entries(forms)) {
 		transformedForms[name] = {
 			...form,
+			// only include members if users are defined in the template
+			...(hasUsers && form.members ? { members: form.members } : {}),
 			elements: form.elements.map((el) => {
 				if (el.type === "pubfield") {
 					return {
@@ -224,10 +226,12 @@ function transformTemplateToSeedInput(template: CommunityTemplate, _currentUserI
 		}
 	}
 
-	// transform pubs
+	// transform pubs - skip pub members if no users defined
 	const transformedPubs = pubs.map((pub) => ({
 		...pub,
 		values: pub.values ?? {},
+		// only include members if users are defined in the template
+		...(hasUsers && pub.members ? { members: pub.members } : {}),
 	}))
 
 	// cast to any since template types are intentionally looser than seed types

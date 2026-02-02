@@ -17,6 +17,7 @@ import {
 } from "ui/dropdown-menu"
 import { MoreVertical } from "ui/icon"
 
+import { CloneCommunityButton } from "./CloneCommunityButton"
 import { ExportTemplateButton } from "./ExportTemplateButton"
 import { RemoveCommunityButton } from "./RemoveCommunityButton"
 
@@ -105,6 +106,11 @@ export const getCommunityTableColumns = (options?: GetCommunityTableColumnsOptio
 								communityId={row.original.id}
 								communityName={row.original.name}
 								onCreateCopy={options?.onCreateCopy}
+							/>
+							<CloneCommunityButton
+								communityId={row.original.id}
+								communityName={row.original.name}
+								communitySlug={row.original.slug}
 							/>
 							<DropdownMenuSeparator />
 							<div className="w-full">

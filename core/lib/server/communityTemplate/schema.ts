@@ -519,6 +519,23 @@ export const createCommunityTemplateSchema = (): JSONSchema => {
 		additionalProperties: false,
 	}
 
+	const actionConfigDefault: JSONSchema = {
+		type: "object",
+		properties: {
+			action: {
+				enum: [...actions],
+				description: "The action this config applies to",
+			},
+			config: {
+				type: "object",
+				additionalProperties: true,
+				description: "Default configuration for the action",
+			},
+		},
+		required: ["action", "config"],
+		additionalProperties: false,
+	}
+
 	const community: JSONSchema = {
 		type: "object",
 		properties: {
@@ -603,6 +620,11 @@ export const createCommunityTemplateSchema = (): JSONSchema => {
 				type: "object",
 				additionalProperties: apiToken,
 				description: "API tokens for programmatic access. Keys are token names.",
+			},
+			actionConfigDefaults: {
+				type: "array",
+				items: actionConfigDefault,
+				description: "Default configurations for actions across the community.",
 			},
 		},
 		required: ["community"],

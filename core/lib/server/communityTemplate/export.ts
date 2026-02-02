@@ -1,4 +1,4 @@
-import type { CommunitiesId } from "db/public"
+import type { CommunitiesId, MemberRole, PubsId } from "db/public"
 import type { IconConfig } from "ui/dynamic-icon"
 
 import { jsonArrayFrom } from "kysely/helpers/postgres"
@@ -7,10 +7,14 @@ import { AutomationConditionBlockType, ElementType } from "db/public"
 
 import type {
 	CommunityTemplate,
+	TemplateActionConfigDefault,
+	TemplateApiToken,
 	TemplateAutomation,
 	TemplateConditionItem,
+	TemplateExportOptions,
 	TemplateForm,
 	TemplateFormElement,
+	TemplatePub,
 	TemplatePubField,
 	TemplateStage,
 } from "./types"
@@ -39,8 +43,11 @@ const transformConditionItems = (items: ConditionBlockItem[]): TemplateCondition
 }
 
 export const exportCommunityTemplate = async (
-	communityId: CommunitiesId
+	communityId: CommunitiesId,
+	options: TemplateExportOptions = {}
 ): Promise<CommunityTemplate> => {
+	const { includePubs = false, includeApiTokens = false, includeActionConfigDefaults = false } =
+		options
 	// fetch community
 	const community = await db
 		.selectFrom("communities")
@@ -88,20 +95,12 @@ export const exportCommunityTemplate = async (
 		}
 	}
 
-	// fetch stages with automations
+	// fetch stages (no members - memberships are skipped in templates)
 	const stages = await db
 		.selectFrom("stages")
 		.select(["stages.id", "stages.name"])
-		.select((eb) =>
-			jsonArrayFrom(
-				eb
-					.selectFrom("stage_memberships")
-					.innerJoin("users", "users.id", "stage_memberships.userId")
-					.select(["users.slug", "stage_memberships.role"])
-					.whereRef("stage_memberships.stageId", "=", "stages.id")
-			).as("members")
-		)
 		.where("communityId", "=", communityId)
+		.orderBy("stages.order", "asc")
 		.execute()
 
 	// fetch automations
@@ -186,7 +185,7 @@ export const exportCommunityTemplate = async (
 		}
 	}
 
-	// build stages template
+	// build stages template (no members - memberships are skipped in templates)
 	const stagesTemplate: Record<string, TemplateStage> = {}
 	for (const stage of stages) {
 		const stageAutomations = automations.filter((a) => a.stageId === stage.id)
@@ -225,13 +224,7 @@ export const exportCommunityTemplate = async (
 			}
 		}
 
-		const membersTemplate: Record<string, string> = {}
-		for (const member of stage.members) {
-			membersTemplate[member.slug] = member.role
-		}
-
 		stagesTemplate[stage.name] = {
-			...(Object.keys(membersTemplate).length > 0 ? { members: membersTemplate as any } : {}),
 			...(Object.keys(automationsTemplate).length > 0
 				? { automations: automationsTemplate }
 				: {}),
@@ -372,8 +365,161 @@ export const exportCommunityTemplate = async (
 		template.forms = formsTemplate
 	}
 
-	// note: we intentionally do not export users (security) or pubs (can be very large)
-	// users can be added manually to the template if needed
+	// optionally export pubs
+	if (includePubs) {
+		const pubsTemplate = await exportPubs(communityId, pubTypes, stages)
+		if (pubsTemplate.length > 0) {
+			template.pubs = pubsTemplate
+		}
+	}
+
+	// optionally export api tokens
+	if (includeApiTokens) {
+		const apiTokensTemplate = await exportApiTokens(communityId)
+		if (Object.keys(apiTokensTemplate).length > 0) {
+			template.apiTokens = apiTokensTemplate
+		}
+	}
+
+	// optionally export action config defaults
+	if (includeActionConfigDefaults) {
+		const actionConfigDefaultsTemplate = await exportActionConfigDefaults(communityId)
+		if (actionConfigDefaultsTemplate.length > 0) {
+			template.actionConfigDefaults = actionConfigDefaultsTemplate
+		}
+	}
 
 	return template
+}
+
+// helper to export pubs
+const exportPubs = async (
+	communityId: CommunitiesId,
+	pubTypes: Array<{ id: string; name: string }>,
+	stages: Array<{ id: string; name: string }>
+): Promise<TemplatePub[]> => {
+	// build lookup maps
+	const pubTypeIdToName = new Map(pubTypes.map((pt) => [pt.id, pt.name]))
+	const stageIdToName = new Map(stages.map((s) => [s.id, s.name]))
+
+	// fetch all pubs with their values and stage info
+	const pubs = await db
+		.selectFrom("pubs")
+		.select(["pubs.id", "pubs.pubTypeId"])
+		.select((eb) => [
+			jsonArrayFrom(
+				eb
+					.selectFrom("pub_values")
+					.innerJoin("pub_fields", "pub_fields.id", "pub_values.fieldId")
+					.select([
+						"pub_fields.name as fieldName",
+						"pub_values.value",
+						"pub_values.relatedPubId",
+					])
+					.whereRef("pub_values.pubId", "=", "pubs.id")
+			).as("values"),
+			jsonArrayFrom(
+				eb
+					.selectFrom("PubsInStages")
+					.select(["stageId"])
+					.whereRef("PubsInStages.pubId", "=", "pubs.id")
+			).as("stages"),
+		])
+		.where("pubs.communityId", "=", communityId)
+		.execute()
+
+	// build a map of pub id to pub for resolving related pubs
+	const pubIdToIndex = new Map<string, number>()
+	pubs.forEach((pub, idx) => {
+		pubIdToIndex.set(pub.id, idx)
+	})
+
+	const result: TemplatePub[] = []
+	for (const pub of pubs) {
+		const pubTypeName = pubTypeIdToName.get(pub.pubTypeId)
+		if (!pubTypeName) continue
+
+		const stageId = pub.stages[0]?.stageId
+		const stageName = stageId ? stageIdToName.get(stageId) : undefined
+
+		// build values
+		const values: Record<string, unknown> = {}
+		for (const val of pub.values) {
+			if (val.relatedPubId) {
+				// relation value
+				if (!values[val.fieldName]) {
+					values[val.fieldName] = []
+				}
+				;(values[val.fieldName] as Array<{ value: unknown; relatedPubId: string }>).push({
+					value: val.value,
+					relatedPubId: val.relatedPubId,
+				})
+			} else {
+				values[val.fieldName] = val.value
+			}
+		}
+
+		result.push({
+			id: pub.id,
+			pubType: pubTypeName,
+			values,
+			...(stageName ? { stage: stageName } : {}),
+		})
+	}
+
+	return result
+}
+
+// helper to export api tokens
+const exportApiTokens = async (
+	communityId: CommunitiesId
+): Promise<Record<string, TemplateApiToken>> => {
+	const tokens = await db
+		.selectFrom("api_access_tokens")
+		.select(["name", "description"])
+		.select((eb) =>
+			jsonArrayFrom(
+				eb
+					.selectFrom("api_access_permissions")
+					.select(["scope", "accessType", "constraints"])
+					.whereRef("api_access_permissions.apiAccessTokenId", "=", "api_access_tokens.id")
+			).as("permissions")
+		)
+		.where("communityId", "=", communityId)
+		.execute()
+
+	const result: Record<string, TemplateApiToken> = {}
+	for (const token of tokens) {
+		// build permissions object
+		const permissions: Record<string, unknown> = {}
+		for (const perm of token.permissions) {
+			if (!permissions[perm.scope]) {
+				permissions[perm.scope] = {}
+			}
+			;(permissions[perm.scope] as Record<string, unknown>)[perm.accessType] = perm.constraints
+		}
+
+		result[token.name] = {
+			...(token.description ? { description: token.description } : {}),
+			permissions: Object.keys(permissions).length > 0 ? permissions : true,
+		}
+	}
+
+	return result
+}
+
+// helper to export action config defaults
+const exportActionConfigDefaults = async (
+	communityId: CommunitiesId
+): Promise<TemplateActionConfigDefault[]> => {
+	const defaults = await db
+		.selectFrom("action_config_defaults")
+		.select(["action", "config"])
+		.where("communityId", "=", communityId)
+		.execute()
+
+	return defaults.map((d) => ({
+		action: d.action,
+		config: (d.config ?? {}) as Record<string, unknown>,
+	}))
 }

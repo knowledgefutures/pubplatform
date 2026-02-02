@@ -28,11 +28,11 @@ import { autoCache } from "./cache/autoCache"
 import { autoRevalidate } from "./cache/autoRevalidate"
 import { maybeWithTrx } from "./maybeWithTrx"
 
-export const createStage = (props: NewStages) =>
-	autoRevalidate(db.insertInto("stages").values(props))
+export const createStage = (props: NewStages, trx = db) =>
+	autoRevalidate(trx.insertInto("stages").values(props).returningAll())
 
-export const updateStage = (stageId: StagesId, props: StagesUpdate) =>
-	autoRevalidate(db.updateTable("stages").set(props).where("id", "=", stageId))
+export const updateStage = (stageId: StagesId, props: StagesUpdate, trx = db) =>
+	autoRevalidate(trx.updateTable("stages").set(props).where("id", "=", stageId))
 
 export const removeStages = (stageIds: StagesId[]) =>
 	autoRevalidate(
@@ -47,8 +47,8 @@ export const removeStages = (stageIds: StagesId[]) =>
 			.where("stageId", "in", (eb) => eb.selectFrom("deleted_stages").select("id"))
 	)
 
-export const createMoveConstraint = (props: NewMoveConstraint) =>
-	autoRevalidate(db.insertInto("move_constraint").values(props))
+export const createMoveConstraint = (props: NewMoveConstraint, trx = db) =>
+	autoRevalidate(trx.insertInto("move_constraint").values(props).returningAll())
 
 /**
  * You should use `executeTakeFirst` here
