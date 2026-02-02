@@ -3,23 +3,17 @@
 import React from "react"
 
 import { Button } from "ui/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-	DialogTrigger,
-} from "ui/dialog"
-import { CurlyBraces, Loader2, ListPlus } from "ui/icon"
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "ui/dialog"
+import { CurlyBraces, ListPlus, Loader2 } from "ui/icon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip"
 import { toast } from "ui/use-toast"
 
-import { didSucceed, useServerAction } from "~/lib/serverActions"
 import { EXAMPLE_TEMPLATE } from "~/lib/server/communityTemplate/types"
+import { didSucceed, useServerAction } from "~/lib/serverActions"
 import { AddCommunityForm } from "./AddCommunityForm"
-import { createCommunityFromTemplateAction } from "./templateActions"
 import { TemplateEditor, useTemplateEditor } from "./TemplateEditor"
+import { createCommunityFromTemplateAction } from "./templateActions"
 
 type AddCommunityProps = {
 	initialTemplate?: string
@@ -66,10 +60,10 @@ export const AddCommunity = ({ initialTemplate }: AddCommunityProps) => {
 				<Tabs value={activeTab} onValueChange={setActiveTab}>
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="basic">Basic</TabsTrigger>
-					<TabsTrigger value="template" className="gap-1.5">
-						<CurlyBraces size={14} />
-						From Template
-					</TabsTrigger>
+						<TabsTrigger value="template" className="gap-1.5">
+							<CurlyBraces size={14} />
+							From Template
+						</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value="basic" className="mt-4">
@@ -77,10 +71,7 @@ export const AddCommunity = ({ initialTemplate }: AddCommunityProps) => {
 					</TabsContent>
 
 					<TabsContent value="template" className="mt-4">
-						<TemplateTabContent
-							setOpen={setOpen}
-							initialTemplate={initialTemplate}
-						/>
+						<TemplateTabContent setOpen={setOpen} initialTemplate={initialTemplate} />
 					</TabsContent>
 				</Tabs>
 			</DialogContent>
@@ -139,10 +130,10 @@ const TemplateTabContent = ({ setOpen, initialTemplate }: TemplateTabContentProp
 			/>
 
 			<div className="flex justify-end gap-2">
-				<Button variant="outline" onClick={() => setOpen(false)}>
+				<Button variant="outline" size="sm" onClick={() => setOpen(false)}>
 					Cancel
 				</Button>
-				<Button onClick={handleSubmit} disabled={!isValid || isSubmitting}>
+				<Button size="sm" onClick={handleSubmit} disabled={!isValid || isSubmitting}>
 					{isSubmitting ? (
 						<>
 							<Loader2 className="animate-spin" size={16} />

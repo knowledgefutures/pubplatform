@@ -5,22 +5,17 @@ import type { CommunitiesId } from "db/public"
 import * as React from "react"
 
 import { Button } from "ui/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from "ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "ui/dialog"
 import { DropdownMenuItem } from "ui/dropdown-menu"
-import { Input } from "ui/input"
 import { Clipboard, Download, Layers, Loader2 } from "ui/icon"
+import { Input } from "ui/input"
 import { Label } from "ui/label"
+import { JsonEditor } from "ui/monaco"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "ui/tabs"
 import { toast } from "ui/use-toast"
 
 import { didSucceed, useServerAction } from "~/lib/serverActions"
 import { exportCommunityCloneAction, importCommunityCloneAction } from "./cloneActions"
-import { JsonEditor } from "ui/monaco"
 
 type CloneCommunityButtonProps = {
 	communityId: string
@@ -119,7 +114,7 @@ export const CloneCommunityButton = ({
 			<DropdownMenuItem
 				onClick={(e) => {
 					e.preventDefault()
-					handleExport()
+					void handleExport()
 				}}
 				className="gap-2"
 			>
@@ -135,7 +130,10 @@ export const CloneCommunityButton = ({
 						configurations. This is useful for debugging or creating test environments.
 					</DialogDescription>
 
-					<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "export" | "import")}>
+					<Tabs
+						value={activeTab}
+						onValueChange={(v) => setActiveTab(v as "export" | "import")}
+					>
 						<TabsList>
 							<TabsTrigger value="export">Export</TabsTrigger>
 							<TabsTrigger value="import">Import</TabsTrigger>
@@ -159,16 +157,24 @@ export const CloneCommunityButton = ({
 
 									<div className="flex justify-between">
 										<div className="flex gap-2">
-											<Button variant="outline" size="sm" onClick={handleCopy}>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={handleCopy}
+											>
 												<Clipboard size={14} />
 												Copy
 											</Button>
-											<Button variant="outline" size="sm" onClick={handleDownload}>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={handleDownload}
+											>
 												<Download size={14} />
 												Download
 											</Button>
 										</div>
-										<Button onClick={() => setActiveTab("import")}>
+										<Button size="sm" onClick={() => setActiveTab("import")}>
 											Import as New Community
 										</Button>
 									</div>
@@ -186,8 +192,9 @@ export const CloneCommunityButton = ({
 										onChange={(e) => setNewSlug(e.target.value)}
 										placeholder="my-community-clone"
 									/>
-									<p className="text-xs text-muted-foreground">
-										Must be unique. Use lowercase letters, numbers, and hyphens only.
+									<p className="text-muted-foreground text-xs">
+										Must be unique. Use lowercase letters, numbers, and hyphens
+										only.
 									</p>
 								</div>
 
@@ -203,7 +210,9 @@ export const CloneCommunityButton = ({
 
 								{!cloneData && (
 									<div className="grid gap-2">
-										<Label>Clone Data (paste JSON if importing from file)</Label>
+										<Label>
+											Clone Data (paste JSON if importing from file)
+										</Label>
 										<div className="h-[200px] rounded-md border">
 											<JsonEditor
 												value={importJson}
@@ -216,11 +225,13 @@ export const CloneCommunityButton = ({
 							</div>
 
 							<div className="flex justify-end gap-2">
-								<Button variant="outline" onClick={() => setOpen(false)}>
+								<Button variant="outline" size="sm" onClick={() => setOpen(false)}>
 									Cancel
 								</Button>
-								<Button onClick={handleImport} disabled={isImporting}>
-									{isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+								<Button size="sm" onClick={handleImport} disabled={isImporting}>
+									{isImporting && (
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									)}
 									Create Clone
 								</Button>
 							</div>

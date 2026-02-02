@@ -15,7 +15,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "ui/dropdown-menu"
-import { MoreVertical } from "ui/icon"
+import { ExternalLink, MoreVertical } from "ui/icon"
 
 import { CloneCommunityButton } from "./CloneCommunityButton"
 import { ExportTemplateButton } from "./ExportTemplateButton"
@@ -79,7 +79,13 @@ export const getCommunityTableColumns = (options?: GetCommunityTableColumnsOptio
 			header: ({ column }) => <DataTableColumnHeader column={column} title="Slug" />,
 			accessorKey: "slug",
 			cell: ({ row }) => (
-				<Link href={`/c/${row.getValue("slug")}/pubs`}>{row.original.slug}</Link>
+				<Link
+					href={`/c/${row.getValue("slug")}/stages`}
+					target="_blank"
+					className="flex items-center gap-1 font-mono hover:underline"
+				>
+					{row.original.slug} <ExternalLink className="size-4" />
+				</Link>
 			),
 		},
 		{

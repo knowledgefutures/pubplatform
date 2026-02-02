@@ -5,19 +5,14 @@ import type { CommunitiesId } from "db/public"
 import * as React from "react"
 
 import { Button } from "ui/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from "ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "ui/dialog"
 import { DropdownMenuItem } from "ui/dropdown-menu"
 import { Clipboard, CurlyBraces, Download, Loader2 } from "ui/icon"
 import { toast } from "ui/use-toast"
 
 import { didSucceed, useServerAction } from "~/lib/serverActions"
-import { exportCommunityTemplateAction } from "./templateActions"
 import { TemplateEditor } from "./TemplateEditor"
+import { exportCommunityTemplateAction } from "./templateActions"
 
 type ExportTemplateButtonProps = {
 	communityId: string
@@ -91,7 +86,7 @@ export const ExportTemplateButton = ({
 			<DropdownMenuItem
 				onClick={(e) => {
 					e.preventDefault()
-					handleExport()
+					void handleExport()
 				}}
 				className="gap-2"
 			>
@@ -124,21 +119,25 @@ export const ExportTemplateButton = ({
 
 							<div className="flex justify-between">
 								<div className="flex gap-2">
-								<Button variant="outline" size="sm" onClick={handleCopy}>
-									<Clipboard size={14} />
-									Copy
-								</Button>
+									<Button variant="outline" size="sm" onClick={handleCopy}>
+										<Clipboard size={14} />
+										Copy
+									</Button>
 									<Button variant="outline" size="sm" onClick={handleDownload}>
 										<Download size={14} />
 										Download
 									</Button>
 								</div>
 								<div className="flex gap-2">
-									<Button variant="outline" onClick={() => setOpen(false)}>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setOpen(false)}
+									>
 										Close
 									</Button>
 									{onCreateCopy && (
-										<Button onClick={handleCreateCopy}>
+										<Button size="sm" onClick={handleCreateCopy}>
 											Create Copy
 										</Button>
 									)}

@@ -4,11 +4,10 @@ import type { ValidationResult } from "ui/monaco"
 
 import * as React from "react"
 
-import { cn } from "utils"
-
 import { AlertCircle, CheckCircle, Clipboard, CurlyBraces } from "ui/icon"
 import { JsonEditor } from "ui/monaco"
 import { toast } from "ui/use-toast"
+import { cn } from "utils"
 
 import { communityTemplateSchema } from "~/lib/server/communityTemplate/schema"
 import { validateCommunityTemplate } from "~/lib/server/communityTemplate/validate"
@@ -62,10 +61,7 @@ export const TemplateEditor = ({
 		}
 	}
 
-	const allErrors = [
-		...validationResult.errors.map((e) => e.message),
-		...crossRefErrors,
-	]
+	const allErrors = [...validationResult.errors.map((e) => e.message), ...crossRefErrors]
 	const isValid = validationResult.valid && crossRefErrors.length === 0 && value.trim().length > 0
 
 	return (
@@ -86,7 +82,7 @@ export const TemplateEditor = ({
 					<button
 						type="button"
 						onClick={handleCopy}
-						className="absolute top-10 right-2 z-10 rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						className="absolute top-0.5 right-6 z-10 rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
 						title="Copy to clipboard"
 					>
 						<Clipboard size={14} />
@@ -115,7 +111,8 @@ export const TemplateEditor = ({
 							<AlertCircle size={16} className="mt-0.5 shrink-0" />
 							<div className="flex flex-col gap-1">
 								<span className="font-medium">
-									{allErrors.length} validation error{allErrors.length !== 1 ? "s" : ""}
+									{allErrors.length} validation error
+									{allErrors.length !== 1 ? "s" : ""}
 								</span>
 								<ul className="list-inside list-disc text-xs opacity-90">
 									{allErrors.slice(0, 5).map((error, i) => (

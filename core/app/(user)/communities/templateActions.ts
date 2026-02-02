@@ -1,25 +1,25 @@
 "use server"
 
 import type { CommunitiesId } from "db/public"
+import type { CommunityTemplate, TemplateExportOptions } from "~/lib/server/communityTemplate"
 
 import { revalidatePath } from "next/cache"
 
 import { MemberRole } from "db/public"
-
-import type { CommunityTemplate, TemplateExportOptions } from "~/lib/server/communityTemplate"
+import { logger } from "logger"
 
 import { db } from "~/kysely/database"
 import { isUniqueConstraintError } from "~/kysely/errors"
 import { getLoginData } from "~/lib/authentication/loginData"
+import { withUncached } from "~/lib/server/cache/skipCacheStore"
 import {
 	communityTemplateSchema,
 	exportCommunityTemplate as exportTemplate,
 	validateCommunityTemplateQuick,
 } from "~/lib/server/communityTemplate"
 import { defineServerAction } from "~/lib/server/defineServerAction"
-import { seedCommunity } from "~/prisma/seed/seedCommunity"
-import { logger } from "logger"
 import { maybeWithTrx } from "~/lib/server/maybeWithTrx"
+import { seedCommunity } from "~/prisma/seed/seedCommunity"
 
 export const exportCommunityTemplateAction = defineServerAction(
 	async function exportCommunityTemplateAction({
@@ -103,27 +103,28 @@ export const createCommunityFromTemplateAction = defineServerAction(
 			// build the seed input from the template
 			const seedInput = transformTemplateToSeedInput(template, user.id)
 
-			const result= await maybeWithTrx(db, async (trx) => {
-			const result = await seedCommunity(seedInput, { randomSlug: false, }, trx)
+			const result = await maybeWithTrx(db, async (trx) => {
+				const result = await withUncached(
+					async () => await seedCommunity(seedInput, { randomSlug: false }, trx)
+				)
 
-			// add current user as admin if they werent included
-			const userIsMember = Object.values(template.users ?? {}).some(
-				(u) => u.email === user.email
-			)
-			if (!userIsMember) {
-				await trx
-					.insertInto("community_memberships")
-					.values({
-						userId: user.id,
-						communityId: result.community.id,
-						role: MemberRole.admin,
-					})
-					.execute()
-			}
+				// add current user as admin if they werent included
+				const userIsMember = Object.values(template.users ?? {}).some(
+					(u) => u.email === user.email
+				)
+				if (!userIsMember) {
+					await trx
+						.insertInto("community_memberships")
+						.values({
+							userId: user.id,
+							communityId: result.community.id,
+							role: MemberRole.admin,
+						})
+						.execute()
+				}
 
-			return result
-
-		})
+				return result
+			})
 
 			revalidatePath("/")
 			return { communitySlug: result.community.slug }

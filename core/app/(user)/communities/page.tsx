@@ -1,6 +1,6 @@
 import type { TableCommunity } from "./getCommunityTableColumns"
 
-import { Layers, Calendar } from "ui/icon"
+import { Calendar, Layers } from "ui/icon"
 
 import { db } from "~/kysely/database"
 import { getPageLoginData } from "~/lib/authentication/loginData"
@@ -81,7 +81,11 @@ export default async function Page() {
 			{tableCommunities.length === 0 ? (
 				<EmptyState />
 			) : (
-				<div className="rounded-lg border bg-card">
+				<div className="flex flex-col gap-2 rounded-lg border bg-card p-4">
+					<div className="flex items-center gap-2 text-muted-foreground text-sm">
+						<Layers className="h-4 w-4" />
+						Communities
+					</div>
 					<CommunitiesClient communities={tableCommunities} />
 				</div>
 			)}
