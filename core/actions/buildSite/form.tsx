@@ -6,6 +6,7 @@ import { useFieldArray, useWatch } from "react-hook-form"
 
 import { Button } from "ui/button"
 import { FieldDescription, FieldLabel, FieldSet } from "ui/field"
+import { Input } from "ui/input"
 import { MonacoFormField } from "ui/monaco"
 import { FieldOutputMap } from "ui/outputMap"
 import { usePubFieldContext } from "ui/pubFields"
@@ -139,7 +140,7 @@ export default function BuildSiteActionForm() {
 							/>
 						</div>
 
-						<div>
+							<div>
 							<FieldLabel className="text-xs">URL Slug</FieldLabel>
 							<ActionField
 								name={`pages.${index}.slug`}
@@ -149,6 +150,25 @@ export default function BuildSiteActionForm() {
 										language="jsonata"
 										theme={theme}
 										height="80px"
+									/>
+								)}
+							/>
+						</div>
+
+						<div>
+							<FieldLabel className="text-xs">File Extension</FieldLabel>
+							<FieldDescription className="text-xs">
+								Output file type. Only &quot;html&quot; pages are wrapped
+								in an HTML shell.
+							</FieldDescription>
+							<ActionField
+								name={`pages.${index}.extension`}
+								render={({ field }) => (
+									<Input
+										{...field}
+										value={field.value ?? "html"}
+										placeholder="html"
+										className="h-8 text-sm"
 									/>
 								)}
 							/>
@@ -224,7 +244,12 @@ export default function BuildSiteActionForm() {
 					type="button"
 					size="sm"
 					onClick={() =>
-						append({ filter: "", slug: "$.pub.id", transform: DEFAULT_PAGE_TEMPLATE })
+						append({
+							filter: "",
+							slug: "$.pub.id",
+							transform: DEFAULT_PAGE_TEMPLATE,
+							extension: "html",
+						})
 					}
 				>
 					<Plus size={14} className="mr-1" />

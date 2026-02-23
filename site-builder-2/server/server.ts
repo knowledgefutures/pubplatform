@@ -1,7 +1,7 @@
 import type { ReadStream } from "node:fs"
 
-import fs, { mkdir } from "node:fs/promises"
-import path, { dirname } from "node:path"
+import fs from "node:fs/promises"
+import path from "node:path"
 import { PassThrough } from "node:stream"
 import { S3Client } from "@aws-sdk/client-s3"
 import { Upload } from "@aws-sdk/lib-storage"
@@ -14,15 +14,11 @@ import { Hono } from "hono"
 import { siteApi } from "contracts"
 import { siteBuilderApi } from "contracts/resources/site-builder-2"
 
-import { getBuildPath } from "../src/lib/server/storage"
-import { buildAstroSite } from "./astro"
-
-const env = await import("../src/lib/server/env").then((m) => m.SERVER_ENV)
+import { SERVER_ENV } from "./env"
 
 const app = new Hono()
-const PORT = env.PORT
+const PORT = SERVER_ENV.PORT
 
-// Define a custom error interface for archiver warnings
 interface ArchiverError extends Error {
 	code?: string
 }
@@ -34,46 +30,27 @@ export const getS3Client = () => {
 		return s3Client
 	}
 
-	const region = env.S3_REGION
-	const key = env.S3_ACCESS_KEY
-	const secret = env.S3_SECRET_KEY
-
 	s3Client = new S3Client({
-		endpoint: env.S3_ENDPOINT,
-		region: region,
+		endpoint: SERVER_ENV.S3_ENDPOINT,
+		region: SERVER_ENV.S3_REGION,
 		credentials: {
-			accessKeyId: key,
-			secretAccessKey: secret,
+			accessKeyId: SERVER_ENV.S3_ACCESS_KEY,
+			secretAccessKey: SERVER_ENV.S3_SECRET_KEY,
 		},
-		forcePathStyle: !!env.S3_ENDPOINT, // Required for MinIO
+		forcePathStyle: !!SERVER_ENV.S3_ENDPOINT,
 	})
 
 	return s3Client
 }
 
-/**
- * Formats bytes to a human-readable format
- * @param bytes - Number of bytes
- * @returns Human readable string
- */
 const _formatBytes = (bytes: number): string => {
 	if (bytes === 0) return "0 Bytes"
-
 	const k = 1024
 	const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
 	const i = Math.floor(Math.log(bytes) / Math.log(k))
-
 	return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
 }
 
-/**
- * Uploads a file to the S3 bucket using the S3 client directly
- * @param id - id under which the file will be stored. eg for a pub, the pubId. for community assets like the logo, the communityId. for user avatars, the userId.
- * @param fileName - name of the file to be stored
- * @param fileData - the file data to upload (Buffer, Uint8Array, or ReadStream)
- * @param contentType - MIME type of the file (e.g., 'image/jpeg')
- * @returns the URL of the uploaded file
- */
 export const uploadFileToS3 = async (
 	id: string,
 	fileName: string,
@@ -91,7 +68,7 @@ export const uploadFileToS3 = async (
 	}
 ): Promise<string> => {
 	const client = getS3Client()
-	const bucket = env.S3_BUCKET_NAME
+	const bucket = SERVER_ENV.S3_BUCKET_NAME
 	const key = `${id}/${fileName}`
 
 	const parallelUploads3 = new Upload({
@@ -102,9 +79,9 @@ export const uploadFileToS3 = async (
 			Body: fileData,
 			ContentType: contentType,
 		},
-		queueSize: queueSize ?? 3, // optional concurrency configuration
-		partSize: partSize ?? 1024 * 1024 * 5, // optional size of each part, in bytes, at least 5MB
-		leavePartsOnError: false, // optional manually handle dropped parts
+		queueSize: queueSize ?? 3,
+		partSize: partSize ?? 1024 * 1024 * 5,
+		leavePartsOnError: false,
 	})
 
 	let lastPercentage = 0
@@ -112,10 +89,8 @@ export const uploadFileToS3 = async (
 		"httpUploadProgress",
 		progressCallback ??
 			((progress) => {
-				// Only log if we have both loaded and total
 				if (progress.loaded && progress.total) {
 					const percentage = Math.round((progress.loaded / progress.total) * 100)
-					// Only log when percentage changes by at least 5%
 					if (percentage >= lastPercentage + 5 || percentage === 100) {
 						lastPercentage = percentage
 					}
@@ -124,34 +99,23 @@ export const uploadFileToS3 = async (
 	)
 
 	const result = await parallelUploads3.done()
-
 	return result.Location!
 }
 
-/**
- * Creates a zip file from a directory and streams it directly to S3
- * @param sourceDir - Directory to zip
- * @param id - S3 folder id/prefix
- * @param fileName - Name to use for the zip file in S3
- * @returns A promise that resolves with the S3 URL when complete
- */
 const createZipAndUploadToS3 = async (
 	sourceDir: string,
 	id: string,
 	fileName: string
 ): Promise<string> => {
 	const client = getS3Client()
-	const bucket = env.S3_BUCKET_NAME
+	const bucket = SERVER_ENV.S3_BUCKET_NAME
 	const key = `${id}/${fileName}`
 
-	// Set up metrics for reporting
 	let totalBytes = 0
 
-	// Get total size of files to be added (in background)
 	const calculateTotalSize = async (dir: string): Promise<number> => {
 		let size = 0
 		const entries = await fs.readdir(dir, { withFileTypes: true })
-
 		for (const entry of entries) {
 			const fullPath = path.join(dir, entry.name)
 			if (entry.isDirectory()) {
@@ -161,44 +125,39 @@ const createZipAndUploadToS3 = async (
 				size += stats.size
 			}
 		}
-
 		return size
 	}
 
 	try {
 		totalBytes = await calculateTotalSize(sourceDir)
 	} catch (_err) {
-		// Continue anyway, we'll just have less precise progress reporting
+		// Continue with less precise progress reporting
 	}
 
 	return new Promise((resolve, reject) => {
-		// Create a pass-through stream as an intermediary between archiver and S3
 		const passThrough = new PassThrough()
 
-		// Create archive stream
 		const archive = archiver("zip", {
-			zlib: { level: 9 }, // compression level
+			zlib: { level: 9 },
 		})
 
 		let processedBytes = 0
 		let lastPercentage = 0
-		// Pipe archive output to the pass-through stream
 		archive.pipe(passThrough)
-		// Configure S3 upload using the pass-through stream as input
+
 		const upload = new Upload({
 			client,
 			params: {
 				Bucket: bucket,
 				Key: key,
-				Body: passThrough, // Use the pass-through stream instead of archiver directly
+				Body: passThrough,
 				ContentType: "application/zip",
 			},
 			queueSize: 4,
-			partSize: 1024 * 1024 * 5, // 5MB parts
+			partSize: 1024 * 1024 * 5,
 			leavePartsOnError: false,
 		})
 
-		// Progress tracking for the upload
 		let uploadLastPercentage = 0
 		upload.on("httpUploadProgress", (progress) => {
 			if (progress.loaded && progress.total) {
@@ -209,7 +168,6 @@ const createZipAndUploadToS3 = async (
 			}
 		})
 
-		// Progress reporting during the compression process
 		archive.on("entry", (entry) => {
 			if (entry.stats?.size) {
 				processedBytes += entry.stats.size
@@ -218,31 +176,24 @@ const createZipAndUploadToS3 = async (
 					if (percentage >= lastPercentage + 5 || percentage === 100) {
 						lastPercentage = percentage
 					}
-				} else {
 				}
 			}
 		})
 
-		// Handle warnings from archiver
 		archive.on("warning", (err: ArchiverError) => {
-			if (err.code === "ENOENT") {
-			} else {
-				// throw error
+			if (err.code !== "ENOENT") {
 				reject(err)
 			}
 		})
 
-		// Handle errors from archiver
 		archive.on("error", (err: Error) => {
 			reject(err)
 		})
 
-		// Handle errors from the pass-through stream
 		passThrough.on("error", (err) => {
 			reject(err)
 		})
 
-		// Start the upload process
 		upload
 			.done()
 			.then((result) => {
@@ -252,17 +203,11 @@ const createZipAndUploadToS3 = async (
 				reject(err)
 			})
 
-		// Append files from the directory to the archive
 		archive.directory(sourceDir, false)
-
-		// Finalize the archive - this is when data actually starts flowing
 		archive.finalize()
 	})
 }
 
-/**
- * gets the content type for a file based on its extension
- */
 const getContentType = (filePath: string): string => {
 	const ext = path.extname(filePath).toLowerCase()
 	const contentTypes: Record<string, string> = {
@@ -287,23 +232,16 @@ const getContentType = (filePath: string): string => {
 	return contentTypes[ext] ?? "application/octet-stream"
 }
 
-/**
- * uploads all files from a directory to S3 recursively
- * @param sourceDir - local directory to upload
- * @param s3Prefix - prefix/folder path in S3 bucket
- * @returns count of uploaded files and the folder URL
- */
 const uploadDirectoryToS3 = async (
 	sourceDir: string,
 	s3Prefix: string
 ): Promise<{ uploadedFiles: number; s3FolderPath: string; s3FolderUrl: string }> => {
 	const client = getS3Client()
-	const bucket = env.S3_BUCKET_NAME
+	const bucket = SERVER_ENV.S3_BUCKET_NAME
 	let uploadedFiles = 0
 
 	const uploadRecursive = async (dir: string, prefix: string): Promise<void> => {
 		const entries = await fs.readdir(dir, { withFileTypes: true })
-
 		for (const entry of entries) {
 			const fullPath = path.join(dir, entry.name)
 			const s3Key = `${prefix}/${entry.name}`
@@ -335,15 +273,12 @@ const uploadDirectoryToS3 = async (
 
 	await uploadRecursive(sourceDir, s3Prefix)
 
-	// construct the folder URL based on whether we're using S3 or MinIO
 	const s3FolderPath = s3Prefix
 	let s3FolderUrl: string
-	if (env.S3_ENDPOINT) {
-		// minio or custom S3 endpoint
-		s3FolderUrl = `${env.S3_ENDPOINT}/${bucket}/${s3Prefix}`
+	if (SERVER_ENV.S3_ENDPOINT) {
+		s3FolderUrl = `${SERVER_ENV.S3_ENDPOINT}/${bucket}/${s3Prefix}`
 	} else {
-		// standard S3
-		s3FolderUrl = `https://${bucket}.s3.${env.S3_REGION}.amazonaws.com/${s3Prefix}`
+		s3FolderUrl = `https://${bucket}.s3.${SERVER_ENV.S3_REGION}.amazonaws.com/${s3Prefix}`
 	}
 
 	return { uploadedFiles, s3FolderPath, s3FolderUrl }
@@ -355,7 +290,7 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 	}
 
 	const client = initClient(siteApi, {
-		baseUrl: env.PUBPUB_URL,
+		baseUrl: SERVER_ENV.PUBPUB_URL,
 		baseHeaders: {
 			Authorization: authHeader,
 		},
@@ -384,6 +319,97 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 	throw new Error(`UNKNOWN ERROR: ${response.body}`)
 }
 
+// ---- Bespoke SSG ----
+
+const renderHtmlPage = (title: string, content: string, css: string): string => {
+	const styleTag = css ? `\n\t<style>${css}</style>` : ""
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+\t<meta charset="UTF-8" />
+\t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+\t<title>${title}</title>${styleTag}
+</head>
+<body>
+${content}
+</body>
+</html>`
+}
+
+type PageGroup = {
+	pages: { id: string; title: string; slug: string; content: string }[]
+	transform: string
+	extension?: string
+}
+
+const buildSite = async ({
+	communitySlug,
+	authToken,
+	pages,
+	css,
+	distDir,
+}: {
+	communitySlug: string
+	authToken: string
+	pages: PageGroup[]
+	css: string
+	distDir: string
+}): Promise<void> => {
+	const client = initClient(siteApi, {
+		baseUrl: SERVER_ENV.PUBPUB_URL,
+		baseHeaders: {
+			Authorization: `Bearer ${authToken}`,
+		},
+	})
+
+	await fs.mkdir(distDir, { recursive: true })
+
+	for (const group of pages) {
+		const extension = group.extension ?? "html"
+		const pubIds = group.pages.map((page) => page.id)
+
+		if (pubIds.length === 0) continue
+
+		const response = await client.pubs.getMany({
+			params: { communitySlug },
+			query: {
+				transform: group.transform,
+				pubIds: pubIds as any,
+			},
+		})
+
+		if (response.status !== 200) {
+			throw new Error(
+				`Failed to fetch pubs. Status: ${response.status} Message: ${(response.body as any)?.message ?? "Unknown error"}`
+			)
+		}
+
+		for (const pub of response.body) {
+			const pageInfo = group.pages.find((p) => p.id === pub.id)
+			if (!pageInfo) continue
+
+			const slug = pageInfo.slug
+			const title = pageInfo.title
+			const content = (pub as any).content as string
+
+			let fileContent: string
+			if (extension === "html") {
+				fileContent = renderHtmlPage(title, content, css)
+			} else {
+				fileContent = content
+			}
+
+			const normalized = slug.replace(/\/+$/, "")
+			const fileName = normalized === "" ? `index.${extension}` : `${normalized}.${extension}`
+			const filePath = path.join(distDir, fileName)
+			await fs.mkdir(path.dirname(filePath), { recursive: true })
+			await fs.writeFile(filePath, fileContent, "utf-8")
+		}
+	}
+}
+
+// ---- Router ----
+
 const router = tsr.router(siteBuilderApi, {
 	build: async ({ body, headers }) => {
 		try {
@@ -397,41 +423,25 @@ const router = tsr.router(siteBuilderApi, {
 				return tokenVerification
 			}
 
-			const siteUrl = body.siteUrl
 			const timestamp = Date.now()
-
 			const distDir = `./dist/${communitySlug}/${body.automationRunId}`
-
-			const buildPath = getBuildPath(communitySlug, body.automationRunId)
 
 			const pages = body.pages
 			const css = body.css ?? ""
-			await mkdir(dirname(buildPath), { recursive: true })
 
-			// write build data (pages and css) to storage
-			const buildData = { pages, css }
-			await fs.writeFile(
-				getBuildPath(communitySlug, body.automationRunId),
-				JSON.stringify(buildData, null, 2)
-			)
-
-			const buildSuccess = await buildAstroSite({
-				outDir: distDir,
-				site: siteUrl,
-				vite: {
-					define: {
-						"import.meta.env.COMMUNITY_SLUG": JSON.stringify(communitySlug),
-						"import.meta.env.AUTH_TOKEN": JSON.stringify(authToken),
-						"import.meta.env.PUBPUB_URL": JSON.stringify(env.PUBPUB_URL),
-						"import.meta.env.AUTOMATION_RUN_ID": JSON.stringify(body.automationRunId),
-					},
-				},
-			})
-
-			if (!buildSuccess) {
+			try {
+				await buildSite({
+					communitySlug,
+					authToken,
+					pages,
+					css,
+					distDir,
+				})
+			} catch (err) {
+				const error = err as Error
 				return {
 					status: 500,
-					body: { success: false, message: "Build failed" },
+					body: { success: false, message: `Build failed: ${error.message}` },
 				}
 			}
 
@@ -439,27 +449,22 @@ const router = tsr.router(siteBuilderApi, {
 			let folderUploadResult:
 				| { uploadedFiles: number; s3FolderPath: string; s3FolderUrl: string }
 				| undefined
-			let error: Error | undefined
 
 			try {
-				// stream zip directly to S3 without saving to disk first
 				const zipFileName = `site-${timestamp}.zip`
 				const zipUploadId = "site-archives"
 				zipUploadResult = await createZipAndUploadToS3(distDir, zipUploadId, zipFileName)
 
-				// upload individual files for static serving
 				const subpath = body.subpath ?? body.automationRunId
 				const s3Prefix = `sites/${communitySlug}/${subpath}`
 				folderUploadResult = await uploadDirectoryToS3(distDir, s3Prefix)
 
-				// compute the public site URL from SITES_BASE_URL env var
 				let publicSiteUrl: string | undefined
 				let firstPageUrl: string | undefined
-				if (env.SITES_BASE_URL) {
-					const baseUrl = env.SITES_BASE_URL.replace(/\/$/, "")
+				if (SERVER_ENV.SITES_BASE_URL) {
+					const baseUrl = SERVER_ENV.SITES_BASE_URL.replace(/\/$/, "")
 					publicSiteUrl = `${baseUrl}/${communitySlug}/${subpath}/`
 
-					// find the first page to link to
 					const firstPage = pages[0]?.pages?.[0]
 					if (firstPage) {
 						const pageSlug = firstPage.slug || firstPage.id
@@ -485,8 +490,7 @@ const router = tsr.router(siteBuilderApi, {
 					},
 				}
 			} catch (err) {
-				error = err as Error
-
+				const error = err as Error
 				return {
 					status: 500,
 					body: {
@@ -498,7 +502,6 @@ const router = tsr.router(siteBuilderApi, {
 			}
 		} catch (err) {
 			const error = err as Error
-
 			return {
 				status: 500,
 				body: {
@@ -518,7 +521,6 @@ const router = tsr.router(siteBuilderApi, {
 	},
 })
 
-// Health check endpoint
 app.get("/health", (c) => {
 	return c.json({ status: "ok" })
 })
@@ -528,11 +530,10 @@ app.all("*", async (c) => {
 		request: new Request(c.req.url, c.req.raw),
 		contract: siteBuilderApi,
 		router,
-		options: {
-			//
-		},
+		options: {},
 	})
 })
+
 serve({
 	fetch: app.fetch,
 	port: Number(PORT),
