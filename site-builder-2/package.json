@@ -8,7 +8,7 @@
 		"dev": "pnpm server:dev",
 		"start": "tsx server/server.ts",
 		"server:start": "tsx server/server.ts",
-		"server:dev": "tsx --env-file=.env.server.development --env-file=.env.server.development.local --watch server/server.ts",
+		"server:dev": "tsx --env-file=.env.server.development --env-file=.env.server.development.local --watch server/server.ts | pino-pretty",
 		"docker:build": "docker build -f ../Dockerfile .. -t site-builder:latest --progress=plain --build-arg PACKAGE=site-builder --target jobs"
 	},
 	"dependencies": {
@@ -34,6 +34,7 @@
 		"@types/archiver": "^6.0.2",
 		"@types/mime-types": "^2.1.4",
 		"@types/node": "22",
-		"dotenv-cli": "^5.0.1"
+		"dotenv-cli": "^5.0.1",
+		"pino-pretty": "^13.0.0"
 	}
 }
