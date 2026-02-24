@@ -505,6 +505,7 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
     ),
     ''
   ) &
+   '<p><a href="' & $.pub.id & '.json">JSON</a></p>' &
   '<p><a href="/">← Back to all reviews</a></p>' &
 '</article>'`,
 											},
