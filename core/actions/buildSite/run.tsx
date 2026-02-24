@@ -102,16 +102,16 @@ export const run = defineRun<typeof action>(
 					})
 				)
 
-			return {
-				pages: interpolatedPubs.map((pub) => ({
-					id: pub.id,
-					title: pub.title,
-					content: page.transform,
-					slug: pub.slug as string,
-				})),
-				transform: page.transform,
-				extension: page.extension ?? "html",
-			}
+				return {
+					pages: interpolatedPubs.map((pub) => ({
+						id: pub.id,
+						title: pub.title,
+						content: page.transform,
+						slug: pub.slug as string,
+					})),
+					transform: page.transform,
+					extension: page.extension ?? "html",
+				}
 			})
 		)
 

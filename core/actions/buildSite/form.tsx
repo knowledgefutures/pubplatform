@@ -140,7 +140,7 @@ export default function BuildSiteActionForm() {
 							/>
 						</div>
 
-							<div>
+						<div>
 							<FieldLabel className="text-xs">URL Slug</FieldLabel>
 							<ActionField
 								name={`pages.${index}.slug`}
@@ -158,8 +158,8 @@ export default function BuildSiteActionForm() {
 						<div>
 							<FieldLabel className="text-xs">File Extension</FieldLabel>
 							<FieldDescription className="text-xs">
-								Output file type. Only &quot;html&quot; pages are wrapped
-								in an HTML shell.
+								Output file type. Only &quot;html&quot; pages are wrapped in an HTML
+								shell.
 							</FieldDescription>
 							<ActionField
 								name={`pages.${index}.extension`}

@@ -483,13 +483,13 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 .review-list li { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-border); }
 .review-list li:last-child { border-bottom: none; }`,
 										subpath: "reviews",
-									pages: [
-										{
-											// Individual review page - one per Review pub
-											slug: "$.pub.id",
-											filter: '$.pub.pubType.name = "Review"',
-											extension: "html",
-											transform: `'<link rel="alternate" type="application/json" href="' & $.pub.id & '.json" />' &
+										pages: [
+											{
+												// Individual review page - one per Review pub
+												slug: "$.pub.id",
+												filter: '$.pub.pubType.name = "Review"',
+												extension: "html",
+												transform: `'<link rel="alternate" type="application/json" href="' & $.pub.id & '.json" />' &
 '<article>' &
   '<h1>' & $.pub.title & '</h1>' &
   $join(
@@ -507,30 +507,30 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
   ) &
   '<p><a href="/">← Back to all reviews</a></p>' &
 '</article>'`,
-										},
-										{
-											// JSON manifest - companion metadata for each review
-											slug: "$.pub.id",
-											filter: '$.pub.pubType.name = "Review"',
-											extension: "json",
-											transform: `$string({
+											},
+											{
+												// JSON manifest - companion metadata for each review
+												slug: "$.pub.id",
+												filter: '$.pub.pubType.name = "Review"',
+												extension: "json",
+												transform: `$string({
   "title": $.pub.title,
   "id": $.pub.id,
   "type": "Review",
   "pubType": $.pub.pubType.name
 })`,
-										},
-										{
-											// Index page - lists all published reviews
-											slug: '"/"',
-											filter: '$.pub.pubType.name = "Review"',
-											extension: "html",
-											transform: `'<h1>Published Reviews</h1>' &
+											},
+											{
+												// Index page - lists all published reviews
+												slug: '"/"',
+												filter: '$.pub.pubType.name = "Review"',
+												extension: "html",
+												transform: `'<h1>Published Reviews</h1>' &
 '<ul class="review-list">' &
   '<li><a href="/coar-notify/reviews/' & $.pub.id & '">' & $.pub.title & '</a></li>' &
 '</ul>'`,
-										},
-									],
+											},
+										],
 										outputMap: [],
 									},
 								},
