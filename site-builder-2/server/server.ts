@@ -13,6 +13,7 @@ import { Hono } from "hono"
 
 import { siteApi } from "contracts"
 import { siteBuilderApi } from "contracts/resources/site-builder-2"
+import { logger } from "logger"
 
 import { SERVER_ENV } from "./env"
 
@@ -342,6 +343,13 @@ type PageGroup = {
 	extension?: string
 }
 
+const PUB_BATCH_SIZE = 50
+
+const chunk = <T>(arr: T[], size: number): T[][] =>
+	Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+		arr.slice(i * size, i * size + size)
+	)
+
 const buildSite = async ({
 	communitySlug,
 	authToken,
@@ -364,48 +372,59 @@ const buildSite = async ({
 
 	await fs.mkdir(distDir, { recursive: true })
 
-	for (const group of pages) {
-		const extension = group.extension ?? "html"
-		const pubIds = group.pages.map((page) => page.id)
+	await Promise.all(
+		pages.map(async (group) => {
+			const extension = group.extension ?? "html"
+			const pubIds = group.pages.map((page) => page.id)
 
-		if (pubIds.length === 0) continue
+			if (pubIds.length === 0) return
 
-		const response = await client.pubs.getMany({
-			params: { communitySlug },
-			query: {
-				transform: group.transform,
-				pubIds: pubIds as any,
-			},
-		})
+			const pagesByPubId = new Map(group.pages.map((p) => [p.id, p]))
 
-		if (response.status !== 200) {
-			throw new Error(
-				`Failed to fetch pubs. Status: ${response.status} Message: ${(response.body as any)?.message ?? "Unknown error"}`
+			await Promise.all(
+				chunk(pubIds, PUB_BATCH_SIZE).map(async (batch) => {
+					const response = await client.pubs.getMany({
+						params: { communitySlug },
+						query: {
+							transform: group.transform,
+							pubIds: batch as any,
+							limit: batch.length,
+						},
+					})
+
+					if (response.status !== 200) {
+						throw new Error(
+							`Failed to fetch pubs. Status: ${response.status} Message: ${(response.body as any)?.message ?? "Unknown error"}`
+						)
+					}
+
+					await Promise.all(
+						response.body.map(async (pub) => {
+							const pageInfo = pagesByPubId.get(pub.id)
+							if (!pageInfo) return
+
+							const content = (pub as any).content as string
+							const fileContent =
+								extension === "html"
+									? renderHtmlPage(pageInfo.title, content, css)
+									: content
+
+							const normalized = pageInfo.slug.replace(/\/+$/, "")
+							const fileName =
+								normalized === ""
+									? `index.${extension}`
+									: extension === "html"
+										? `${normalized}/index.html`
+										: `${normalized}.${extension}`
+							const filePath = path.join(distDir, fileName)
+							await fs.mkdir(path.dirname(filePath), { recursive: true })
+							await fs.writeFile(filePath, fileContent, "utf-8")
+						})
+					)
+				})
 			)
-		}
-
-		for (const pub of response.body) {
-			const pageInfo = group.pages.find((p) => p.id === pub.id)
-			if (!pageInfo) continue
-
-			const slug = pageInfo.slug
-			const title = pageInfo.title
-			const content = (pub as any).content as string
-
-			let fileContent: string
-			if (extension === "html") {
-				fileContent = renderHtmlPage(title, content, css)
-			} else {
-				fileContent = content
-			}
-
-			const normalized = slug.replace(/\/+$/, "")
-			const fileName = normalized === "" ? `index.${extension}` : `${normalized}.${extension}`
-			const filePath = path.join(distDir, fileName)
-			await fs.mkdir(path.dirname(filePath), { recursive: true })
-			await fs.writeFile(filePath, fileContent, "utf-8")
-		}
-	}
+		})
+	)
 }
 
 // ---- Router ----
@@ -430,6 +449,11 @@ const router = tsr.router(siteBuilderApi, {
 			const css = body.css ?? ""
 
 			try {
+				logger.info({
+					msg: "Building site",
+					communitySlug,
+					automationRunId: body.automationRunId,
+				})
 				await buildSite({
 					communitySlug,
 					authToken,
@@ -439,6 +463,7 @@ const router = tsr.router(siteBuilderApi, {
 				})
 			} catch (err) {
 				const error = err as Error
+				logger.error({ msg: "Build failed", error })
 				return {
 					status: 500,
 					body: { success: false, message: `Build failed: ${error.message}` },
@@ -491,6 +516,7 @@ const router = tsr.router(siteBuilderApi, {
 				}
 			} catch (err) {
 				const error = err as Error
+				logger.error({ msg: "Build zip upload failed", error })
 				return {
 					status: 500,
 					body: {
@@ -502,6 +528,7 @@ const router = tsr.router(siteBuilderApi, {
 			}
 		} catch (err) {
 			const error = err as Error
+			logger.error({ msg: "Build zip upload and folder upload failed", error })
 			return {
 				status: 500,
 				body: {

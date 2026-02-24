@@ -8,7 +8,7 @@
 		"dev": "pnpm server:dev",
 		"start": "tsx server/server.ts",
 		"server:start": "tsx server/server.ts",
-		"server:dev": "tsx --env-file=.env.server.development --env-file=.env.server.development.local server/server.ts",
+		"server:dev": "tsx --env-file=.env.server.development --env-file=.env.server.development.local --watch server/server.ts",
 		"docker:build": "docker build -f ../Dockerfile .. -t site-builder:latest --progress=plain --build-arg PACKAGE=site-builder --target jobs"
 	},
 	"dependencies": {
@@ -23,6 +23,7 @@
 		"contracts": "workspace:",
 		"dotenv": "^16.4.5",
 		"hono": "^4.9.7",
+		"logger": "workspace:*",
 		"mime-types": "^2.1.35",
 		"tsconfig": "workspace:*",
 		"tsx": "^4.19.3",
