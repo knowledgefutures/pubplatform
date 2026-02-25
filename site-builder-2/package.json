@@ -4,56 +4,37 @@
 	"private": true,
 	"version": "0.0.1",
 	"scripts": {
-		"type-check": "astro check",
+		"type-check": "tsc --noEmit",
 		"dev": "pnpm server:dev",
-		"site:dev": "astro dev",
-		"site:build": "astro build",
-		"site:preview": "astro preview",
-		"site:astro": "astro",
 		"start": "tsx server/server.ts",
 		"server:start": "tsx server/server.ts",
-		"server:dev": "tsx --env-file=.env.server.development --env-file=.env.server.development.local server/server.ts",
+		"server:dev": "tsx --env-file=.env.server.development --env-file=.env.server.development.local --watch server/server.ts | pino-pretty",
 		"docker:build": "docker build -f ../Dockerfile .. -t site-builder:latest --progress=plain --build-arg PACKAGE=site-builder --target jobs"
 	},
 	"dependencies": {
-		"@astrojs/react": "^4.2.4",
 		"@aws-sdk/client-s3": "^3.525.0",
 		"@aws-sdk/lib-storage": "^3.787.0",
 		"@hono/node-server": "^1.14.1",
 		"@hono/zod-validator": "^0.4.3",
-		"@pubpub/tailwind": "workspace:*",
 		"@t3-oss/env-core": "^0.12.0",
-		"@tailwindcss/typography": "^0.5.16",
-		"@tailwindcss/vite": "^4.1.17",
 		"@ts-rest/core": "catalog:",
 		"@ts-rest/serverless": "^3.52.1",
 		"archiver": "^6.0.2",
-		"astro": "^5.7.3",
-		"astro-pdf": "^1.6.0",
 		"contracts": "workspace:",
 		"dotenv": "^16.4.5",
 		"hono": "^4.9.7",
+		"logger": "workspace:*",
 		"mime-types": "^2.1.35",
-		"react": "catalog:react19",
-		"react-dom": "catalog:react19",
-		"tailwindcss": "catalog:",
-		"tailwindcss-animate": "^1.0.6",
 		"tsconfig": "workspace:*",
 		"tsx": "^4.19.3",
-		"ui": "workspace:",
 		"utils": "workspace:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"@astrojs/check": "^0.9.4",
 		"@types/archiver": "^6.0.2",
 		"@types/mime-types": "^2.1.4",
 		"@types/node": "22",
-		"@types/react": "catalog:react19",
-		"@types/react-dom": "catalog:react19",
-		"dotenv-cli": "^5.0.1"
-	},
-	"Goverrides": {
-		"@astrojs/react>vite": "npm:rolldown-vite@latest"
+		"dotenv-cli": "^5.0.1",
+		"pino-pretty": "^13.0.0"
 	}
 }

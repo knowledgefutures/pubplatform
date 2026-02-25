@@ -2,11 +2,6 @@
 dist/**
 !dist/.gitkeep
 
-# generated types
-.astro/**
-
-!.astro/.gitkeep
-
 # dependencies
 node_modules/
 
@@ -32,6 +27,5 @@ builds/**
 !.env.development
 !.env.server.development
 
+.storage/
 
-.storage/**
-!.storage/.gitkeep

@@ -110,6 +110,7 @@ export const run = defineRun<typeof action>(
 						slug: pub.slug as string,
 					})),
 					transform: page.transform,
+					extension: page.extension ?? "html",
 				}
 			})
 		)

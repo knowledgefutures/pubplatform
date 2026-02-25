@@ -1,20 +1,17 @@
-# Astro Site Builder Service
+# Site Builder Service
 
-This service provides an API to build your Astro site and upload it to an S3-compatible storage service.
+This service provides an API to build static sites and upload them to an S3-compatible storage service.
 
 ## Prerequisites
 
 - Docker and Docker Compose
-- Node.js 18+ (for local development)
+- Node.js 22+ (for local development)
 
 ## Getting Started
 
-There are two "modes" to run this package in for development:
+Run `pnpm server:dev` to start the server in development mode.
 
-1. "Site mode": Running `pnpm site:dev` to run the Astro site in development mode, this is to actually construct the site and see the results in the browser
-2. "Server mode": Running `pnpm server:dev` to run the server in development mode, this is to test the API and the site-building capabilities themselves.
-
-When running in production we only run the server mode, we don't use Astro as a server.
+The server receives build requests from the Platform, fetches pub content via the Platform API, generates static files (HTML, JSON, XML, etc.), and uploads them to S3.
 
 Currently there is no seed in `core` that works properly with the site-builder.
 

@@ -88,7 +88,15 @@ const schema = z.object({
 					.string()
 					.describe("A filter expression that selects which pubs to include"),
 				slug: z.string().describe("JSONata expression for the page URL slug"),
-				transform: z.string().describe("JSONata expression that outputs HTML for the page"),
+				transform: z
+					.string()
+					.describe("JSONata expression that outputs content for the page"),
+				extension: z
+					.string()
+					.default("html")
+					.describe(
+						"File extension for the generated output (e.g., 'html', 'json', 'xml'). Only 'html' pages are wrapped in an HTML shell."
+					),
 			})
 		)
 		.min(1)
