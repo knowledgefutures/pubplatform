@@ -41,7 +41,8 @@ const TEMPLATE_OPTIONS: PayloadTemplateType[] = [
 export function SendNotificationForm({ onSent, prefill }: SendNotificationFormProps) {
 	const [mode, setMode] = useState<FormMode>("template")
 	const [targetUrl, setTargetUrl] = useState(
-		prefill?.targetUrl ?? "http://localhost:3000/api/v0/c/coar-notify/site/webhook/coar-inbox"
+		prefill?.targetUrl ??
+			"http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox"
 	)
 	const [templateType, setTemplateType] = useState<PayloadTemplateType>(
 		prefill?.templateType ?? "Offer Review"
@@ -66,7 +67,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 	const [inReplyTo, setInReplyTo] = useState(prefill?.inReplyTo ?? "")
 	const [inReplyToUrl, setInReplyToUrl] = useState(prefill?.inReplyToObjectUrl ?? "")
 	const [workUrl, setWorkUrl] = useState(
-		"http://localhost:3000/c/coar-notify/pub/{pubId}"
+		"http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
 	)
 
 	const generatePayload = (): CoarNotifyPayload => {
@@ -364,7 +365,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									type="text"
 									value={workUrl}
 									onChange={(e) => setWorkUrl(e.target.value)}
-									placeholder="http://localhost:3000/c/coar-notify/pub/{pubId}"
+									placeholder="http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
