@@ -139,10 +139,12 @@ export function createAnnounceIngestPayload({
 	reviewUrl,
 	originUrl,
 	targetUrl,
+	workUrl,
 }: {
 	reviewUrl: string
 	originUrl: string
 	targetUrl: string
+	workUrl?: string
 }): CoarNotifyPayload {
 	return {
 		"@context": ["https://www.w3.org/ns/activitystreams", "https://coar-notify.net"],
@@ -156,6 +158,7 @@ export function createAnnounceIngestPayload({
 		object: {
 			id: reviewUrl,
 			type: ["Page", "sorg:Review"],
+			...(workUrl && { "as:inReplyTo": workUrl }),
 		},
 		target: {
 			id: originUrl,

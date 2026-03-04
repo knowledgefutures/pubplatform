@@ -115,14 +115,15 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 									config: { path: WEBHOOK_PATH },
 								},
 							],
-							// Only process incoming Offer notifications (review requests from external services)
+							// Process incoming Offer (review requests) or Announce Ingest (aggregator notifications)
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
 									{
 										kind: "condition",
 										type: "jsonata",
-										expression: "'Offer' in $.json.type",
+										expression:
+											"'Offer' in $.json.type or ('Announce' in $.json.type and 'coar-notify:IngestAction' in $.json.type)",
 									},
 								],
 							},
@@ -597,8 +598,8 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 								},
 							],
 						},
-						// Create a Review pub after accepting the request
-						"Create Review for Notification": {
+						// Create a Review pub after accepting an Offer (links to Notification)
+						"Create Review for Offer": {
 							icon: {
 								name: "plus-circle",
 								color: "#10b981",
@@ -617,6 +618,11 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 										type: "jsonata",
 										expression: "$.pub.pubType.name = 'Notification'",
 									},
+									{
+										kind: "condition",
+										type: "jsonata",
+										expression: "'Offer' in $eval($.pub.values.Payload).type",
+									},
 								],
 							},
 							actions: [
@@ -632,6 +638,54 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 											fieldSlug: "coar-notify:relatedpub",
 											relatedPubId: "{{ $.pub.id }}",
 											value: "Notification",
+											direction: "source",
+										},
+									},
+								},
+							],
+						},
+						// Create a Review pub after accepting an Announce Ingest (links to resolved local article)
+						"Create Review for Ingest": {
+							icon: {
+								name: "plus-circle",
+								color: "#10b981",
+							},
+							triggers: [
+								{
+									event: AutomationEvent.pubEnteredStage,
+									config: {},
+								},
+							],
+							condition: {
+								type: AutomationConditionBlockType.AND,
+								items: [
+									{
+										kind: "condition",
+										type: "jsonata",
+										expression: "$.pub.pubType.name = 'Notification'",
+									},
+									{
+										kind: "condition",
+										type: "jsonata",
+										expression:
+											"'Announce' in $eval($.pub.values.Payload).type and 'coar-notify:IngestAction' in $eval($.pub.values.Payload).type",
+									},
+								],
+							},
+							resolver: `$.pub.id = {{ $replace($replace($eval($.pub.values.Payload).object["as:inReplyTo"], $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}`,
+							actions: [
+								{
+									action: Action.createPub,
+									config: {
+										stage: STAGE_IDS.ReviewInbox,
+										formSlug: "review-default-editor",
+										pubValues: {
+											Title: "Review from aggregator: {{ $eval($.pub.values.Payload).object.id }}",
+										},
+										relationConfig: {
+											fieldSlug: "coar-notify:relatedpub",
+											relatedPubId: "{{ $.pub.id }}",
+											value: "Submission",
 											direction: "source",
 										},
 									},

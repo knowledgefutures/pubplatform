@@ -82,6 +82,17 @@ const seed = createSeed({
 							config: { path: WEBHOOK_PATH },
 						},
 					],
+					condition: {
+						type: AutomationConditionBlockType.AND,
+						items: [
+							{
+								kind: "condition",
+								type: "jsonata",
+								expression:
+									"'Offer' in $.json.type or ('Announce' in $.json.type and 'coar-notify:IngestAction' in $.json.type)",
+							},
+						],
+					},
 					actions: [
 						{
 							action: Action.createPub,
@@ -97,7 +108,7 @@ const seed = createSeed({
 						},
 					],
 				},
-				"Create Review for Notification": {
+				"Create Review for Offer": {
 					triggers: [
 						{
 							event: AutomationEvent.pubEnteredStage,
@@ -112,6 +123,11 @@ const seed = createSeed({
 								type: "jsonata",
 								expression: "$.pub.pubType.name = 'Notification'",
 							},
+							{
+								kind: "condition",
+								type: "jsonata",
+								expression: "'Offer' in $eval($.pub.values.payload).type",
+							},
 						],
 					},
 					actions: [
@@ -122,8 +138,6 @@ const seed = createSeed({
 								formSlug: "review-default-editor",
 								pubValues: {
 									title: "Review for: {{ $.pub.values.title }}",
-									// Copy sourceurl from Notification to Review for use in Announce
-									// TODO: Investigate why relationship traversal ($.pub.out.relatedpub.values.sourceurl) isn't working
 									sourceurl: "{{ $.pub.values.sourceurl }}",
 								},
 								relationConfig: {
@@ -136,7 +150,88 @@ const seed = createSeed({
 						},
 					],
 				},
+				"Accept Request": {
+					triggers: [{ event: AutomationEvent.manual, config: {} }],
+					condition: {
+						type: AutomationConditionBlockType.AND,
+						items: [
+							{
+								kind: "condition",
+								type: "jsonata",
+								expression: "$.pub.pubType.name = 'Notification'",
+							},
+						],
+					},
+					actions: [{ action: Action.move, config: { stage: STAGE_IDS.Accepted } }],
+				},
+				"Reject Request": {
+					triggers: [{ event: AutomationEvent.manual, config: {} }],
+					condition: {
+						type: AutomationConditionBlockType.AND,
+						items: [
+							{
+								kind: "condition",
+								type: "jsonata",
+								expression: "$.pub.pubType.name = 'Notification'",
+							},
+						],
+					},
+					actions: [{ action: Action.move, config: { stage: STAGE_IDS.Rejected } }],
+				},
 			},
+		},
+		Accepted: {
+			id: STAGE_IDS.Accepted,
+			automations: {
+				"Create Review for Ingest": {
+					triggers: [
+						{
+							event: AutomationEvent.pubEnteredStage,
+							config: {},
+						},
+					],
+					condition: {
+						type: AutomationConditionBlockType.AND,
+						items: [
+							{
+								kind: "condition",
+								type: "jsonata",
+								expression: "$.pub.pubType.name = 'Notification'",
+							},
+							{
+								kind: "condition",
+								type: "jsonata",
+								expression:
+									"'Announce' in $eval($.pub.values.payload).type and 'coar-notify:IngestAction' in $eval($.pub.values.payload).type",
+							},
+						],
+					},
+					resolver: `$.pub.id = {{ $replace($replace($eval($.pub.values.payload).object["as:inReplyTo"], $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}`,
+					actions: [
+						{
+							action: Action.createPub,
+							config: {
+								stage: STAGE_IDS.ReviewInbox,
+								formSlug: "review-default-editor",
+								pubValues: {
+									title:
+										"Review from aggregator: {{ $eval($.pub.values.payload).object.id }}",
+								},
+								relationConfig: {
+									fieldSlug: `${COMMUNITY_SLUG}:relatedpub`,
+									relatedPubId: "{{ $.pub.id }}",
+									value: "Submission",
+									direction: "source",
+								},
+							},
+						},
+					],
+				},
+			},
+		},
+		Rejected: {
+			id: STAGE_IDS.Rejected,
+			automations: {},
 		},
 		ReviewInbox: {
 			id: STAGE_IDS.ReviewInbox,
@@ -250,7 +345,10 @@ const seed = createSeed({
 	],
 	stageConnections: {
 		Inbox: {
-			to: ["ReviewRequested", "Published"],
+			to: ["ReviewRequested", "Published", "Accepted", "Rejected"],
+		},
+		Accepted: {
+			to: ["ReviewInbox"],
 		},
 		ReviewInbox: {
 			to: ["Reviewing"],
@@ -444,12 +542,17 @@ test.describe("User Story 4: Review Group Aggregation Announcement to Repositori
 		await loginPage.goto()
 		await loginPage.loginAndWaitForNavigation(community.users.admin.email, "password")
 
-		const webhookUrl = `${process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000"}/api/v0/c/${community.community.slug}/site/webhook/${WEBHOOK_PATH}`
+		const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000"
+		const webhookUrl = `${baseUrl}/api/v0/c/${community.community.slug}/site/webhook/${WEBHOOK_PATH}`
+
+		const submissionPub = community.pubs[0]
+		const workUrl = `${baseUrl}/c/${community.community.slug}/pub/${submissionPub.id}`
 
 		const ingestionAnnouncement = createAnnounceIngestPayload({
 			reviewId: "review-123",
 			serviceUrl: "https://review-group.org",
 			aggregatorUrl: mockPreprintRepo.url,
+			workUrl,
 		})
 
 		await mockPreprintRepo.sendNotification(webhookUrl, ingestionAnnouncement)
@@ -463,5 +566,24 @@ test.describe("User Story 4: Review Group Aggregation Announcement to Repositori
 		).toBeVisible({
 			timeout: 15000,
 		})
+
+		// Accept the notification to trigger Create Review for Ingest
+		const stagesManagePage = new StagesManagePage(page, community.community.slug)
+		await stagesManagePage.goTo()
+		await stagesManagePage.openStagePanelTab("Inbox", "Pubs")
+		await page.getByRole("button", { name: "Inbox" }).first().click()
+		await page.getByText("Move to Accepted").click()
+
+		// Verify Review was created and linked to the Submission (Pre-existing Pub)
+		await expect
+			.poll(
+				async () => {
+					await page.goto(`/c/${community.community.slug}/stages`)
+					const reviewList = page.getByText("Review from aggregator:", { exact: false })
+					return (await reviewList.count()) > 0
+				},
+				{ timeout: 15000 }
+			)
+			.toBe(true)
 	})
 })
