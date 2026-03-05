@@ -144,33 +144,33 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									config: {
 										url: REMOTE_INBOX_URL,
 										method: "POST",
-										body: {
+										body: `<<< {
 											"@context": [
 												"https://www.w3.org/ns/activitystreams",
-												"https://coar-notify.net",
+												"https://coar-notify.net"
 											],
-											type: ["Offer", "coar-notify:ReviewAction"],
-											id: "urn:uuid:{{ $.pub.id }}",
-											actor: {
-												id: "{{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}",
-												type: "Service",
-												name: "{{ $.community.name }}",
+											"type": ["Offer", "coar-notify:ReviewAction"],
+											"id": "urn:uuid:" & $.pub.id,
+											"actor": {
+												"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
+												"type": "Service",
+												"name": $.community.name
 											},
-											object: {
-												id: "{{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
-												type: ["Page", "sorg:AboutPage"],
+											"object": {
+												"id": $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/" & $.pub.id,
+												"type": ["Page", "sorg:AboutPage"]
 											},
-											target: {
-												id: REMOTE_INBOX_URL.replace("/inbox", ""),
-												inbox: REMOTE_INBOX_URL,
-												type: "Service",
+											"target": {
+												"id": "${REMOTE_INBOX_URL.replace("/inbox", "")}",
+												"inbox": "${REMOTE_INBOX_URL}",
+												"type": "Service"
 											},
-											origin: {
-												id: "{{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}",
-												inbox: `{{ $.env.PUBPUB_URL }}/api/v0/c/{{ $.community.slug }}/site/webhook/${WEBHOOK_PATH}`,
-												type: "Service",
-											},
-										},
+											"origin": {
+												"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
+												"inbox": $.env.PUBPUB_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
+												"type": "Service"
+											}
+										} >>>`,
 									},
 								},
 							],
