@@ -1,18 +1,34 @@
 services:
     # for local file uploads
-    minio:
-        env_file:
-            - path: .env.docker-compose.dev
-              required: true
-        extends:
-            file: docker-compose.base.yml
-            service: minio
-        networks:
-            - app-network
-        volumes:
-            - ./.local_data/files:/data
-        ports:
-            - "9000:9000"
+    # minio:
+    #     env_file:
+    #         - path: .env.docker-compose.dev
+    #           required: true
+    #     extends:
+    #         file: docker-compose.base.yml
+    #         service: minio
+    #     networks:
+    #         - app-network
+    #     volumes:
+    #         - ./.local_data/files:/data
+    #     ports:
+    #         - "9000:9000"
+
+    # garage:
+    #     container_name: garage
+    #     image: dxflrs/garage:v1.1.0
+    #     restart: unless-stopped
+    #     ports:
+    #         - 3900:3900 ## s3 api
+    #         - 3901:3901 ## rpc
+    #         - 3902:3902 ## s3 web
+    #         - 3903:3903 ## admin api and '/metrics' for prometheus
+    #     environment:
+    #         - TZ=Europe/Berlin
+    #     volumes:
+    #         - ./garage.toml:/etc/garage.toml
+    #         - ./.local_data/garage/meta:/var/lib/garage/meta
+    #         - ./.local_data/garage/data:/var/lib/garage/data
 
     db:
         env_file:
@@ -48,24 +64,24 @@ services:
         ports:
             - 6379:6379
 
-    minio-init:
-        env_file:
-            - path: .env.docker-compose.dev
-              required: true
-        healthcheck:
-            test: ["CMD", "echo", "true"]
-            interval: 1m30s
-            timeout: 30s
-            retries: 5
-            start_period: 30s
-        extends:
-            file: docker-compose.base.yml
-            service: minio-init
-        depends_on:
-            minio:
-                condition: service_healthy
-        networks:
-            - app-network
+    # minio-init:
+    #     env_file:
+    #         - path: .env.docker-compose.dev
+    #           required: true
+    #     healthcheck:
+    #         test: ["CMD", "echo", "true"]
+    #         interval: 1m30s
+    #         timeout: 30s
+    #         retries: 5
+    #         start_period: 30s
+    #     extends:
+    #         file: docker-compose.base.yml
+    #         service: minio-init
+    #     depends_on:
+    #         minio:
+    #             condition: service_healthy
+    #     networks:
+    #         - app-network
 
     # caddy with s3fs for serving static sites from minio
     caddy-sites:
@@ -85,8 +101,99 @@ services:
         networks:
             - app-network
         depends_on:
-            minio:
+            garage:
                 condition: service_healthy
+    garage:
+        image: dxflrs/garage:v2.2.0
+        container_name: platform-garage
+        ports:
+            - "9000:3900"
+            - "9001:3902"
+        volumes:
+            - ./.local_data/garage/meta:/var/lib/garage/meta
+            - ./.local_data/garage/data:/var/lib/garage/data
+        environment:
+            GARAGE_RPC_SECRET: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        command: /garage -c /etc/garage.toml server
+        configs:
+            - source: garage-config
+              target: /etc/garage.toml
+        healthcheck:
+            test: ["CMD", "/garage", "-c", "/etc/garage.toml", "status"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+    garage-init:
+        image: alpine:latest
+        depends_on:
+            garage:
+                condition: service_healthy
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        entrypoint: >
+            /bin/sh -c "
+            apk add --no-cache docker-cli;
+            CONTAINER=$$(docker ps --filter name=platform-garage --format '{{.Names}}');
+            NODE_ID=$$(docker exec $$CONTAINER /garage -c /etc/garage.toml status 2>/dev/null | grep 'NO ROLE ASSIGNED' | awk '{print \$$1}');
+            if [ ! -z \"$$NODE_ID\" ]; then
+                docker exec $$CONTAINER /garage -c /etc/garage.toml layout assign -z dc1 -c 10G $$NODE_ID;
+                docker exec $$CONTAINER /garage -c /etc/garage.toml layout apply --version 1;
+                sleep 2;
+            fi;
+            docker exec $$CONTAINER /garage -c /etc/garage.toml key import -n admin --yes GKb69252a3b0643e8bd08d4cd4 9115be9c9e4994306a4176543b0db461f4eb04c5c8a388676d1b57392d0f4e93 2>/dev/null || true;
+            docker exec $$CONTAINER /garage -c /etc/garage.toml bucket create v7.assets.pubpub.org 2>/dev/null || true;
+            docker exec $$CONTAINER /garage -c /etc/garage.toml bucket allow --read --write v7.assets.pubpub.org --key GKb69252a3b0643e8bd08d4cd4;
+            echo 'Garage initialization complete';
+            "
+
+    mc:
+        image: minio/mc:latest
+        depends_on:
+            garage-init:
+                condition: service_completed_successfully
+        entrypoint: >
+            /bin/sh -c "
+            mc alias set garage http://garage:3900 GKb69252a3b0643e8bd08d4cd4 9115be9c9e4994306a4176543b0db461f4eb04c5c8a388676d1b57392d0f4e93 --insecure;
+            tail -f /dev/null
+            "
+
+    webui:
+        image: khairul169/garage-webui:latest
+        container_name: garage-webui
+        restart: unless-stopped
+        configs:
+            - source: garage-config
+              target: /etc/garage.toml
+        ports:
+            - 3909:3909
+        environment:
+            - API_BASE_URL=http://garage:3903
+            - S3_ENDPOINT_URL=http://garage:3900
+            - API_ADMIN_KEY=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+
+configs:
+    garage-config:
+        content: |
+            metadata_dir = "/var/lib/garage/meta"
+            data_dir = "/var/lib/garage/data"
+            db_engine = "sqlite"
+            replication_factor = 1
+            rpc_bind_addr = "[::]:3901"
+            rpc_secret = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+            [s3_api]
+            s3_region = "us-east-1"
+            api_bind_addr = "[::]:3900"
+            root_domain = ".s3.garage"
+
+            [s3_web]
+            bind_addr = "[::]:3902"
+            root_domain = ".web.garage"
+
+            [admin]
+            api_bind_addr = "[::]:3903"
+            admin_key = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
 networks:
     app-network:
