@@ -58,7 +58,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 	)
 	const [objectCiteAs, setObjectCiteAs] = useState("")
 	const [objectItemUrl, setObjectItemUrl] = useState("")
-	const [reviewUrl, setReviewUrl] = useState("http://localhost:4001/review/review-001")
+	const [reviewUrl, setReviewUrl] = useState("http://localhost:4001/reviews/sample-review")
 	const [originUrl, setOriginUrl] = useState(prefill?.originUrl ?? "http://localhost:4001")
 	const [targetServiceUrl, setTargetServiceUrl] = useState(
 		prefill?.targetServiceUrl ?? "http://localhost:3000"
@@ -242,13 +242,6 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
-							<input
-								type="text"
-								value={reviewUrl}
-								onChange={(e) => setReviewUrl(e.target.value)}
-								placeholder="http://localhost:4001/review/..."
-								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-							/>
 						</div>
 						<div>
 							<label className="mb-1 block font-medium text-gray-700 text-sm">

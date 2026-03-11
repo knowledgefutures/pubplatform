@@ -156,7 +156,7 @@ const us1Seed = createSeed({
 							},
 						],
 					},
-					resolver: `$.pub.id = {{ $replace($replace($.json.object["as:inReplyTo"], $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}`,
+					resolver: "$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pubs/\", \"\"), $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pub/\", \"\") }}",
 					actions: [
 						{
 							action: Action.createPub,
@@ -690,7 +690,7 @@ const us4Seed = createSeed({
 							},
 						],
 					},
-					resolver: `$.pub.id = {{ $replace($replace($eval($.pub.values.payload).object["as:inReplyTo"], $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}`,
+					resolver: "$.pub.id = {{ $replace($replace($eval($.pub.values.payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pubs/\", \"\"), $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pub/\", \"\") }}",
 					actions: [
 						{
 							action: Action.createPub,

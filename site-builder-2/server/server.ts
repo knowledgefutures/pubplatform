@@ -322,24 +322,28 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 
 // ---- Bespoke SSG ----
 
-const renderHtmlPage = (title: string, content: string, css: string): string => {
+const renderHtmlPage = (title: string, content: string, css: string, headExtra?: string): string => {
 	const styleTag = css ? `\n\t<style>${css}</style>` : ""
+	const headExtraTag = headExtra ? `\n\t${headExtra}` : ""
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 \t<meta charset="UTF-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-\t<title>${title}</title>${styleTag}
+\t<title>${title}</title>${styleTag}${headExtraTag}
 </head>
 <body>
+<div class="banner">PubPub &mdash; Built Site</div>
+<div class="site-content">
 ${content}
+</div>
 </body>
 </html>`
 }
 
 type PageGroup = {
-	pages: { id: string; title: string; slug: string; content: string }[]
-	transform: string
+	pages: { id: string; title: string; slug: string; content: string; headExtra?: string }[]
+	transform?: string
 	extension?: string
 }
 
@@ -372,6 +376,8 @@ const buildSite = async ({
 
 	await fs.mkdir(distDir, { recursive: true })
 
+	const allGeneratedPages: { title: string; slug: string; fileName: string }[] = []
+
 	await Promise.all(
 		pages.map(async (group) => {
 			const extension = group.extension ?? "html"
@@ -380,6 +386,34 @@ const buildSite = async ({
 			if (pubIds.length === 0) return
 
 			const pagesByPubId = new Map(group.pages.map((p) => [p.id, p]))
+
+			const writePage = async (pageInfo: { title: string; slug: string; content: string; headExtra?: string }) => {
+				const normalized = pageInfo.slug.replace(/\/+$/, "")
+				const fileName =
+					normalized === ""
+						? `index.${extension}`
+						: extension === "html"
+							? `${normalized}/index.html`
+							: `${normalized}.${extension}`
+				// If the content is already a complete HTML document, use it as-is
+				const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
+				const fileContent =
+					extension === "html" && !isCompleteHtml
+						? renderHtmlPage(pageInfo.title, pageInfo.content, css, pageInfo.headExtra)
+						: pageInfo.content
+				const filePath = path.join(distDir, fileName)
+				await fs.mkdir(path.dirname(filePath), { recursive: true })
+				await fs.writeFile(filePath, fileContent, "utf-8")
+				allGeneratedPages.push({ title: pageInfo.title, slug: normalized, fileName })
+			}
+
+			if (!group.transform) {
+				// Pre-rendered content: use per-page content directly
+				await Promise.all(
+					group.pages.map(async (page) => writePage(page))
+				)
+				return
+			}
 
 			await Promise.all(
 				chunk(pubIds, PUB_BATCH_SIZE).map(async (batch) => {
@@ -402,29 +436,31 @@ const buildSite = async ({
 						response.body.map(async (pub) => {
 							const pageInfo = pagesByPubId.get(pub.id)
 							if (!pageInfo) return
-
 							const content = (pub as any).content as string
-							const fileContent =
-								extension === "html"
-									? renderHtmlPage(pageInfo.title, content, css)
-									: content
-
-							const normalized = pageInfo.slug.replace(/\/+$/, "")
-							const fileName =
-								normalized === ""
-									? `index.${extension}`
-									: extension === "html"
-										? `${normalized}/index.html`
-										: `${normalized}.${extension}`
-							const filePath = path.join(distDir, fileName)
-							await fs.mkdir(path.dirname(filePath), { recursive: true })
-							await fs.writeFile(filePath, fileContent, "utf-8")
+							await writePage({ title: pageInfo.title, slug: pageInfo.slug, content })
 						})
 					)
 				})
 			)
 		})
 	)
+
+	// Auto-generate index.html if none was created by page groups
+	const hasIndex = allGeneratedPages.some((p) => p.fileName === "index.html")
+	if (!hasIndex && allGeneratedPages.length > 0) {
+		// Only show top-level pages (no "/" in slug) on the index
+		const topLevelPages = allGeneratedPages.filter((p) => p.slug && !p.slug.includes("/"))
+		const pagesToList = topLevelPages.length > 0 ? topLevelPages : allGeneratedPages
+		const listItems = pagesToList
+			.map((p) => {
+				const href = p.slug ? `${p.slug}/index.html` : "./"
+				return `<li><a href="${href}">${p.title || p.slug || "Untitled"}</a></li>`
+			})
+			.join("\n")
+		const indexContent = `<h1>Submissions</h1>\n<ul>\n${listItems}\n</ul>`
+		const indexPath = path.join(distDir, "index.html")
+		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, css), "utf-8")
+	}
 }
 
 // ---- Router ----

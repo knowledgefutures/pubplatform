@@ -91,11 +91,17 @@ const schema = z.object({
 				transform: z
 					.string()
 					.describe("JSONata expression that outputs content for the page"),
+				headExtra: z
+					.string()
+					.optional()
+					.describe(
+						"JSONata expression for additional HTML to inject into <head> (e.g. <link> tags). Only applies to HTML pages."
+					),
 				extension: z
 					.string()
 					.default("html")
 					.describe(
-						"File extension for the generated output (e.g., 'html', 'json', 'xml'). Only 'html' pages are wrapped in an HTML shell."
+						"File extension for the generated output (e.g., 'html', 'json', 'xml'). Only 'html' pages are wrapped in an HTML shell. If content starts with <!DOCTYPE, it is used as-is without wrapping."
 					),
 			})
 		)

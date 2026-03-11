@@ -4,12 +4,18 @@ import type { StoredNotification } from "~/lib/store"
 
 import { useState } from "react"
 
-import { getAvailableResponses, type PayloadTemplateType } from "~/lib/payloads"
+import {
+	getAvailableFollowUps,
+	getAvailableResponses,
+	type PayloadTemplateType,
+} from "~/lib/payloads"
 
 interface NotificationCardProps {
 	notification: StoredNotification
+	notifications: StoredNotification[]
 	onDelete: () => void
 	onRespond?: (responseType: PayloadTemplateType, prefill: ResponsePrefill) => void
+	isLatest?: boolean
 }
 
 export interface ResponsePrefill {
@@ -21,7 +27,13 @@ export interface ResponsePrefill {
 	targetServiceUrl: string
 }
 
-export function NotificationCard({ notification, onDelete, onRespond }: NotificationCardProps) {
+export function NotificationCard({
+	notification,
+	notifications,
+	onDelete,
+	isLatest,
+	onRespond,
+}: NotificationCardProps) {
 	const [isExpanded, setIsExpanded] = useState(false)
 
 	const types = Array.isArray(notification.payload.type)
@@ -30,6 +42,10 @@ export function NotificationCard({ notification, onDelete, onRespond }: Notifica
 
 	const availableResponses =
 		notification.direction === "received" ? getAvailableResponses(notification.payload) : []
+	const availableFollowUps =
+		notification.direction === "sent" && notification.status === "success"
+			? getAvailableFollowUps(notification.payload)
+			: []
 
 	const getTypeColor = (type: string) => {
 		if (type.includes("Offer")) return "bg-blue-100 text-blue-800"
@@ -99,25 +115,51 @@ export function NotificationCard({ notification, onDelete, onRespond }: Notifica
 		if (!onRespond) return
 
 		const payload = notification.payload
-		const originInbox = payload.origin?.inbox ?? `${payload.origin?.id}/inbox/`
 
-		const prefill: ResponsePrefill = {
-			targetUrl: originInbox,
-			templateType: responseType,
-			inReplyTo: payload.id,
-			inReplyToObjectUrl: payload.object?.id ?? "",
-			originUrl: "http://localhost:4001",
-			targetServiceUrl: payload.origin?.id ?? "",
+		if (notification.direction === "sent") {
+			// Follow-up on a sent notification (e.g., Announce after Accept)
+			// For Accept follow-ups, look up the original received Offer to get the paper URL
+			let inReplyToObjectUrl = payload.object?.id ?? ""
+			if (payload.inReplyTo) {
+				const originalNotification = notifications.find(
+					(n) =>
+						n.direction === "received" && n.payload.id === payload.inReplyTo
+				)
+				if (originalNotification?.payload.object?.id) {
+					inReplyToObjectUrl = originalNotification.payload.object.id
+				}
+			}
+
+			const prefill: ResponsePrefill = {
+				targetUrl: notification.targetUrl ?? "",
+				templateType: responseType,
+				inReplyTo: payload.inReplyTo ?? payload.id,
+				inReplyToObjectUrl,
+				originUrl: payload.origin?.id ?? "http://localhost:4001",
+				targetServiceUrl: payload.target?.id ?? "",
+			}
+			onRespond(responseType, prefill)
+		} else {
+			// Response to a received notification
+			const originInbox = payload.origin?.inbox ?? `${payload.origin?.id}/inbox/`
+			const prefill: ResponsePrefill = {
+				targetUrl: originInbox,
+				templateType: responseType,
+				inReplyTo: payload.id,
+				inReplyToObjectUrl: payload.object?.id ?? "",
+				originUrl: "http://localhost:4001",
+				targetServiceUrl: payload.origin?.id ?? "",
+			}
+			onRespond(responseType, prefill)
 		}
-
-		onRespond(responseType, prefill)
 	}
 
 	return (
-		<div className="px-6 py-4 hover:bg-gray-50">
+		<div className={`px-6 py-4 ${isLatest ? "bg-blue-50 border-l-4 border-l-blue-500" : "hover:bg-gray-50"}`}>
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
+						{isLatest && <span className="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 font-medium text-white text-xs">Latest</span>}
 						{getDirectionBadge()}
 						{types.map((type) => (
 							<span
@@ -173,6 +215,23 @@ export function NotificationCard({ notification, onDelete, onRespond }: Notifica
 									className={`rounded-md px-2.5 py-1 font-medium text-xs transition-colors ${getResponseButtonColor(responseType)}`}
 								>
 									{responseType}
+								</button>
+							))}
+						</div>
+					)}
+
+					{/* Follow-up buttons for sent notifications */}
+					{availableFollowUps.length > 0 && onRespond && (
+						<div className="mt-3 flex flex-wrap gap-2">
+							<span className="self-center text-gray-500 text-xs">Follow up:</span>
+							{availableFollowUps.map((followUpType) => (
+								<button
+									type="button"
+									key={followUpType}
+									onClick={() => handleRespond(followUpType)}
+									className={`rounded-md px-2.5 py-1 font-medium text-xs transition-colors ${getResponseButtonColor(followUpType)}`}
+								>
+									{followUpType}
 								</button>
 							))}
 						</div>

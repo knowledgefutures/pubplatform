@@ -162,10 +162,12 @@ export default function Home() {
 										requests.
 									</div>
 								) : (
-									notifications.map((notification) => (
+									notifications.map((notification, index) => (
 										<NotificationCard
 											key={notification.id}
 											notification={notification}
+											isLatest={index === 0}
+											notifications={notifications}
 											onDelete={() => handleDelete(notification.id)}
 											onRespond={handleRespond}
 										/>

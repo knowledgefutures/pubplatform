@@ -26,9 +26,10 @@ export const siteBuilderApi = contract.router(
 								title: z.string(),
 								slug: z.string(),
 								content: z.string(),
+								headExtra: z.string().optional(),
 							})
 						),
-						transform: z.string(),
+						transform: z.string().optional(),
 						extension: z.string().default("html"),
 					})
 				),
