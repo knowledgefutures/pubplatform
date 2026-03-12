@@ -70,6 +70,43 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 		"http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
 	)
 
+	// Default target URLs per template type for demo convenience
+	const TEMPLATE_DEFAULTS: Record<PayloadTemplateType, { targetUrl: string; targetServiceUrl: string }> = {
+		"Offer Review": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us2-unjournal",
+		},
+		"Announce Review": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
+		},
+		"Offer Ingest": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us4-repository/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us4-repository",
+		},
+		"Announce Ingest": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us4-repository/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us4-repository",
+		},
+		Accept: {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
+		},
+		Reject: {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
+		},
+	}
+
+	const handleTemplateChange = (newType: PayloadTemplateType) => {
+		setTemplateType(newType)
+		if (!prefill) {
+			const defaults = TEMPLATE_DEFAULTS[newType]
+			setTargetUrl(defaults.targetUrl)
+			setTargetServiceUrl(defaults.targetServiceUrl)
+		}
+	}
+
 	const generatePayload = (): CoarNotifyPayload => {
 		switch (templateType) {
 			case "Offer Review":
@@ -511,7 +548,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 								id="templateType"
 								value={templateType}
 								onChange={(e) =>
-									setTemplateType(e.target.value as PayloadTemplateType)
+									handleTemplateChange(e.target.value as PayloadTemplateType)
 								}
 								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 							>

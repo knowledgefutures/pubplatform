@@ -33,6 +33,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 		ReviewCompleted: "dddddddd-0001-4ddd-dddd-dddddddddd12" as StagesId,
 		AwaitingReview: "dddddddd-0001-4ddd-dddd-dddddddddd13" as StagesId,
 		ReviewRejected: "dddddddd-0001-4ddd-dddd-dddddddddd14" as StagesId,
+		ExternalReviews: "dddddddd-0001-4ddd-dddd-dddddddddd15" as StagesId,
 	}
 
 	return seedCommunity(
@@ -117,6 +118,44 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 								{
 									action: Action.move,
 									config: { stage: STAGE_IDS.AwaitingResponse },
+								},
+							],
+						},
+						"Publish Site": {
+							icon: { name: "globe", color: "#3b82f6" },
+							triggers: [{ event: AutomationEvent.manual, config: {} }],
+							actions: [
+								{
+									action: Action.buildSite,
+									config: {
+										subpath: "site",
+										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
+										bannerText: "Arcadia Science",
+										pages: [
+											{
+												filter: "$.pub.pubType.name = 'Submission'",
+												slug: "$.pub.id",
+												transform: [
+													"'<article>'",
+													"& '<h1>' & $.pub.title & '</h1>'",
+													"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
+													"& '<h2>Abstract</h2>'",
+													"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
+													"& '<h2>Introduction</h2>'",
+													"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
+													"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
+													"& '</article>'"
+												].join(" "),
+												extension: "html",
+											},
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "'_data/' & $.pub.id",
+												transform: "'{}'",
+												extension: "json",
+											},
+										],
+									},
 								},
 							],
 						},
@@ -276,7 +315,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 								{
 									action: Action.createPub,
 									config: {
-										stage: STAGE_IDS.ReviewCompleted,
+										stage: STAGE_IDS.ExternalReviews,
 										formSlug: "review-default-editor",
 										pubValues: {
 											Title: "Review: {{ $.json.object.id }}",
@@ -290,9 +329,17 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										},
 									},
 								},
+								{
+									action: Action.move,
+									config: { stage: STAGE_IDS.ReviewCompleted },
+								},
 							],
 						},
 					},
+				},
+				ExternalReviews: {
+					id: STAGE_IDS.ExternalReviews,
+					automations: {},
 				},
 				ReviewRejected: {
 					id: STAGE_IDS.ReviewRejected,
@@ -312,6 +359,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									config: {
 										subpath: "site",
 										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
+										bannerText: "Arcadia Science",
 										pages: [
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
@@ -364,7 +412,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 			stageConnections: {
 				Submissions: { to: ["AwaitingResponse"] },
 				AwaitingResponse: { to: ["AwaitingReview", "ReviewRejected"] },
-				AwaitingReview: { to: ["ReviewCompleted"] },
+				
 			},
 		},
 		{ randomSlug: false }
@@ -462,10 +510,19 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 										stage: STAGE_IDS.Inbox,
 										formSlug: "notification-default-editor",
 										pubValues: {
-											Title: "URL: {{ $.json.object.id }} - Type: {{ $join($.json.type, ', ') }}",
+											Title: "Request To Review: {{ $.json.object.id }}",
 											Payload: "{{ $string($.json) }}",
 											SourceURL: "{{ $.json.object.id }}",
 										},
+									},
+								},
+								{
+									action: Action.email,
+									config: {
+										recipientEmail: "all@pubpub.org",
+										subject:
+											"New review request received: {{ $.json.object.id }}",
+										body: "A new review request has been received.\n\nObject: {{ $.json.object.id }}\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}",
 									},
 								},
 							],
@@ -766,6 +823,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									config: {
 										subpath: "site",
 										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
+										bannerText: "The Unjournal",
 										pages: [
 										// Review HTML pages with signposting <link> to DocMap
 										{
@@ -778,18 +836,22 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 												"& '<div class=\"pub-field-label\">Source</div>'",
 												"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
 												"& '</div>'",
+												"& '<div class=\"pub-field\">'",
+												"& '<div class=\"pub-field-label\">Review</div>'",
+												"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
+												"& '</div>'",
 												"& '</article>'"
 											].join(" "),
 											headExtra:
 												"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \".docmap.json />\"",
 											extension: "html",
 										},
-										// Isolated review content page
+										// Isolated review content page (plain HTML, no site chrome)
 										{
 											filter: "$.pub.pubType.name = 'Review'",
 											slug: "$.pub.id & '/content'",
 											transform:
-												"$.pub.values.Content ? $.pub.values.Content : 'No content available'",
+												"'<!DOCTYPE html><html><body>' & ($.pub.values.Content ? $.pub.values.Content : 'No content available') & '</body></html>'",
 											extension: "html",
 										},
 										// DocMap JSON metadata for each review
@@ -797,20 +859,21 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 											filter: "$.pub.pubType.name = 'Review'",
 											slug: "$.pub.id & '.docmap'",
 											transform: [
-												"$string({",
-												"`@context`: \"https://w3id.org/docmaps/context.jsonld\",",
-												"\"type\": \"docmap\",",
-												"\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \".docmap.json\",",
-												"\"publisher\": {\"name\": $.community.name},",
-												"`first-step`: \"_:b0\",",
-												"\"steps\": {`_:b0`: {\"actions\": [{\"outputs\": [{",
-												"\"type\": \"review-article\",",
-												"\"content\": [",
-												"{\"type\": \"web-page\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \"/index.html\"},",
-												"{\"type\": \"web-content\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \"/content/index.html\"}",
-												"]",
-												"}]}]}}",
-												"})"
+												"'{' &",
+												"'\"@context\": \"https://w3id.org/docmaps/context.jsonld\",' &",
+												"'\"type\": \"docmap\",' &",
+												"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '.docmap.json\",' &",
+												"'\"publisher\": {\"name\": \"' & $.community.name & '\"},' &",
+												"'\"first-step\": \"_:b0\",' &",
+												"'\"steps\": {\"_:b0\": {\"actions\": [{\"outputs\": [{' &",
+												"'\"type\": \"review-article\",' &",
+												"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
+												"'\"content\": [' &",
+												"'{\"type\": \"web-page\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '/index.html\"},' &",
+												"'{\"type\": \"web-content\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '/content/index.html\"}' &",
+												"']' &",
+												"'}]}]}}' &",
+												"'}'"
 											].join(" "),
 											extension: "json",
 										},
@@ -841,9 +904,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 			},
 			stageConnections: {
 				Inbox: { to: ["Accepted", "Rejected"] },
-				Accepted: { to: ["ReviewInbox"] },
-				ReviewInbox: { to: ["Reviewing"] },
-				Reviewing: { to: ["Published"] },
+				
 			},
 		},
 		{ randomSlug: false }
@@ -906,6 +967,11 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 					values: {
 						Title: "Sample Review of Research Output",
 						SourceURL: "https://www.biorxiv.org/content/10.1101/2024.01.01.123456",
+						Content:
+							"<p><strong>Overview:</strong> This research output presents a well-structured investigation into gene expression patterns across multiple tissue types. The methodology is sound and the findings contribute meaningfully to our understanding of transcriptional regulation.</p>" +
+							"<p><strong>Strengths:</strong> The use of single-cell RNA sequencing combined with spatial transcriptomics provides a comprehensive view of expression dynamics. The computational pipeline is well-documented and reproducible. Statistical methods are appropriate for the scale of data analyzed.</p>" +
+							"<p><strong>Areas for Improvement:</strong> The discussion could benefit from deeper engagement with conflicting results in the literature. Some of the supplementary figures are difficult to interpret without additional context. We suggest expanding the methods section to include parameter sensitivity analysis.</p>" +
+							"<p><strong>Recommendation:</strong> Accept with minor revisions. The core findings are robust and the paper makes a valuable contribution to the field.</p>",
 					},
 				},
 			],
@@ -982,6 +1048,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 									config: {
 										subpath: "site",
 										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
+										bannerText: "Review Group",
 										pages: [
 										// Review HTML pages with signposting <link> to DocMap
 										{
@@ -994,18 +1061,22 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 												"& '<div class=\"pub-field-label\">Source</div>'",
 												"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
 												"& '</div>'",
+												"& '<div class=\"pub-field\">'",
+												"& '<div class=\"pub-field-label\">Review</div>'",
+												"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
+												"& '</div>'",
 												"& '</article>'"
 											].join(" "),
 											headExtra:
 												"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \".docmap.json />\"",
 											extension: "html",
 										},
-										// Isolated review content page
+										// Isolated review content page (plain HTML, no site chrome)
 										{
 											filter: "$.pub.pubType.name = 'Review'",
 											slug: "$.pub.id & '/content'",
 											transform:
-												"$.pub.values.Content ? $.pub.values.Content : 'No content available'",
+												"'<!DOCTYPE html><html><body>' & ($.pub.values.Content ? $.pub.values.Content : 'No content available') & '</body></html>'",
 											extension: "html",
 										},
 										// DocMap JSON metadata for each review
@@ -1013,20 +1084,21 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 											filter: "$.pub.pubType.name = 'Review'",
 											slug: "$.pub.id & '.docmap'",
 											transform: [
-												"$string({",
-												"`@context`: \"https://w3id.org/docmaps/context.jsonld\",",
-												"\"type\": \"docmap\",",
-												"\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \".docmap.json\",",
-												"\"publisher\": {\"name\": $.community.name},",
-												"`first-step`: \"_:b0\",",
-												"\"steps\": {`_:b0`: {\"actions\": [{\"outputs\": [{",
-												"\"type\": \"review-article\",",
-												"\"content\": [",
-												"{\"type\": \"web-page\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \"/index.html\"},",
-												"{\"type\": \"web-content\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \"/content/index.html\"}",
-												"]",
-												"}]}]}}",
-												"})"
+												"'{' &",
+												"'\"@context\": \"https://w3id.org/docmaps/context.jsonld\",' &",
+												"'\"type\": \"docmap\",' &",
+												"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '.docmap.json\",' &",
+												"'\"publisher\": {\"name\": \"' & $.community.name & '\"},' &",
+												"'\"first-step\": \"_:b0\",' &",
+												"'\"steps\": {\"_:b0\": {\"actions\": [{\"outputs\": [{' &",
+												"'\"type\": \"review-article\",' &",
+												"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
+												"'\"content\": [' &",
+												"'{\"type\": \"web-page\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '/index.html\"},' &",
+												"'{\"type\": \"web-content\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '/content/index.html\"}' &",
+												"']' &",
+												"'}]}]}}' &",
+												"'}'"
 											].join(" "),
 											extension: "json",
 										},
@@ -1171,7 +1243,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 										stage: STAGE_IDS.Inbox,
 										formSlug: "notification-default-editor",
 										pubValues: {
-											Title: "URL: {{ $.json.object.id }} - Type: {{ $join($.json.type, ', ') }}",
+											Title: "Notification: {{ $.json.object.id }}",
 											Payload: "{{ $string($.json) }}",
 											SourceURL: "{{ $.json.object.id }}",
 										},
@@ -1304,6 +1376,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									config: {
 										subpath: "site",
 										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
+										bannerText: "External Repository",
 										pages: [
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
@@ -1355,7 +1428,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 			},
 			stageConnections: {
 				Inbox: { to: ["Accepted", "Rejected"] },
-				Accepted: { to: ["ReviewCompleted"] },
+				
 			},
 		},
 		{ randomSlug: false }

@@ -322,9 +322,10 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 
 // ---- Bespoke SSG ----
 
-const renderHtmlPage = (title: string, content: string, css: string, headExtra?: string): string => {
+const renderHtmlPage = (title: string, content: string, css: string, headExtra?: string, bannerText?: string): string => {
 	const styleTag = css ? `\n\t<style>${css}</style>` : ""
 	const headExtraTag = headExtra ? `\n\t${headExtra}` : ""
+	const bannerTag = bannerText ? `\n<div class="banner">${bannerText}</div>` : ""
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -332,8 +333,7 @@ const renderHtmlPage = (title: string, content: string, css: string, headExtra?:
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 \t<title>${title}</title>${styleTag}${headExtraTag}
 </head>
-<body>
-<div class="banner">PubPub &mdash; Built Site</div>
+<body>${bannerTag}
 <div class="site-content">
 ${content}
 </div>
@@ -359,12 +359,14 @@ const buildSite = async ({
 	authToken,
 	pages,
 	css,
+	bannerText,
 	distDir,
 }: {
 	communitySlug: string
 	authToken: string
 	pages: PageGroup[]
 	css: string
+	bannerText?: string
 	distDir: string
 }): Promise<void> => {
 	const client = initClient(siteApi, {
@@ -399,7 +401,7 @@ const buildSite = async ({
 				const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
 				const fileContent =
 					extension === "html" && !isCompleteHtml
-						? renderHtmlPage(pageInfo.title, pageInfo.content, css, pageInfo.headExtra)
+						? renderHtmlPage(pageInfo.title, pageInfo.content, css, pageInfo.headExtra, bannerText)
 						: pageInfo.content
 				const filePath = path.join(distDir, fileName)
 				await fs.mkdir(path.dirname(filePath), { recursive: true })
@@ -459,7 +461,7 @@ const buildSite = async ({
 			.join("\n")
 		const indexContent = `<h1>Submissions</h1>\n<ul>\n${listItems}\n</ul>`
 		const indexPath = path.join(distDir, "index.html")
-		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, css), "utf-8")
+		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, css, undefined, bannerText), "utf-8")
 	}
 }
 
@@ -495,6 +497,7 @@ const router = tsr.router(siteBuilderApi, {
 					authToken,
 					pages,
 					css,
+					bannerText: body.bannerText,
 					distDir,
 				})
 			} catch (err) {

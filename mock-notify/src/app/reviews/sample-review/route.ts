@@ -60,7 +60,7 @@ const html = `<!DOCTYPE html>
 	</style>
 </head>
 <body>
-	<div class="banner">Mock Review Service &mdash; External Review Platform</div>
+	<div class="banner">Mock Review Service</div>
 	<article>
 		<h1>Sample Peer Review</h1>
 		<p class="meta">Hosted by Mock Review Service &bull; COAR Notify Demo</p>

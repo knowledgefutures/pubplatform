@@ -18,6 +18,7 @@ export const siteBuilderApi = contract.router(
 				communitySlug: z.string(),
 				subpath: z.string().optional(),
 				css: z.string().optional(),
+			bannerText: z.string().optional(),
 				pages: z.array(
 					z.object({
 						pages: z.array(

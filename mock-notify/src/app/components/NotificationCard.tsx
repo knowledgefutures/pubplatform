@@ -178,20 +178,20 @@ export function NotificationCard({
 					{notification.payload.object?.id && (
 						<p className="mt-1 truncate text-gray-500 text-sm">
 							Object:{" "}
-							<span className="font-mono">{notification.payload.object.id}</span>
+							<a href={notification.payload.object.id} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline">{notification.payload.object.id}</a>
 						</p>
 					)}
 
 					{notification.direction === "sent" && notification.targetUrl && (
 						<p className="mt-1 truncate text-gray-500 text-sm">
-							To: <span className="font-mono">{notification.targetUrl}</span>
+							To: <a href={notification.targetUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline">{notification.targetUrl}</a>
 						</p>
 					)}
 
 					{notification.direction === "received" && notification.payload.origin && (
 						<p className="mt-1 truncate text-gray-500 text-sm">
 							From:{" "}
-							<span className="font-mono">{notification.payload.origin.id}</span>
+							<a href={notification.payload.origin.id} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline">{notification.payload.origin.id}</a>
 						</p>
 					)}
 

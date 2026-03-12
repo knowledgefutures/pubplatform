@@ -301,6 +301,7 @@ export const run = defineRun<typeof action>(
 					communitySlug,
 					subpath: config.subpath,
 					css: config.css,
+				bannerText: config.bannerText,
 					pages,
 					siteUrl: env.PUBPUB_URL,
 				},
