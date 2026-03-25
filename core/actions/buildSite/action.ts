@@ -81,10 +81,6 @@ const schema = z.object({
 		.string()
 		.optional()
 		.describe("Custom CSS for the generated pages. Leave empty to use the default styles."),
-	bannerText: z
-		.string()
-		.optional()
-		.describe("Text to display in the site banner. If not provided, no banner is shown."),
 	pages: z
 		.array(
 			z.object({
@@ -95,12 +91,6 @@ const schema = z.object({
 				transform: z
 					.string()
 					.describe("JSONata expression that outputs content for the page"),
-				headExtra: z
-					.string()
-					.optional()
-					.describe(
-						"JSONata expression for additional HTML to inject into <head> (e.g. <link> tags). Only applies to HTML pages."
-					),
 				extension: z
 					.string()
 					.default("html")

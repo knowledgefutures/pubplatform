@@ -17,6 +17,33 @@ const REMOTE_INBOX_URL = "http://localhost:4001/api/inbox"
 const adminId = "dddddddd-dddd-4ddd-dddd-dddddddddd01" as UsersId
 const joeAuthorId = "dddddddd-dddd-4ddd-dddd-dddddddddd02" as UsersId
 
+const SEED_CSS =
+	"* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }"
+
+/**
+ * Wraps content template lines in a full HTML document with banner and optional head extras.
+ * All strings are JSONata expression fragments that get joined with ' '.
+ */
+const fullHtmlTransform = ({
+	bannerText,
+	headExtra,
+	content,
+}: {
+	bannerText: string
+	headExtra?: string // JSONata expression evaluating to HTML string for <head>
+	content: string[]
+}): string => {
+	const headBase = `<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>' & $.pub.title & '</title><style>${SEED_CSS}</style>`
+	const headSection = headExtra
+		? `'<!DOCTYPE html><html lang="en"><head>${headBase}' & ${headExtra} & '</head>`
+		: `'<!DOCTYPE html><html lang="en"><head>${headBase}</head>`
+	return [
+		`${headSection}<body><div class="banner">${bannerText}</div><div class="site-content">'`,
+		...content,
+		"& '</div></body></html>'",
+	].join(" ")
+}
+
 /**
  * User Story 1: Repository Author Requests Review
  *
@@ -129,23 +156,25 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
-										bannerText: "Arcadia Science",
+										css: SEED_CSS,
 										pages: [
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
-												transform: [
-													"'<article>'",
-													"& '<h1>' & $.pub.title & '</h1>'",
-													"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
-													"& '<h2>Abstract</h2>'",
-													"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
-													"& '<h2>Introduction</h2>'",
-													"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
-													"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
-													"& '</article>'"
-												].join(" "),
+												transform: fullHtmlTransform({
+													bannerText: "Arcadia Science",
+													content: [
+														"& '<article>'",
+														"& '<h1>' & $.pub.title & '</h1>'",
+														"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
+														"& '<h2>Abstract</h2>'",
+														"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
+														"& '<h2>Introduction</h2>'",
+														"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
+														"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
+														"& '</article>'",
+													],
+												}),
 												extension: "html",
 											},
 											{
@@ -358,23 +387,25 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
-										bannerText: "Arcadia Science",
+										css: SEED_CSS,
 										pages: [
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
-												transform: [
-													"'<article>'",
-													"& '<h1>' & $.pub.title & '</h1>'",
-													"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
-													"& '<h2>Abstract</h2>'",
-													"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
-													"& '<h2>Introduction</h2>'",
-													"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
-													"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
-													"& '</article>'",
-												].join(" "),
+												transform: fullHtmlTransform({
+													bannerText: "Arcadia Science",
+													content: [
+														"& '<article>'",
+														"& '<h1>' & $.pub.title & '</h1>'",
+														"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
+														"& '<h2>Abstract</h2>'",
+														"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
+														"& '<h2>Introduction</h2>'",
+														"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
+														"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
+														"& '</article>'",
+													],
+												}),
 												extension: "html",
 											},
 										// Review data group — not rendered as pages, used for cross-referencing
@@ -822,28 +853,30 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
-										bannerText: "The Unjournal",
+										css: SEED_CSS,
 										pages: [
 										// Review HTML pages with signposting <link> to DocMap
 										{
 											filter: "$.pub.pubType.name = 'Review'",
 											slug: "$.pub.id",
-											transform: [
-												"'<article>'",
-												"& '<h1>' & $.pub.title & '</h1>'",
-												"& '<div class=\"pub-field\">'",
-												"& '<div class=\"pub-field-label\">Source</div>'",
-												"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
-												"& '</div>'",
-												"& '<div class=\"pub-field\">'",
-												"& '<div class=\"pub-field-label\">Review</div>'",
-												"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
-												"& '</div>'",
-												"& '</article>'"
-											].join(" "),
-											headExtra:
-												"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \".docmap.json />\"",
+											transform: fullHtmlTransform({
+												bannerText: "The Unjournal",
+												headExtra:
+													"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \".docmap.json />\"",
+												content: [
+													"& '<article>'",
+													"& '<h1>' & $.pub.title & '</h1>'",
+													"& '<div class=\"pub-field\">'",
+													"& '<div class=\"pub-field-label\">Source</div>'",
+													"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
+													"& '</div>'",
+													"& '<div class=\"pub-field\">'",
+													"& '<div class=\"pub-field-label\">Review</div>'",
+													"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
+													"& '</div>'",
+													"& '</article>'",
+												],
+											}),
 											extension: "html",
 										},
 										// Isolated review content page (plain HTML, no site chrome)
@@ -1047,28 +1080,30 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
-										bannerText: "Review Group",
+										css: SEED_CSS,
 										pages: [
 										// Review HTML pages with signposting <link> to DocMap
 										{
 											filter: "$.pub.pubType.name = 'Review'",
 											slug: "$.pub.id",
-											transform: [
-												"'<article>'",
-												"& '<h1>' & $.pub.title & '</h1>'",
-												"& '<div class=\"pub-field\">'",
-												"& '<div class=\"pub-field-label\">Source</div>'",
-												"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
-												"& '</div>'",
-												"& '<div class=\"pub-field\">'",
-												"& '<div class=\"pub-field-label\">Review</div>'",
-												"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
-												"& '</div>'",
-												"& '</article>'"
-											].join(" "),
-											headExtra:
-												"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \".docmap.json />\"",
+											transform: fullHtmlTransform({
+												bannerText: "Review Group",
+												headExtra:
+													"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \".docmap.json />\"",
+												content: [
+													"& '<article>'",
+													"& '<h1>' & $.pub.title & '</h1>'",
+													"& '<div class=\"pub-field\">'",
+													"& '<div class=\"pub-field-label\">Source</div>'",
+													"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
+													"& '</div>'",
+													"& '<div class=\"pub-field\">'",
+													"& '<div class=\"pub-field-label\">Review</div>'",
+													"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
+													"& '</div>'",
+													"& '</article>'",
+												],
+											}),
 											extension: "html",
 										},
 										// Isolated review content page (plain HTML, no site chrome)
@@ -1375,23 +1410,25 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: "* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }",
-										bannerText: "External Repository",
+										css: SEED_CSS,
 										pages: [
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
-												transform: [
-													"'<article>'",
-													"& '<h1>' & $.pub.title & '</h1>'",
-													"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
-													"& '<h2>Abstract</h2>'",
-													"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
-													"& '<h2>Introduction</h2>'",
-													"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
-													"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
-													"& '</article>'",
-												].join(" "),
+												transform: fullHtmlTransform({
+													bannerText: "External Repository",
+													content: [
+														"& '<article>'",
+														"& '<h1>' & $.pub.title & '</h1>'",
+														"& '<p>This paper presents a novel approach to distributed systems consensus, combining elements of classical Byzantine fault tolerance with modern machine learning techniques. We demonstrate that our method achieves significant improvements in throughput while maintaining strong consistency guarantees.</p>'",
+														"& '<h2>Abstract</h2>'",
+														"& '<p>Consensus protocols form the backbone of reliable distributed systems, yet existing approaches struggle to balance performance with correctness under adversarial conditions. In this work, we introduce Adaptive Consensus (AC), a protocol that dynamically adjusts its communication patterns based on observed network behavior. Our evaluation across geo-distributed deployments shows a 3.2x improvement in commit latency compared to state-of-the-art protocols, with no loss in safety guarantees.</p>'",
+														"& '<h2>Introduction</h2>'",
+														"& '<p>The proliferation of globally distributed applications has created renewed interest in consensus protocols that can operate efficiently across wide-area networks. Traditional protocols such as Paxos and Raft were designed primarily for local-area deployments, and their performance degrades significantly when participants are separated by high-latency links.</p>'",
+														"& '<p>Recent work has explored various optimizations, including speculative execution, batching, and pipelining. However, these approaches typically assume relatively stable network conditions and do not adapt well to the dynamic environments characteristic of modern cloud deployments.</p>'",
+														"& '</article>'",
+													],
+												}),
 												extension: "html",
 											},
 										// Review data group — not rendered as pages, used for cross-referencing

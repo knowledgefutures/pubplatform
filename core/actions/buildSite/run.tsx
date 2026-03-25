@@ -1,6 +1,6 @@
 "use server"
 
-import type { JsonValue } from "contracts"
+import type { JsonValue, ProcessedPub } from "contracts"
 import type { PubsId } from "db/public"
 import type { PubValues } from "~/lib/server"
 import type { action } from "./action"
@@ -22,6 +22,7 @@ import { getCommunity } from "~/lib/server/community"
 import { applyJsonataFilter, compileJsonataQuery } from "~/lib/server/jsonata-query"
 import { updatePub } from "~/lib/server/pub"
 import { buildInterpolationContext } from "../_lib/interpolationContext"
+import type { IncomingRelations } from "../_lib/pubProxy"
 import { defineRun } from "../types"
 
 /**
@@ -42,51 +43,27 @@ const extractValue = async (data: unknown, expression: string): Promise<unknown>
 }
 
 /**
- * Browser script injected into submission pages that dynamically fetches
- * review content by following signposting links:
- *   review page → <link rel="describedby"> → DocMap JSON → web-content URL → content
+ * Compute incoming relations from loaded pubs across all page groups.
+ * For each pub that has relational values, records the reverse mapping:
+ * targetPubId -> { fieldSlug -> [sourcePubs] }
  */
-const SIGNPOSTING_FETCH_SCRIPT = `<script>
-(async function() {
-	var items = document.querySelectorAll('[data-review-url]');
-	for (var i = 0; i < items.length; i++) {
-		var item = items[i];
-		var url = item.getAttribute('data-review-url');
-		var target = item.querySelector('.review-content-target');
-		if (!url || !target) continue;
-		try {
-			var pageRes = await fetch(url);
-			var pageHtml = await pageRes.text();
-			var doc = new DOMParser().parseFromString(pageHtml, 'text/html');
-			var link = doc.querySelector('link[rel="describedby"][type="application/docmap+json"]');
-			if (!link) { target.innerHTML = '<em>No signposting metadata found</em>'; continue; }
-			var docmapRes = await fetch(link.getAttribute('href'));
-			var docmap = await docmapRes.json();
-			var contentUrl = null;
-			var steps = docmap.steps ? Object.values(docmap.steps) : [];
-			for (var s = 0; s < steps.length && !contentUrl; s++) {
-				var actions = steps[s].actions || [];
-				for (var a = 0; a < actions.length && !contentUrl; a++) {
-					var outputs = actions[a].outputs || [];
-					for (var o = 0; o < outputs.length && !contentUrl; o++) {
-						var contents = outputs[o].content || [];
-						for (var c = 0; c < contents.length; c++) {
-							if (contents[c].type === 'web-content') { contentUrl = contents[c].url; break; }
-						}
-					}
-				}
+const computeIncomingRelations = (
+	allPubs: ProcessedPub[]
+): Map<string, IncomingRelations> => {
+	const map = new Map<string, IncomingRelations>()
+	for (const pub of allPubs) {
+		for (const v of pub.values) {
+			if (v.relatedPubId) {
+				const existing = map.get(v.relatedPubId) ?? {}
+				const fieldPubs = existing[v.fieldSlug] ?? []
+				fieldPubs.push(pub)
+				existing[v.fieldSlug] = fieldPubs
+				map.set(v.relatedPubId, existing)
 			}
-			if (!contentUrl) { target.innerHTML = '<em>No content URL in DocMap</em>'; continue; }
-			var contentRes = await fetch(contentUrl);
-			var content = await contentRes.text();
-			target.style.color = ''; target.style.fontStyle = '';
-			target.innerHTML = content;
-		} catch (e) {
-			target.innerHTML = '<em>Failed to load review content</em>';
 		}
 	}
-})();
-<\/script>`
+	return map
+}
 
 export const run = defineRun<typeof action>(
 	async ({ communityId, pub, config, automationRunId, lastModifiedBy }) => {
@@ -110,11 +87,10 @@ export const run = defineRun<typeof action>(
 			},
 		})
 
-		// First pass: fetch pubs and interpolate slugs for all page groups
-		const pageGroupData = await Promise.all(
+		// First pass: fetch raw pubs for all page groups
+		const rawPageGroups = await Promise.all(
 			config.pages.map(async (page) => {
 				const query = compileJsonataQuery(page.filter)
-
 				const pubs = await getPubsWithRelatedValues(
 					{ communityId },
 					{
@@ -125,7 +101,17 @@ export const run = defineRun<typeof action>(
 						withPubType: true,
 					}
 				)
+				return { page, pubs }
+			})
+		)
 
+		// Compute incoming relations from all fetched pubs across all groups
+		const allPubs = rawPageGroups.flatMap((g) => g.pubs)
+		const incomingRelationsMap = computeIncomingRelations(allPubs)
+
+		// Second pass: interpolate with incoming relations available via $.pub.in
+		const pageGroupData = await Promise.all(
+			rawPageGroups.map(async ({ page, pubs }) => {
 				const interpolatedPubs = await Promise.all(
 					pubs.map(async (pub) => {
 						const pubContext = buildInterpolationContext({
@@ -133,6 +119,7 @@ export const run = defineRun<typeof action>(
 							pub,
 							env: { PUBPUB_URL: env.PUBPUB_URL },
 							useDummyValues: true,
+							incomingRelations: incomingRelationsMap.get(pub.id),
 						})
 						const [error, slug] = await tryCatch(interpolate(page.slug, pubContext))
 						if (!slug)
@@ -142,7 +129,6 @@ export const run = defineRun<typeof action>(
 							})
 						const interpolatedSlug = error ? pub.id : slug
 
-						// Pre-render the content using the interpolation context
 						const [contentError, content] = await tryCatch(
 							interpolate(page.transform, pubContext)
 						)
@@ -152,21 +138,6 @@ export const run = defineRun<typeof action>(
 								err: contentError,
 							})
 
-						// Interpolate headExtra if configured (e.g. <link> tags)
-						const [headExtraError, headExtraValue] = page.headExtra
-							? await tryCatch(interpolate(page.headExtra, pubContext))
-							: [null, undefined]
-						if (headExtraError)
-							logger.error({
-								msg: "Error interpolating headExtra",
-								err: headExtraError,
-							})
-
-						// Extract source URL for cross-referencing (e.g. review's origin URL)
-						const [, sourceUrlValue] = await tryCatch(
-							interpolate("$.pub.values.SourceURL", pubContext)
-						)
-
 						return {
 							id: pub.id,
 							title: getPubTitle(pub),
@@ -175,94 +146,20 @@ export const run = defineRun<typeof action>(
 									? JSON.stringify(content, null, 2)
 									: String(content ?? ""),
 							slug: interpolatedSlug as string,
-							headExtra: headExtraValue
-								? String(headExtraValue)
-								: undefined,
-							sourceUrl: sourceUrlValue
-								? String(sourceUrlValue)
-								: undefined,
-							// Track outgoing relations for cross-referencing
-							relatedPubIds: pub.values
-								.filter((v) => v.relatedPubId)
-								.map((v) => v.relatedPubId!),
 						}
 					})
 				)
 
 				return {
-					transform: page.transform,
 					extension: page.extension ?? "html",
 					pubs: interpolatedPubs,
 				}
 			})
 		)
 
-		// Inject cross-reference links and review content into pre-rendered HTML pages.
-		// Reviews with a sourceUrl get a dynamic signposting fetch script;
-		// reviews without one get their pre-rendered content inlined.
-		for (const group of pageGroupData) {
-			if (group.extension !== "html") continue
-			for (const pub of group.pubs) {
-				// Find pubs across ALL groups that relate TO this pub (incoming relations)
-				const incomingPubs: {
-					title: string
-					slug: string
-					content: string
-					sourceUrl?: string
-				}[] = []
-				for (const otherGroup of pageGroupData) {
-					for (const otherPub of otherGroup.pubs) {
-						if (otherPub.id === pub.id) continue
-						if (otherPub.relatedPubIds.includes(pub.id)) {
-							incomingPubs.push({
-								title: otherPub.title,
-								slug: otherPub.slug,
-								content: otherPub.content,
-								sourceUrl: otherPub.sourceUrl,
-							})
-						}
-					}
-				}
-
-				if (incomingPubs.length > 0) {
-					const depth = pub.slug.split("/").filter(Boolean).length
-					const toRoot = depth > 0 ? "../".repeat(depth) : "./"
-					const hasSignposting = incomingPubs.some((p) => p.sourceUrl)
-
-					const reviewSections = incomingPubs
-						.map((p) => {
-							if (p.sourceUrl) {
-								// Link to the authoritative source; content fetched via signposting
-								return (
-									`<div class="pub-field" data-review-url="${p.sourceUrl}" style="border:1px solid var(--color-border,#e5e7eb);border-radius:0.5rem;padding:1rem;margin-bottom:1rem">` +
-									`<h3><a href="${p.sourceUrl}">${p.title || "Untitled"}</a></h3>` +
-									`<div class="review-content-target" style="color:var(--color-muted,#6b7280);font-style:italic">Loading review content via signposting&hellip;</div>` +
-									`</div>`
-								)
-							}
-							// Fallback: inline the pre-rendered content with local link
-							return (
-								`<div class="pub-field" style="border:1px solid var(--color-border,#e5e7eb);border-radius:0.5rem;padding:1rem;margin-bottom:1rem">` +
-								`<h3><a href="${toRoot}${p.slug}/index.html">${p.title || "Untitled"}</a></h3>` +
-								`<div>${p.content}</div>` +
-								`</div>`
-							)
-						})
-						.join("")
-
-					pub.content += `<div class="pub-field" style="margin-top:2rem"><div class="pub-field-label">Reviews</div>${reviewSections}</div>`
-
-					// Inject the signposting fetch script once if any review uses sourceUrl
-					if (hasSignposting) {
-						pub.content += SIGNPOSTING_FETCH_SCRIPT
-					}
-				}
-			}
-		}
-
 		// Build final pages payload (pre-rendered, no transform needed)
 		const pages: {
-			pages: { id: string; title: string; content: string; slug: string; headExtra?: string }[]
+			pages: { id: string; title: string; content: string; slug: string }[]
 			extension: string
 		}[] = pageGroupData.map((group) => ({
 			pages: group.pubs.map((pub) => ({
@@ -270,7 +167,6 @@ export const run = defineRun<typeof action>(
 				title: pub.title,
 				content: pub.content,
 				slug: pub.slug,
-				headExtra: pub.headExtra,
 			})),
 			extension: group.extension,
 		}))
@@ -301,7 +197,6 @@ export const run = defineRun<typeof action>(
 					communitySlug,
 					subpath: config.subpath,
 					css: config.css,
-				bannerText: config.bannerText,
 					pages,
 					siteUrl: env.PUBPUB_URL,
 				},

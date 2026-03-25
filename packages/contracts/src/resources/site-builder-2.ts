@@ -18,7 +18,6 @@ export const siteBuilderApi = contract.router(
 				communitySlug: z.string(),
 				subpath: z.string().optional(),
 				css: z.string().optional(),
-			bannerText: z.string().optional(),
 				pages: z.array(
 					z.object({
 						pages: z.array(
@@ -27,7 +26,6 @@ export const siteBuilderApi = contract.router(
 								title: z.string(),
 								slug: z.string(),
 								content: z.string(),
-								headExtra: z.string().optional(),
 							})
 						),
 						transform: z.string().optional(),

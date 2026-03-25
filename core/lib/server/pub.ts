@@ -1317,6 +1317,57 @@ const COUNT_OPTIONS = {
 	trx: db,
 } as const satisfies GetPubsWithRelatedValuesOptions
 
+/**
+ * Fetch incoming relations for a pub: other pubs that reference this pub via relational fields.
+ * Returns a map of field slug -> array of source pubs (ProcessedPub[]).
+ */
+export async function getIncomingRelations(
+	pubId: PubsId,
+	communityId: CommunitiesId
+): Promise<Record<string, ProcessedPub[]>> {
+	// Find all (source pub id, field slug) pairs where a value points to this pub
+	const refs = await db
+		.selectFrom("pub_values as pv")
+		.innerJoin("pub_fields as pf", "pf.id", "pv.fieldId")
+		.select(["pv.pubId", "pf.slug"])
+		.where("pv.relatedPubId", "=", pubId)
+		.where("pf.communityId", "=", communityId)
+		.execute()
+
+	if (refs.length === 0) return {}
+
+	// Group source pub IDs by field slug
+	const pubIdsByField = new Map<string, Set<string>>()
+	for (const ref of refs) {
+		const set = pubIdsByField.get(ref.slug) ?? new Set()
+		set.add(ref.pubId)
+		pubIdsByField.set(ref.slug, set)
+	}
+
+	// Fetch all unique source pubs
+	const allPubIds = [...new Set(refs.map((r) => r.pubId))] as PubsId[]
+	const sourcePubs = await getPubsWithRelatedValues(
+		{ communityId },
+		{
+			pubIds: allPubIds,
+			withValues: true,
+			withPubType: true,
+			withRelatedPubs: false,
+		}
+	)
+	const pubsById = new Map(sourcePubs.map((p) => [p.id, p]))
+
+	// Build the result map
+	const result: Record<string, ProcessedPub[]> = {}
+	for (const [fieldSlug, pubIds] of pubIdsByField) {
+		result[fieldSlug] = [...pubIds]
+			.map((id) => pubsById.get(id as PubsId))
+			.filter((p): p is ProcessedPub => p !== undefined)
+	}
+
+	return result
+}
+
 export async function getPubsWithRelatedValues<Options extends GetPubsWithRelatedValuesOptions>(
 	props: Extract<PubIdOrPubTypeIdOrStageIdOrCommunityId, { pubId: PubsId }>,
 	options?: Options
