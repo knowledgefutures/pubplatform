@@ -322,14 +322,14 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 
 // ---- Bespoke SSG ----
 
-const renderHtmlPage = (title: string, content: string, css: string): string => {
-	const styleTag = css ? `\n\t<style>${css}</style>` : ""
+const renderHtmlPage = (title: string, content: string, hasCss: boolean): string => {
+	const cssLink = hasCss ? `\n\t<link rel="stylesheet" href="/styles.css" />` : ""
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 \t<meta charset="UTF-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-\t<title>${title}</title>${styleTag}
+\t<title>${title}</title>${cssLink}
 </head>
 <body>
 <div class="site-content">
@@ -374,6 +374,12 @@ const buildSite = async ({
 
 	await fs.mkdir(distDir, { recursive: true })
 
+	// Write CSS to a separate file if provided
+	const hasCss = css.length > 0
+	if (hasCss) {
+		await fs.writeFile(path.join(distDir, "styles.css"), css, "utf-8")
+	}
+
 	const allGeneratedPages: { title: string; slug: string; fileName: string }[] = []
 
 	await Promise.all(
@@ -397,7 +403,7 @@ const buildSite = async ({
 				const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
 				const fileContent =
 					extension === "html" && !isCompleteHtml
-						? renderHtmlPage(pageInfo.title, pageInfo.content, css)
+						? renderHtmlPage(pageInfo.title, pageInfo.content, hasCss)
 						: pageInfo.content
 				const filePath = path.join(distDir, fileName)
 				await fs.mkdir(path.dirname(filePath), { recursive: true })
@@ -457,7 +463,7 @@ const buildSite = async ({
 			.join("\n")
 		const indexContent = `<h1>Submissions</h1>\n<ul>\n${listItems}\n</ul>`
 		const indexPath = path.join(distDir, "index.html")
-		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, css), "utf-8")
+		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, hasCss), "utf-8")
 	}
 }
 
