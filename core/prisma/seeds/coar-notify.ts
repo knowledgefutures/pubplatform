@@ -33,7 +33,7 @@ const withBannerAndHead = ({
 	headExtra?: string // JSONata expression evaluating to HTML string for <head>
 	content: string[]
 }): string => {
-	const headBase = `<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>' & $.pub.title & '</title><link rel="stylesheet" href="/styles.css" />`
+	const headBase = `<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>' & $.pub.title & '</title><link rel="stylesheet" href="' & $.site.base & '/styles.css" />`
 	const headSection = headExtra
 		? `'<!DOCTYPE html><html lang="en"><head>${headBase}' & ${headExtra} & '</head>`
 		: `'<!DOCTYPE html><html lang="en"><head>${headBase}</head>`

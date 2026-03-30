@@ -322,8 +322,14 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 
 // ---- Bespoke SSG ----
 
-const renderHtmlPage = (title: string, content: string, hasCss: boolean): string => {
-	const cssLink = hasCss ? `\n\t<link rel="stylesheet" href="/styles.css" />` : ""
+const computeRelativeBase = (slug: string): string => {
+	const depth = slug.split("/").filter(Boolean).length
+	return depth === 0 ? "." : Array(depth).fill("..").join("/")
+}
+
+const renderHtmlPage = (title: string, content: string, hasCss: boolean, slug: string): string => {
+	const base = computeRelativeBase(slug)
+	const cssLink = hasCss ? `\n\t<link rel="stylesheet" href="${base}/styles.css" />` : ""
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -403,7 +409,7 @@ const buildSite = async ({
 				const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
 				const fileContent =
 					extension === "html" && !isCompleteHtml
-						? renderHtmlPage(pageInfo.title, pageInfo.content, hasCss)
+						? renderHtmlPage(pageInfo.title, pageInfo.content, hasCss, normalized)
 						: pageInfo.content
 				const filePath = path.join(distDir, fileName)
 				await fs.mkdir(path.dirname(filePath), { recursive: true })
@@ -463,7 +469,7 @@ const buildSite = async ({
 			.join("\n")
 		const indexContent = `<h1>Submissions</h1>\n<ul>\n${listItems}\n</ul>`
 		const indexPath = path.join(distDir, "index.html")
-		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, hasCss), "utf-8")
+		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, hasCss, ""), "utf-8")
 	}
 }
 

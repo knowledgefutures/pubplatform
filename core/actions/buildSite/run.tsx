@@ -127,7 +127,13 @@ export const run = defineRun<typeof action>(
 								msg: "Error interpolating slug. Will continue with pub id.",
 								err: error,
 							})
-						const interpolatedSlug = error ? pub.id : slug
+						const interpolatedSlug = (error ? pub.id : slug) as string
+
+						// Compute relative base path from slug depth for asset references ($.site.base)
+						const slugDepth = interpolatedSlug.split("/").filter(Boolean).length
+						const siteBase =
+							slugDepth === 0 ? "." : Array(slugDepth).fill("..").join("/")
+						;(pubContext as Record<string, unknown>).site = { base: siteBase }
 
 						const [contentError, content] = await tryCatch(
 							interpolate(page.transform, pubContext)
