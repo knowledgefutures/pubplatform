@@ -20,6 +20,13 @@ const joeAuthorId = "dddddddd-dddd-4ddd-dddd-dddddddddd02" as UsersId
 const SEED_CSS =
 	"* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; color: #1e293b; line-height: 1.6; } .banner { background: #0d9488; color: #f0fdfa; padding: 0.5rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; } .site-content { max-width: 720px; margin: 2rem auto; padding: 0 1.5rem; } h1 { font-size: 1.6rem; color: #0f766e; border-bottom: 2px solid #14b8a6; padding-bottom: 0.5rem; margin-bottom: 1rem; } h2 { font-size: 1.1rem; color: #0f766e; margin: 1.25rem 0 0.4rem; } h3 { font-size: 1rem; margin: 0.75rem 0 0.25rem; } a { color: #0d9488; } .pub-field { margin-top: 1rem; } .pub-field-label { font-weight: 600; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; } .pub-field-value { margin-bottom: 0.75rem; }"
 
+/** Static page group entry that produces styles.css */
+const CSS_PAGE_GROUP = {
+	slug: "'styles'",
+	transform: `'${SEED_CSS}'`,
+	extension: "css",
+}
+
 /**
  * Wraps content template lines in a full HTML document with banner, CSS,
  * and optional head extras (e.g. signposting <link> tags).
@@ -156,8 +163,8 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: SEED_CSS,
 										pages: [
+											CSS_PAGE_GROUP,
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -387,8 +394,8 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: SEED_CSS,
 										pages: [
+											CSS_PAGE_GROUP,
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -853,8 +860,8 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: SEED_CSS,
 										pages: [
+											CSS_PAGE_GROUP,
 										// Review HTML pages with signposting <link> to DocMap
 										{
 											filter: "$.pub.pubType.name = 'Review'",
@@ -1080,8 +1087,8 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: SEED_CSS,
 										pages: [
+											CSS_PAGE_GROUP,
 										// Review HTML pages with signposting <link> to DocMap
 										{
 											filter: "$.pub.pubType.name = 'Review'",
@@ -1410,8 +1417,8 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									action: Action.buildSite,
 									config: {
 										subpath: "site",
-										css: SEED_CSS,
 										pages: [
+											CSS_PAGE_GROUP,
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",

@@ -87,10 +87,14 @@ export const run = defineRun<typeof action>(
 			},
 		})
 
-		// First pass: fetch raw pubs for all page groups
+		// Split page groups into static (no filter) and dynamic (with filter)
+		const staticGroups = config.pages.filter((p) => !p.filter)
+		const dynamicGroups = config.pages.filter((p) => p.filter)
+
+		// First pass: fetch raw pubs for dynamic page groups
 		const rawPageGroups = await Promise.all(
-			config.pages.map(async (page) => {
-				const query = compileJsonataQuery(page.filter)
+			dynamicGroups.map(async (page) => {
+				const query = compileJsonataQuery(page.filter!)
 				const pubs = await getPubsWithRelatedValues(
 					{ communityId },
 					{
@@ -109,8 +113,39 @@ export const run = defineRun<typeof action>(
 		const allPubs = rawPageGroups.flatMap((g) => g.pubs)
 		const incomingRelationsMap = computeIncomingRelations(allPubs)
 
-		// Second pass: interpolate with incoming relations available via $.pub.in
-		const pageGroupData = await Promise.all(
+		// Process static page groups (single file, no pub context)
+		const staticPageGroupData = await Promise.all(
+			staticGroups.map(async (page) => {
+				const [contentError, content] = await tryCatch(
+					interpolate(page.transform, {})
+				)
+				if (contentError)
+					logger.error({
+						msg: "Error interpolating static page content",
+						err: contentError,
+					})
+
+				const [slugError, slug] = await tryCatch(
+					interpolate(page.slug, {})
+				)
+				const interpolatedSlug = (slugError ? "static" : slug) as string
+
+				return {
+					extension: page.extension ?? "html",
+					pubs: [
+						{
+							id: "static",
+							title: interpolatedSlug,
+							content: String(content ?? ""),
+							slug: interpolatedSlug,
+						},
+					],
+				}
+			})
+		)
+
+		// Second pass: interpolate dynamic groups with incoming relations available via $.pub.in
+		const dynamicPageGroupData = await Promise.all(
 			rawPageGroups.map(async ({ page, pubs }) => {
 				const interpolatedPubs = await Promise.all(
 					pubs.map(async (pub) => {
@@ -164,6 +199,7 @@ export const run = defineRun<typeof action>(
 		)
 
 		// Build final pages payload (pre-rendered, no transform needed)
+		const pageGroupData = [...staticPageGroupData, ...dynamicPageGroupData]
 		const pages: {
 			pages: { id: string; title: string; content: string; slug: string }[]
 			extension: string
@@ -202,7 +238,6 @@ export const run = defineRun<typeof action>(
 					automationRunId: automationRunId,
 					communitySlug,
 					subpath: config.subpath,
-					css: config.css,
 					pages,
 					siteUrl: env.PUBPUB_URL,
 				},

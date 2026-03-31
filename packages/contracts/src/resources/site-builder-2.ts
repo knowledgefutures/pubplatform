@@ -17,7 +17,6 @@ export const siteBuilderApi = contract.router(
 				automationRunId: z.string().uuid(),
 				communitySlug: z.string(),
 				subpath: z.string().optional(),
-				css: z.string().optional(),
 				pages: z.array(
 					z.object({
 						pages: z.array(

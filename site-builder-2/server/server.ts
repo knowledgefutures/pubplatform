@@ -322,20 +322,13 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 
 // ---- Bespoke SSG ----
 
-const computeRelativeBase = (slug: string): string => {
-	const depth = slug.split("/").filter(Boolean).length
-	return depth === 0 ? "." : Array(depth).fill("..").join("/")
-}
-
-const renderHtmlPage = (title: string, content: string, hasCss: boolean, slug: string): string => {
-	const base = computeRelativeBase(slug)
-	const cssLink = hasCss ? `\n\t<link rel="stylesheet" href="${base}/styles.css" />` : ""
+const renderHtmlPage = (title: string, content: string): string => {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 \t<meta charset="UTF-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-\t<title>${title}</title>${cssLink}
+\t<title>${title}</title>
 </head>
 <body>
 <div class="site-content">
@@ -362,13 +355,11 @@ const buildSite = async ({
 	communitySlug,
 	authToken,
 	pages,
-	css,
 	distDir,
 }: {
 	communitySlug: string
 	authToken: string
 	pages: PageGroup[]
-	css: string
 	distDir: string
 }): Promise<void> => {
 	const client = initClient(siteApi, {
@@ -379,12 +370,6 @@ const buildSite = async ({
 	})
 
 	await fs.mkdir(distDir, { recursive: true })
-
-	// Write CSS to a separate file if provided
-	const hasCss = css.length > 0
-	if (hasCss) {
-		await fs.writeFile(path.join(distDir, "styles.css"), css, "utf-8")
-	}
 
 	const allGeneratedPages: { title: string; slug: string; fileName: string }[] = []
 
@@ -409,7 +394,7 @@ const buildSite = async ({
 				const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
 				const fileContent =
 					extension === "html" && !isCompleteHtml
-						? renderHtmlPage(pageInfo.title, pageInfo.content, hasCss, normalized)
+						? renderHtmlPage(pageInfo.title, pageInfo.content)
 						: pageInfo.content
 				const filePath = path.join(distDir, fileName)
 				await fs.mkdir(path.dirname(filePath), { recursive: true })
@@ -469,7 +454,7 @@ const buildSite = async ({
 			.join("\n")
 		const indexContent = `<h1>Submissions</h1>\n<ul>\n${listItems}\n</ul>`
 		const indexPath = path.join(distDir, "index.html")
-		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent, hasCss, ""), "utf-8")
+		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent), "utf-8")
 	}
 }
 
@@ -492,7 +477,6 @@ const router = tsr.router(siteBuilderApi, {
 			const distDir = `./dist/${communitySlug}/${body.automationRunId}`
 
 			const pages = body.pages
-			const css = body.css ?? ""
 
 			try {
 				logger.info({
@@ -504,7 +488,6 @@ const router = tsr.router(siteBuilderApi, {
 					communitySlug,
 					authToken,
 					pages,
-					css,
 					distDir,
 				})
 			} catch (err) {
