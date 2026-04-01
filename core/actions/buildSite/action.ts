@@ -40,9 +40,13 @@ const schema = z.object({
 					.string()
 					.optional()
 					.describe(
-						"A filter expression that selects which pubs to include. If omitted, the group produces a single static file."
+						"A filter expression that selects which pubs to include. If omitted, the group produces a single static file with no pub context."
 					),
-				slug: z.string().describe("JSONata expression for the page URL slug"),
+				slug: z
+					.string()
+					.describe(
+						"JSONata expression for the page URL slug. If the slug references $.pub (e.g. $.pub.id), one page is produced per matched pub with $.pub in context. If the slug is static (e.g. 'index'), a single page is produced with all matched pubs available as $.pubs."
+					),
 				transform: z
 					.string()
 					.describe("JSONata expression that outputs content for the page"),

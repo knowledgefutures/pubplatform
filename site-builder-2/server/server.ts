@@ -371,8 +371,6 @@ const buildSite = async ({
 
 	await fs.mkdir(distDir, { recursive: true })
 
-	const allGeneratedPages: { title: string; slug: string; fileName: string }[] = []
-
 	await Promise.all(
 		pages.map(async (group) => {
 			const extension = group.extension ?? "html"
@@ -399,7 +397,7 @@ const buildSite = async ({
 				const filePath = path.join(distDir, fileName)
 				await fs.mkdir(path.dirname(filePath), { recursive: true })
 				await fs.writeFile(filePath, fileContent, "utf-8")
-				allGeneratedPages.push({ title: pageInfo.title, slug: normalized, fileName })
+
 			}
 
 			if (!group.transform) {
@@ -440,22 +438,6 @@ const buildSite = async ({
 		})
 	)
 
-	// Auto-generate index.html if none was created by page groups
-	const hasIndex = allGeneratedPages.some((p) => p.fileName === "index.html")
-	if (!hasIndex && allGeneratedPages.length > 0) {
-		// Only show top-level pages (no "/" in slug) on the index
-		const topLevelPages = allGeneratedPages.filter((p) => p.slug && !p.slug.includes("/"))
-		const pagesToList = topLevelPages.length > 0 ? topLevelPages : allGeneratedPages
-		const listItems = pagesToList
-			.map((p) => {
-				const href = p.slug ? `${p.slug}/index.html` : "./"
-				return `<li><a href="${href}">${p.title || p.slug || "Untitled"}</a></li>`
-			})
-			.join("\n")
-		const indexContent = `<h1>Submissions</h1>\n<ul>\n${listItems}\n</ul>`
-		const indexPath = path.join(distDir, "index.html")
-		await fs.writeFile(indexPath, renderHtmlPage("Index", indexContent), "utf-8")
-	}
 }
 
 // ---- Router ----

@@ -27,6 +27,19 @@ const CSS_PAGE_GROUP = {
 	extension: "css",
 }
 
+/** Creates a single index page that lists all matched pubs as links */
+const indexPageGroup = (filter: string, bannerText: string) => ({
+	filter,
+	slug: "''",
+	transform: [
+		`'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Index</title><link rel="stylesheet" href="./styles.css" /></head>`,
+		`<body><div class="banner">${bannerText}</div><div class="site-content"><h1>Submissions</h1><ul>'`,
+		`& $join($map($.pubs, function($p) { '<li><a href="' & $p.id & '/index.html">' & $p.title & '</a></li>' }), '')`,
+		`& '</ul></div></body></html>'`,
+	].join(" "),
+	extension: "html",
+})
+
 /**
  * Wraps content template lines in a full HTML document with banner, CSS,
  * and optional head extras (e.g. signposting <link> tags).
@@ -165,6 +178,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
+											indexPageGroup("$.pub.pubType.name = 'Submission'", "Arcadia Science"),
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -396,6 +410,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
+											indexPageGroup("$.pub.pubType.name = 'Submission'", "Arcadia Science"),
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -862,6 +877,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
+											indexPageGroup("$.pub.pubType.name = 'Review'", "The Unjournal"),
 										// Review HTML pages with signposting <link> to DocMap
 										{
 											filter: "$.pub.pubType.name = 'Review'",
@@ -1089,6 +1105,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
+											indexPageGroup("$.pub.pubType.name = 'Review'", "Review Group"),
 										// Review HTML pages with signposting <link> to DocMap
 										{
 											filter: "$.pub.pubType.name = 'Review'",
@@ -1419,6 +1436,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
+											indexPageGroup("$.pub.pubType.name = 'Submission'", "External Repository"),
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",

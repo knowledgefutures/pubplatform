@@ -22,7 +22,7 @@ import { getCommunity } from "~/lib/server/community"
 import { applyJsonataFilter, compileJsonataQuery } from "~/lib/server/jsonata-query"
 import { updatePub } from "~/lib/server/pub"
 import { buildInterpolationContext } from "../_lib/interpolationContext"
-import type { IncomingRelations } from "../_lib/pubProxy"
+import { type IncomingRelations, createPubProxy } from "../_lib/pubProxy"
 import { defineRun } from "../types"
 
 /**
@@ -87,14 +87,13 @@ export const run = defineRun<typeof action>(
 			},
 		})
 
-		// Split page groups into static (no filter) and dynamic (with filter)
-		const staticGroups = config.pages.filter((p) => !p.filter)
-		const dynamicGroups = config.pages.filter((p) => p.filter)
+		const NIL_UUID = "00000000-0000-0000-0000-000000000000"
 
-		// First pass: fetch raw pubs for dynamic page groups
-		const rawPageGroups = await Promise.all(
-			dynamicGroups.map(async (page) => {
-				const query = compileJsonataQuery(page.filter!)
+		// Fetch pubs for all groups that have a filter
+		const groupsWithPubs = await Promise.all(
+			config.pages.map(async (page) => {
+				if (!page.filter) return { page, pubs: [] as ProcessedPub[] }
+				const query = compileJsonataQuery(page.filter)
 				const pubs = await getPubsWithRelatedValues(
 					{ communityId },
 					{
@@ -109,44 +108,70 @@ export const run = defineRun<typeof action>(
 			})
 		)
 
-		// Compute incoming relations from all fetched pubs across all groups
-		const allPubs = rawPageGroups.flatMap((g) => g.pubs)
+		// Compute incoming relations across all fetched pubs
+		const allPubs = groupsWithPubs.flatMap((g) => g.pubs)
 		const incomingRelationsMap = computeIncomingRelations(allPubs)
 
-		// Process static page groups (single file, no pub context)
-		const staticPageGroupData = await Promise.all(
-			staticGroups.map(async (page) => {
-				const [contentError, content] = await tryCatch(
-					interpolate(page.transform, {})
-				)
-				if (contentError)
-					logger.error({
-						msg: "Error interpolating static page content",
-						err: contentError,
-					})
+		const stringifyContent = (content: unknown): string =>
+			typeof content === "object" && content !== null
+				? JSON.stringify(content, null, 2)
+				: String(content ?? "")
 
-				const [slugError, slug] = await tryCatch(
-					interpolate(page.slug, {})
-				)
-				const interpolatedSlug = (slugError ? "static" : slug) as string
+		const computeSiteBase = (slug: string) => {
+			const depth = slug.split("/").filter(Boolean).length
+			return depth === 0 ? "." : Array(depth).fill("..").join("/")
+		}
 
-				return {
-					extension: page.extension ?? "html",
-					pubs: [
-						{
-							id: "static",
+		// Process each page group according to its mode
+		const pageGroupData = await Promise.all(
+			groupsWithPubs.map(async ({ page, pubs }) => {
+				const extension = page.extension ?? "html"
+
+				// Static: no filter, no pubs — evaluate transform once with empty context
+				if (!page.filter) {
+					const [slugErr, slug] = await tryCatch(interpolate(page.slug, {}))
+					const interpolatedSlug = (slugErr ? "static" : slug) as string
+					const [contentErr, content] = await tryCatch(interpolate(page.transform, {}))
+					if (contentErr) logger.error({ msg: "Error interpolating static page", err: contentErr })
+					return {
+						extension,
+						pubs: [{
+							id: NIL_UUID,
 							title: interpolatedSlug,
-							content: String(content ?? ""),
+							content: stringifyContent(content),
 							slug: interpolatedSlug,
-						},
-					],
+						}],
+					}
 				}
-			})
-		)
 
-		// Second pass: interpolate dynamic groups with incoming relations available via $.pub.in
-		const dynamicPageGroupData = await Promise.all(
-			rawPageGroups.map(async ({ page, pubs }) => {
+				// Single: slug doesn't reference $.pub — one page with all matched pubs as $.pubs
+				const isPerPub = page.slug.includes("$.pub")
+				if (!isPerPub) {
+					const pubProxies = pubs.map((p) =>
+						createPubProxy(p, communitySlug, incomingRelationsMap.get(p.id))
+					)
+					const context: Record<string, unknown> = {
+						pubs: pubProxies,
+						community: { id: community.id, name: community.name, slug: community.slug },
+						env: { PUBPUB_URL: env.PUBPUB_URL },
+					}
+					const [slugErr, slug] = await tryCatch(interpolate(page.slug, context))
+					const interpolatedSlug = (slugErr ? "index" : slug) as string
+					context.site = { base: computeSiteBase(interpolatedSlug) }
+					const [contentErr, content] = await tryCatch(interpolate(page.transform, context))
+					if (contentErr) logger.error({ msg: "Error interpolating single page", err: contentErr })
+					return {
+						extension,
+						pubs: [{
+							id: NIL_UUID,
+							title: interpolatedSlug,
+							content: stringifyContent(content),
+							slug: interpolatedSlug,
+						}],
+					}
+				}
+
+				// Per-pub: one page per matched pub with $.pub in context
 				const interpolatedPubs = await Promise.all(
 					pubs.map(async (pub) => {
 						const pubContext = buildInterpolationContext({
@@ -156,50 +181,24 @@ export const run = defineRun<typeof action>(
 							useDummyValues: true,
 							incomingRelations: incomingRelationsMap.get(pub.id),
 						})
-						const [error, slug] = await tryCatch(interpolate(page.slug, pubContext))
-						if (!slug)
-							logger.error({
-								msg: "Error interpolating slug. Will continue with pub id.",
-								err: error,
-							})
-						const interpolatedSlug = (error ? pub.id : slug) as string
-
-						// Compute relative base path from slug depth for asset references ($.site.base)
-						const slugDepth = interpolatedSlug.split("/").filter(Boolean).length
-						const siteBase =
-							slugDepth === 0 ? "." : Array(slugDepth).fill("..").join("/")
-						;(pubContext as Record<string, unknown>).site = { base: siteBase }
-
-						const [contentError, content] = await tryCatch(
-							interpolate(page.transform, pubContext)
-						)
-						if (contentError)
-							logger.error({
-								msg: "Error interpolating content",
-								err: contentError,
-							})
-
+						const [slugErr, slug] = await tryCatch(interpolate(page.slug, pubContext))
+						if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })
+						const interpolatedSlug = (slugErr ? pub.id : slug) as string
+						;(pubContext as Record<string, unknown>).site = { base: computeSiteBase(interpolatedSlug) }
+						const [contentErr, content] = await tryCatch(interpolate(page.transform, pubContext))
+						if (contentErr) logger.error({ msg: "Error interpolating content", err: contentErr })
 						return {
 							id: pub.id,
 							title: getPubTitle(pub),
-							content:
-								typeof content === "object" && content !== null
-									? JSON.stringify(content, null, 2)
-									: String(content ?? ""),
-							slug: interpolatedSlug as string,
+							content: stringifyContent(content),
+							slug: interpolatedSlug,
 						}
 					})
 				)
 
-				return {
-					extension: page.extension ?? "html",
-					pubs: interpolatedPubs,
-				}
+				return { extension, pubs: interpolatedPubs }
 			})
 		)
-
-		// Build final pages payload (pre-rendered, no transform needed)
-		const pageGroupData = [...staticPageGroupData, ...dynamicPageGroupData]
 		const pages: {
 			pages: { id: string; title: string; content: string; slug: string }[]
 			extension: string
