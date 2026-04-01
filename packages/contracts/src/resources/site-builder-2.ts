@@ -27,7 +27,6 @@ export const siteBuilderApi = contract.router(
 								content: z.string(),
 							})
 						),
-						transform: z.string().optional(),
 						extension: z.string().default("html"),
 					})
 				),
@@ -40,8 +39,6 @@ export const siteBuilderApi = contract.router(
 					message: z.string(),
 					url: z.string(),
 					timestamp: z.number(),
-					fileSize: z.number(),
-					fileSizeFormatted: z.string(),
 					s3FolderUrl: z.string().optional(),
 					s3FolderPath: z.string().optional(),
 					siteUrl: z.string().optional(),

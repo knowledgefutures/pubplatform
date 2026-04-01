@@ -184,7 +184,7 @@ export const run = defineRun<typeof action>(
 						const [slugErr, slug] = await tryCatch(interpolate(page.slug, pubContext))
 						if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })
 						const interpolatedSlug = (slugErr ? pub.id : slug) as string
-						;(pubContext as Record<string, unknown>).site = { base: computeSiteBase(interpolatedSlug) }
+						pubContext.site = { base: computeSiteBase(interpolatedSlug) }
 						const [contentErr, content] = await tryCatch(interpolate(page.transform, pubContext))
 						if (contentErr) logger.error({ msg: "Error interpolating content", err: contentErr })
 						return {

@@ -44,13 +44,6 @@ export const getS3Client = () => {
 	return s3Client
 }
 
-const _formatBytes = (bytes: number): string => {
-	if (bytes === 0) return "0 Bytes"
-	const k = 1024
-	const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
-	return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
-}
 
 export const uploadFileToS3 = async (
 	id: string,
@@ -340,99 +333,42 @@ ${content}
 
 type PageGroup = {
 	pages: { id: string; title: string; slug: string; content: string }[]
-	transform?: string
 	extension?: string
 }
 
-const PUB_BATCH_SIZE = 50
-
-const chunk = <T>(arr: T[], size: number): T[][] =>
-	Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-		arr.slice(i * size, i * size + size)
-	)
-
 const buildSite = async ({
-	communitySlug,
-	authToken,
 	pages,
 	distDir,
 }: {
-	communitySlug: string
-	authToken: string
 	pages: PageGroup[]
 	distDir: string
 }): Promise<void> => {
-	const client = initClient(siteApi, {
-		baseUrl: SERVER_ENV.PUBPUB_URL,
-		baseHeaders: {
-			Authorization: `Bearer ${authToken}`,
-		},
-	})
-
 	await fs.mkdir(distDir, { recursive: true })
 
 	await Promise.all(
 		pages.map(async (group) => {
 			const extension = group.extension ?? "html"
-			const pubIds = group.pages.map((page) => page.id)
 
-			if (pubIds.length === 0) return
-
-			const pagesByPubId = new Map(group.pages.map((p) => [p.id, p]))
-
-			const writePage = async (pageInfo: { title: string; slug: string; content: string }) => {
-				const normalized = pageInfo.slug.replace(/\/+$/, "")
-				const fileName =
-					normalized === ""
-						? `index.${extension}`
-						: extension === "html"
-							? `${normalized}/index.html`
-							: `${normalized}.${extension}`
-				// If the content is already a complete HTML document, use it as-is
-				const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
-				const fileContent =
-					extension === "html" && !isCompleteHtml
-						? renderHtmlPage(pageInfo.title, pageInfo.content)
-						: pageInfo.content
-				const filePath = path.join(distDir, fileName)
-				await fs.mkdir(path.dirname(filePath), { recursive: true })
-				await fs.writeFile(filePath, fileContent, "utf-8")
-
-			}
-
-			if (!group.transform) {
-				// Pre-rendered content: use per-page content directly
-				await Promise.all(
-					group.pages.map(async (page) => writePage(page))
-				)
-				return
-			}
+			if (group.pages.length === 0) return
 
 			await Promise.all(
-				chunk(pubIds, PUB_BATCH_SIZE).map(async (batch) => {
-					const response = await client.pubs.getMany({
-						params: { communitySlug },
-						query: {
-							transform: group.transform,
-							pubIds: batch as any,
-							limit: batch.length,
-						},
-					})
-
-					if (response.status !== 200) {
-						throw new Error(
-							`Failed to fetch pubs. Status: ${response.status} Message: ${(response.body as any)?.message ?? "Unknown error"}`
-						)
-					}
-
-					await Promise.all(
-						response.body.map(async (pub) => {
-							const pageInfo = pagesByPubId.get(pub.id)
-							if (!pageInfo) return
-							const content = (pub as any).content as string
-							await writePage({ title: pageInfo.title, slug: pageInfo.slug, content })
-						})
-					)
+				group.pages.map(async (pageInfo) => {
+					const normalized = pageInfo.slug.replace(/\/+$/, "")
+					const fileName =
+						normalized === ""
+							? `index.${extension}`
+							: extension === "html"
+								? `${normalized}/index.html`
+								: `${normalized}.${extension}`
+					// If the content is already a complete HTML document, use it as-is
+					const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
+					const fileContent =
+						extension === "html" && !isCompleteHtml
+							? renderHtmlPage(pageInfo.title, pageInfo.content)
+							: pageInfo.content
+					const filePath = path.join(distDir, fileName)
+					await fs.mkdir(path.dirname(filePath), { recursive: true })
+					await fs.writeFile(filePath, fileContent, "utf-8")
 				})
 			)
 		})
@@ -467,8 +403,6 @@ const router = tsr.router(siteBuilderApi, {
 					automationRunId: body.automationRunId,
 				})
 				await buildSite({
-					communitySlug,
-					authToken,
 					pages,
 					distDir,
 				})
@@ -517,8 +451,6 @@ const router = tsr.router(siteBuilderApi, {
 						message: "Site built and uploaded successfully",
 						url: zipUploadResult,
 						timestamp: timestamp,
-						fileSize: 0,
-						fileSizeFormatted: `${folderUploadResult.uploadedFiles} files uploaded`,
 						s3FolderPath: folderUploadResult.s3FolderPath,
 						s3FolderUrl: folderUploadResult.s3FolderUrl,
 						siteUrl: publicSiteUrl,

@@ -23,25 +23,11 @@ export type InterpolationContextBase = {
 	env: InterpolationEnv
 }
 
-export type InterpolationContextWithPub = InterpolationContextBase & {
-	pub: ReturnType<typeof createPubProxy>
-	json?: Json
-}
-
-export type InterpolationContextWithJson = InterpolationContextBase & {
-	json: Json
+export type InterpolationContext = InterpolationContextBase & {
 	pub?: ReturnType<typeof createPubProxy>
+	json?: Json
+	site?: { base: string }
 }
-
-export type InterpolationContextWithBoth = InterpolationContextBase & {
-	pub: ReturnType<typeof createPubProxy>
-	json: Json
-}
-
-export type InterpolationContext =
-	| InterpolationContextWithPub
-	| InterpolationContextWithJson
-	| InterpolationContextWithBoth
 
 type InterpolationCommunity = Pick<Communities, "id" | "name" | "slug" | "avatar">
 
@@ -108,7 +94,7 @@ type BuildInterpolationContextArgs =
 export function buildInterpolationContext(
 	args: BuildInterpolationContextArgs
 ): InterpolationContext {
-	const baseContext: Omit<InterpolationContext, "json" | "pub"> = {
+	const baseContext: Omit<InterpolationContext, "json" | "pub" | "site"> = {
 		env: {
 			PUBPUB_URL: args.env.PUBPUB_URL,
 		},
