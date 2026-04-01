@@ -122,8 +122,7 @@ export function NotificationCard({
 			let inReplyToObjectUrl = payload.object?.id ?? ""
 			if (payload.inReplyTo) {
 				const originalNotification = notifications.find(
-					(n) =>
-						n.direction === "received" && n.payload.id === payload.inReplyTo
+					(n) => n.direction === "received" && n.payload.id === payload.inReplyTo
 				)
 				if (originalNotification?.payload.object?.id) {
 					inReplyToObjectUrl = originalNotification.payload.object.id
@@ -155,11 +154,17 @@ export function NotificationCard({
 	}
 
 	return (
-		<div className={`px-6 py-4 ${isLatest ? "bg-blue-50 border-l-4 border-l-blue-500" : "hover:bg-gray-50"}`}>
+		<div
+			className={`px-6 py-4 ${isLatest ? "border-l-4 border-l-blue-500 bg-blue-50" : "hover:bg-gray-50"}`}
+		>
 			<div className="flex items-start justify-between gap-4">
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
-						{isLatest && <span className="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 font-medium text-white text-xs">Latest</span>}
+						{isLatest && (
+							<span className="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 font-medium text-white text-xs">
+								Latest
+							</span>
+						)}
 						{getDirectionBadge()}
 						{types.map((type) => (
 							<span
@@ -178,20 +183,42 @@ export function NotificationCard({
 					{notification.payload.object?.id && (
 						<p className="mt-1 truncate text-gray-500 text-sm">
 							Object:{" "}
-							<a href={notification.payload.object.id} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline">{notification.payload.object.id}</a>
+							<a
+								href={notification.payload.object.id}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="font-mono text-blue-600 hover:underline"
+							>
+								{notification.payload.object.id}
+							</a>
 						</p>
 					)}
 
 					{notification.direction === "sent" && notification.targetUrl && (
 						<p className="mt-1 truncate text-gray-500 text-sm">
-							To: <a href={notification.targetUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline">{notification.targetUrl}</a>
+							To:{" "}
+							<a
+								href={notification.targetUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="font-mono text-blue-600 hover:underline"
+							>
+								{notification.targetUrl}
+							</a>
 						</p>
 					)}
 
 					{notification.direction === "received" && notification.payload.origin && (
 						<p className="mt-1 truncate text-gray-500 text-sm">
 							From:{" "}
-							<a href={notification.payload.origin.id} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline">{notification.payload.origin.id}</a>
+							<a
+								href={notification.payload.origin.id}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="font-mono text-blue-600 hover:underline"
+							>
+								{notification.payload.origin.id}
+							</a>
 						</p>
 					)}
 

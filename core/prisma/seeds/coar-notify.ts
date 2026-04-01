@@ -178,7 +178,10 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
-											indexPageGroup("$.pub.pubType.name = 'Submission'", "Arcadia Science"),
+											indexPageGroup(
+												"$.pub.pubType.name = 'Submission'",
+												"Arcadia Science"
+											),
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -216,9 +219,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 					automations: {
 						"Send Review Offer": {
 							icon: { name: "send", color: "#f59e0b" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -290,8 +291,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Review offer accepted for: {{ $.pub.title }}",
+										subject: "Review offer accepted for: {{ $.pub.title }}",
 										body: "The review offer for **{{ $.pub.title }}** has been accepted.\n\nView the submission: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
@@ -325,8 +325,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Review offer rejected for: {{ $.pub.title }}",
+										subject: "Review offer rejected for: {{ $.pub.title }}",
 										body: "The review offer for **{{ $.pub.title }}** has been rejected.\n\nView the submission: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
@@ -360,7 +359,8 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									},
 								],
 							},
-							resolver: "$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pubs/\", \"\"), $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pub/\", \"\") }}",
+							resolver:
+								'$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 							actions: [
 								{
 									action: Action.createPub,
@@ -400,9 +400,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 					automations: {
 						"Publish Site": {
 							icon: { name: "globe", color: "#3b82f6" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.buildSite,
@@ -410,7 +408,10 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
-											indexPageGroup("$.pub.pubType.name = 'Submission'", "Arcadia Science"),
+											indexPageGroup(
+												"$.pub.pubType.name = 'Submission'",
+												"Arcadia Science"
+											),
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -430,13 +431,13 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 												}),
 												extension: "html",
 											},
-										// Review data group — not rendered as pages, used for cross-referencing
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "'_data/' & $.pub.id",
-											transform: "'{}'",
-											extension: "json",
-										},
+											// Review data group — not rendered as pages, used for cross-referencing
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "'_data/' & $.pub.id",
+												transform: "'{}'",
+												extension: "json",
+											},
 										],
 									},
 								},
@@ -444,9 +445,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 						},
 						"Notify: Site Published": {
 							icon: { name: "mail", color: "#22c55e" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.email,
@@ -465,7 +464,6 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 			stageConnections: {
 				Submissions: { to: ["AwaitingResponse"] },
 				AwaitingResponse: { to: ["AwaitingReview", "ReviewRejected"] },
-				
 			},
 		},
 		{ randomSlug: false }
@@ -627,9 +625,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 					automations: {
 						"Send Accept Acknowledgement": {
 							icon: { name: "check", color: "#22c55e" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -676,8 +672,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Review request accepted: {{ $.pub.title }}",
+										subject: "Review request accepted: {{ $.pub.title }}",
 										body: "The review request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
@@ -685,9 +680,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 						},
 						"Create Review for Offer": {
 							icon: { name: "plus-circle", color: "#10b981" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -699,8 +692,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									{
 										kind: "condition",
 										type: "jsonata",
-										expression:
-											"'Offer' in $eval($.pub.values.Payload).type",
+										expression: "'Offer' in $eval($.pub.values.Payload).type",
 									},
 								],
 							},
@@ -736,9 +728,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 					automations: {
 						"Send Reject Acknowledgement": {
 							icon: { name: "x", color: "#ef4444" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -786,8 +776,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Review request rejected: {{ $.pub.title }}",
+										subject: "Review request rejected: {{ $.pub.title }}",
 										body: "The review request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
@@ -800,9 +789,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 					automations: {
 						"Start Review": {
 							icon: { name: "play", color: "#8b5cf6" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.move,
@@ -817,9 +804,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 					automations: {
 						"Finish Review": {
 							icon: { name: "check-circle", color: "#22c55e" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.move,
@@ -834,9 +819,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 					automations: {
 						"Announce Review": {
 							icon: { name: "send", color: "#ec4899" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.http,
@@ -867,9 +850,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 						},
 						"Publish Site": {
 							icon: { name: "globe", color: "#3b82f6" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.buildSite,
@@ -877,62 +858,65 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
-											indexPageGroup("$.pub.pubType.name = 'Review'", "The Unjournal"),
-										// Review HTML pages with signposting <link> to DocMap
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "$.pub.id",
-											transform: withBannerAndHead({
-												bannerText: "The Unjournal",
-												headExtra:
-													"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\" & $.pub.id & \".docmap.json />\"",
-												content: [
-													"& '<article>'",
-													"& '<h1>' & $.pub.title & '</h1>'",
-													"& '<div class=\"pub-field\">'",
-													"& '<div class=\"pub-field-label\">Source</div>'",
-													"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
-													"& '</div>'",
-													"& '<div class=\"pub-field\">'",
-													"& '<div class=\"pub-field-label\">Review</div>'",
-													"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
-													"& '</div>'",
-													"& '</article>'",
-												],
-											}),
-											extension: "html",
-										},
-										// Isolated review content page (plain HTML, no site chrome)
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "$.pub.id & '/content'",
-											transform:
-												"'<!DOCTYPE html><html><body>' & ($.pub.values.Content ? $.pub.values.Content : 'No content available') & '</body></html>'",
-											extension: "html",
-										},
-										// DocMap JSON metadata for each review
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "$.pub.id & '.docmap'",
-											transform: [
-												"'{' &",
-												"'\"@context\": \"https://w3id.org/docmaps/context.jsonld\",' &",
-												"'\"type\": \"docmap\",' &",
-												"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '.docmap.json\",' &",
-												"'\"publisher\": {\"name\": \"' & $.community.name & '\"},' &",
-												"'\"first-step\": \"_:b0\",' &",
-												"'\"steps\": {\"_:b0\": {\"actions\": [{\"outputs\": [{' &",
-												"'\"type\": \"review-article\",' &",
-												"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
-												"'\"content\": [' &",
-												"'{\"type\": \"web-page\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '/index.html\"},' &",
-												"'{\"type\": \"web-content\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '/content/index.html\"}' &",
-												"']' &",
-												"'}]}]}}' &",
-												"'}'"
-											].join(" "),
-											extension: "json",
-										},
+											indexPageGroup(
+												"$.pub.pubType.name = 'Review'",
+												"The Unjournal"
+											),
+											// Review HTML pages with signposting <link> to DocMap
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "$.pub.id",
+												transform: withBannerAndHead({
+													bannerText: "The Unjournal",
+													headExtra:
+														'"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/" & $.pub.id & ".docmap.json />"',
+													content: [
+														"& '<article>'",
+														"& '<h1>' & $.pub.title & '</h1>'",
+														"& '<div class=\"pub-field\">'",
+														"& '<div class=\"pub-field-label\">Source</div>'",
+														"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
+														"& '</div>'",
+														"& '<div class=\"pub-field\">'",
+														"& '<div class=\"pub-field-label\">Review</div>'",
+														"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
+														"& '</div>'",
+														"& '</article>'",
+													],
+												}),
+												extension: "html",
+											},
+											// Isolated review content page (plain HTML, no site chrome)
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "$.pub.id & '/content'",
+												transform:
+													"'<!DOCTYPE html><html><body>' & ($.pub.values.Content ? $.pub.values.Content : 'No content available') & '</body></html>'",
+												extension: "html",
+											},
+											// DocMap JSON metadata for each review
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "$.pub.id & '.docmap'",
+												transform: [
+													"'{' &",
+													'\'"@context": "https://w3id.org/docmaps/context.jsonld",\' &',
+													'\'"type": "docmap",\' &',
+													"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '.docmap.json\",' &",
+													'\'"publisher": {"name": "\' & $.community.name & \'"},\' &',
+													'\'"first-step": "_:b0",\' &',
+													'\'"steps": {"_:b0": {"actions": [{"outputs": [{\' &',
+													'\'"type": "review-article",\' &',
+													"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
+													"'\"content\": [' &",
+													'\'{"type": "web-page", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\' & $.pub.id & \'/index.html"},\' &',
+													'\'{"type": "web-content", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\' & $.pub.id & \'/content/index.html"}\' &',
+													"']' &",
+													"'}]}]}}' &",
+													"'}'",
+												].join(" "),
+												extension: "json",
+											},
 										],
 									},
 								},
@@ -940,16 +924,13 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 						},
 						"Notify: Site Published": {
 							icon: { name: "mail", color: "#22c55e" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Review published: {{ $.pub.title }}",
+										subject: "Review published: {{ $.pub.title }}",
 										body: `Review **{{ $.pub.title }}** has been published and announced.\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
 									},
 								},
@@ -960,7 +941,6 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 			},
 			stageConnections: {
 				Inbox: { to: ["Accepted", "Rejected"] },
-				
 			},
 		},
 		{ randomSlug: false }
@@ -1062,9 +1042,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 					automations: {
 						"Request Ingest": {
 							icon: { name: "send", color: "#ec4899" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.http,
@@ -1095,9 +1073,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 						},
 						"Publish Site": {
 							icon: { name: "globe", color: "#3b82f6" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.buildSite,
@@ -1105,62 +1081,65 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
-											indexPageGroup("$.pub.pubType.name = 'Review'", "Review Group"),
-										// Review HTML pages with signposting <link> to DocMap
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "$.pub.id",
-											transform: withBannerAndHead({
-												bannerText: "Review Group",
-												headExtra:
-													"\"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\" & $.pub.id & \".docmap.json />\"",
-												content: [
-													"& '<article>'",
-													"& '<h1>' & $.pub.title & '</h1>'",
-													"& '<div class=\"pub-field\">'",
-													"& '<div class=\"pub-field-label\">Source</div>'",
-													"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
-													"& '</div>'",
-													"& '<div class=\"pub-field\">'",
-													"& '<div class=\"pub-field-label\">Review</div>'",
-													"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
-													"& '</div>'",
-													"& '</article>'",
-												],
-											}),
-											extension: "html",
-										},
-										// Isolated review content page (plain HTML, no site chrome)
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "$.pub.id & '/content'",
-											transform:
-												"'<!DOCTYPE html><html><body>' & ($.pub.values.Content ? $.pub.values.Content : 'No content available') & '</body></html>'",
-											extension: "html",
-										},
-										// DocMap JSON metadata for each review
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "$.pub.id & '.docmap'",
-											transform: [
-												"'{' &",
-												"'\"@context\": \"https://w3id.org/docmaps/context.jsonld\",' &",
-												"'\"type\": \"docmap\",' &",
-												"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '.docmap.json\",' &",
-												"'\"publisher\": {\"name\": \"' & $.community.name & '\"},' &",
-												"'\"first-step\": \"_:b0\",' &",
-												"'\"steps\": {\"_:b0\": {\"actions\": [{\"outputs\": [{' &",
-												"'\"type\": \"review-article\",' &",
-												"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
-												"'\"content\": [' &",
-												"'{\"type\": \"web-page\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '/index.html\"},' &",
-												"'{\"type\": \"web-content\", \"url\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '/content/index.html\"}' &",
-												"']' &",
-												"'}]}]}}' &",
-												"'}'"
-											].join(" "),
-											extension: "json",
-										},
+											indexPageGroup(
+												"$.pub.pubType.name = 'Review'",
+												"Review Group"
+											),
+											// Review HTML pages with signposting <link> to DocMap
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "$.pub.id",
+												transform: withBannerAndHead({
+													bannerText: "Review Group",
+													headExtra:
+														'"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/" & $.pub.id & ".docmap.json />"',
+													content: [
+														"& '<article>'",
+														"& '<h1>' & $.pub.title & '</h1>'",
+														"& '<div class=\"pub-field\">'",
+														"& '<div class=\"pub-field-label\">Source</div>'",
+														"& '<div class=\"pub-field-value\"><a href=\"' & $.pub.values.SourceURL & '\">' & $.pub.values.SourceURL & '</a></div>'",
+														"& '</div>'",
+														"& '<div class=\"pub-field\">'",
+														"& '<div class=\"pub-field-label\">Review</div>'",
+														"& ($.pub.values.Content ? $.pub.values.Content : '<em>No content available</em>')",
+														"& '</div>'",
+														"& '</article>'",
+													],
+												}),
+												extension: "html",
+											},
+											// Isolated review content page (plain HTML, no site chrome)
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "$.pub.id & '/content'",
+												transform:
+													"'<!DOCTYPE html><html><body>' & ($.pub.values.Content ? $.pub.values.Content : 'No content available') & '</body></html>'",
+												extension: "html",
+											},
+											// DocMap JSON metadata for each review
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "$.pub.id & '.docmap'",
+												transform: [
+													"'{' &",
+													'\'"@context": "https://w3id.org/docmaps/context.jsonld",\' &',
+													'\'"type": "docmap",\' &',
+													"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '.docmap.json\",' &",
+													'\'"publisher": {"name": "\' & $.community.name & \'"},\' &',
+													'\'"first-step": "_:b0",\' &',
+													'\'"steps": {"_:b0": {"actions": [{"outputs": [{\' &',
+													'\'"type": "review-article",\' &',
+													"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
+													"'\"content\": [' &",
+													'\'{"type": "web-page", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\' & $.pub.id & \'/index.html"},\' &',
+													'\'{"type": "web-content", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\' & $.pub.id & \'/content/index.html"}\' &',
+													"']' &",
+													"'}]}]}}' &",
+													"'}'",
+												].join(" "),
+												extension: "json",
+											},
 										],
 									},
 								},
@@ -1168,9 +1147,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 						},
 						"Notify: Review Published": {
 							icon: { name: "mail", color: "#22c55e" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.email,
@@ -1328,8 +1305,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Ingest request accepted: {{ $.pub.title }}",
+										subject: "Ingest request accepted: {{ $.pub.title }}",
 										body: "The ingest request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
@@ -1357,8 +1333,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									action: Action.email,
 									config: {
 										recipientEmail: "all@pubpub.org",
-										subject:
-											"Ingest request rejected: {{ $.pub.title }}",
+										subject: "Ingest request rejected: {{ $.pub.title }}",
 										body: "The ingest request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
@@ -1375,9 +1350,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 					automations: {
 						"Create Review for Ingest": {
 							icon: { name: "plus-circle", color: "#10b981" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -1394,7 +1367,8 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									},
 								],
 							},
-							resolver: "$.pub.id = {{ $replace($replace($eval($.pub.values.Payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pubs/\", \"\"), $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pub/\", \"\") }}",
+							resolver:
+								'$.pub.id = {{ $replace($replace($eval($.pub.values.Payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 							actions: [
 								{
 									action: Action.createPub,
@@ -1403,7 +1377,8 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 										formSlug: "review-default-editor",
 										pubValues: {
 											Title: "Review from aggregator: {{ $eval($.pub.values.Payload).object.id }}",
-											SourceURL: "{{ $eval($.pub.values.Payload).object.id }}",
+											SourceURL:
+												"{{ $eval($.pub.values.Payload).object.id }}",
 										},
 										relationConfig: {
 											fieldSlug: "coar-us4-repository:relatedpub",
@@ -1426,9 +1401,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 					automations: {
 						"Publish Site": {
 							icon: { name: "globe", color: "#3b82f6" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.buildSite,
@@ -1436,7 +1409,10 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 										subpath: "site",
 										pages: [
 											CSS_PAGE_GROUP,
-											indexPageGroup("$.pub.pubType.name = 'Submission'", "External Repository"),
+											indexPageGroup(
+												"$.pub.pubType.name = 'Submission'",
+												"External Repository"
+											),
 											{
 												filter: "$.pub.pubType.name = 'Submission'",
 												slug: "$.pub.id",
@@ -1456,13 +1432,13 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 												}),
 												extension: "html",
 											},
-										// Review data group — not rendered as pages, used for cross-referencing
-										{
-											filter: "$.pub.pubType.name = 'Review'",
-											slug: "'_data/' & $.pub.id",
-											transform: "'{}'",
-											extension: "json",
-										},
+											// Review data group — not rendered as pages, used for cross-referencing
+											{
+												filter: "$.pub.pubType.name = 'Review'",
+												slug: "'_data/' & $.pub.id",
+												transform: "'{}'",
+												extension: "json",
+											},
 										],
 									},
 								},
@@ -1470,9 +1446,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 						},
 						"Notify: Site Published": {
 							icon: { name: "mail", color: "#22c55e" },
-							triggers: [
-								{ event: AutomationEvent.pubEnteredStage, config: {} },
-							],
+							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
 								{
 									action: Action.email,
@@ -1490,7 +1464,6 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 			},
 			stageConnections: {
 				Inbox: { to: ["Accepted", "Rejected"] },
-				
 			},
 		},
 		{ randomSlug: false }

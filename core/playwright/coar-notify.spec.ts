@@ -156,7 +156,8 @@ const us1Seed = createSeed({
 							},
 						],
 					},
-					resolver: "$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pubs/\", \"\"), $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pub/\", \"\") }}",
+					resolver:
+						'$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 					actions: [
 						{
 							action: Action.createPub,
@@ -294,9 +295,7 @@ const us2Seed = createSeed({
 							},
 						],
 					},
-					actions: [
-						{ action: Action.move, config: { stage: us2StageIds.Accepted } },
-					],
+					actions: [{ action: Action.move, config: { stage: us2StageIds.Accepted } }],
 				},
 				"Reject Request": {
 					triggers: [{ event: AutomationEvent.manual, config: {} }],
@@ -310,9 +309,7 @@ const us2Seed = createSeed({
 							},
 						],
 					},
-					actions: [
-						{ action: Action.move, config: { stage: us2StageIds.Rejected } },
-					],
+					actions: [{ action: Action.move, config: { stage: us2StageIds.Rejected } }],
 				},
 			},
 		},
@@ -332,8 +329,7 @@ const us2Seed = createSeed({
 							{
 								kind: "condition",
 								type: "jsonata",
-								expression:
-									"'Offer' in $eval($.pub.values.payload).type",
+								expression: "'Offer' in $eval($.pub.values.payload).type",
 							},
 						],
 					},
@@ -368,9 +364,7 @@ const us2Seed = createSeed({
 			automations: {
 				"Start Review": {
 					triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
-					actions: [
-						{ action: Action.move, config: { stage: us2StageIds.Reviewing } },
-					],
+					actions: [{ action: Action.move, config: { stage: us2StageIds.Reviewing } }],
 				},
 			},
 		},
@@ -379,9 +373,7 @@ const us2Seed = createSeed({
 			automations: {
 				"Finish Review": {
 					triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
-					actions: [
-						{ action: Action.move, config: { stage: us2StageIds.Published } },
-					],
+					actions: [{ action: Action.move, config: { stage: us2StageIds.Published } }],
 				},
 			},
 		},
@@ -647,9 +639,7 @@ const us4Seed = createSeed({
 							},
 						],
 					},
-					actions: [
-						{ action: Action.move, config: { stage: us4StageIds.Accepted } },
-					],
+					actions: [{ action: Action.move, config: { stage: us4StageIds.Accepted } }],
 				},
 				"Reject Request": {
 					triggers: [{ event: AutomationEvent.manual, config: {} }],
@@ -663,9 +653,7 @@ const us4Seed = createSeed({
 							},
 						],
 					},
-					actions: [
-						{ action: Action.move, config: { stage: us4StageIds.Rejected } },
-					],
+					actions: [{ action: Action.move, config: { stage: us4StageIds.Rejected } }],
 				},
 			},
 		},
@@ -690,7 +678,8 @@ const us4Seed = createSeed({
 							},
 						],
 					},
-					resolver: "$.pub.id = {{ $replace($replace($eval($.pub.values.payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pubs/\", \"\"), $.env.PUBPUB_URL & \"/c/\" & $.community.slug & \"/pub/\", \"\") }}",
+					resolver:
+						'$.pub.id = {{ $replace($replace($eval($.pub.values.payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 					actions: [
 						{
 							action: Action.createPub,
@@ -860,9 +849,7 @@ test.describe("User Story 2: Review Group Receives Review Request", () => {
 
 		// Verify Notification was created
 		await page.goto(`/c/${us2Community.community.slug}/activity/automations`)
-		const card = page
-			.getByTestId(/automation-run-card-.*-Process COAR Notification/)
-			.first()
+		const card = page.getByTestId(/automation-run-card-.*-Process COAR Notification/).first()
 		await expect(card).toBeVisible({ timeout: 15000 })
 
 		// The automation chain runs:

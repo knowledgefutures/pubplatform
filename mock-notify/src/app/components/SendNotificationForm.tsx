@@ -71,7 +71,10 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 	)
 
 	// Default target URLs per template type for demo convenience
-	const TEMPLATE_DEFAULTS: Record<PayloadTemplateType, { targetUrl: string; targetServiceUrl: string }> = {
+	const TEMPLATE_DEFAULTS: Record<
+		PayloadTemplateType,
+		{ targetUrl: string; targetServiceUrl: string }
+	> = {
 		"Offer Review": {
 			targetUrl: "http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox",
 			targetServiceUrl: "http://localhost:3000/c/coar-us2-unjournal",

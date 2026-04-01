@@ -22,7 +22,7 @@ import { getCommunity } from "~/lib/server/community"
 import { applyJsonataFilter, compileJsonataQuery } from "~/lib/server/jsonata-query"
 import { updatePub } from "~/lib/server/pub"
 import { buildInterpolationContext } from "../_lib/interpolationContext"
-import { type IncomingRelations, createPubProxy } from "../_lib/pubProxy"
+import { createPubProxy, type IncomingRelations } from "../_lib/pubProxy"
 import { defineRun } from "../types"
 
 /**
@@ -47,9 +47,7 @@ const extractValue = async (data: unknown, expression: string): Promise<unknown>
  * For each pub that has relational values, records the reverse mapping:
  * targetPubId -> { fieldSlug -> [sourcePubs] }
  */
-const computeIncomingRelations = (
-	allPubs: ProcessedPub[]
-): Map<string, IncomingRelations> => {
+const computeIncomingRelations = (allPubs: ProcessedPub[]): Map<string, IncomingRelations> => {
 	const map = new Map<string, IncomingRelations>()
 	for (const pub of allPubs) {
 		for (const v of pub.values) {
@@ -132,15 +130,18 @@ export const run = defineRun<typeof action>(
 					const [slugErr, slug] = await tryCatch(interpolate(page.slug, {}))
 					const interpolatedSlug = (slugErr ? "static" : slug) as string
 					const [contentErr, content] = await tryCatch(interpolate(page.transform, {}))
-					if (contentErr) logger.error({ msg: "Error interpolating static page", err: contentErr })
+					if (contentErr)
+						logger.error({ msg: "Error interpolating static page", err: contentErr })
 					return {
 						extension,
-						pubs: [{
-							id: NIL_UUID,
-							title: interpolatedSlug,
-							content: stringifyContent(content),
-							slug: interpolatedSlug,
-						}],
+						pubs: [
+							{
+								id: NIL_UUID,
+								title: interpolatedSlug,
+								content: stringifyContent(content),
+								slug: interpolatedSlug,
+							},
+						],
 					}
 				}
 
@@ -158,16 +159,21 @@ export const run = defineRun<typeof action>(
 					const [slugErr, slug] = await tryCatch(interpolate(page.slug, context))
 					const interpolatedSlug = (slugErr ? "index" : slug) as string
 					context.site = { base: computeSiteBase(interpolatedSlug) }
-					const [contentErr, content] = await tryCatch(interpolate(page.transform, context))
-					if (contentErr) logger.error({ msg: "Error interpolating single page", err: contentErr })
+					const [contentErr, content] = await tryCatch(
+						interpolate(page.transform, context)
+					)
+					if (contentErr)
+						logger.error({ msg: "Error interpolating single page", err: contentErr })
 					return {
 						extension,
-						pubs: [{
-							id: NIL_UUID,
-							title: interpolatedSlug,
-							content: stringifyContent(content),
-							slug: interpolatedSlug,
-						}],
+						pubs: [
+							{
+								id: NIL_UUID,
+								title: interpolatedSlug,
+								content: stringifyContent(content),
+								slug: interpolatedSlug,
+							},
+						],
 					}
 				}
 
@@ -185,8 +191,11 @@ export const run = defineRun<typeof action>(
 						if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })
 						const interpolatedSlug = (slugErr ? pub.id : slug) as string
 						pubContext.site = { base: computeSiteBase(interpolatedSlug) }
-						const [contentErr, content] = await tryCatch(interpolate(page.transform, pubContext))
-						if (contentErr) logger.error({ msg: "Error interpolating content", err: contentErr })
+						const [contentErr, content] = await tryCatch(
+							interpolate(page.transform, pubContext)
+						)
+						if (contentErr)
+							logger.error({ msg: "Error interpolating content", err: contentErr })
 						return {
 							id: pub.id,
 							title: getPubTitle(pub),

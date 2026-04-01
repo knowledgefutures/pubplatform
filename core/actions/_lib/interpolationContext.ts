@@ -12,7 +12,7 @@ import type {
 import type { FullAutomation, Json } from "db/types"
 import type { CommunityStage } from "~/lib/server/stages"
 
-import { type IncomingRelations, createPubProxy } from "./pubProxy"
+import { createPubProxy, type IncomingRelations } from "./pubProxy"
 
 export type InterpolationContextBase = {
 	community: InterpolationCommunity

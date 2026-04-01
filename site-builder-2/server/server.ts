@@ -44,7 +44,6 @@ export const getS3Client = () => {
 	return s3Client
 }
 
-
 export const uploadFileToS3 = async (
 	id: string,
 	fileName: string,
@@ -361,7 +360,8 @@ const buildSite = async ({
 								? `${normalized}/index.html`
 								: `${normalized}.${extension}`
 					// If the content is already a complete HTML document, use it as-is
-					const isCompleteHtml = extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
+					const isCompleteHtml =
+						extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
 					const fileContent =
 						extension === "html" && !isCompleteHtml
 							? renderHtmlPage(pageInfo.title, pageInfo.content)
@@ -373,7 +373,6 @@ const buildSite = async ({
 			)
 		})
 	)
-
 }
 
 // ---- Router ----
@@ -382,7 +381,7 @@ const router = tsr.router(siteBuilderApi, {
 	build: async ({ body, headers }) => {
 		try {
 			const authHeader = headers.authorization
-			const authToken = authHeader.replace("Bearer ", "")
+			const _authToken = authHeader.replace("Bearer ", "")
 			const communitySlug = body.communitySlug
 
 			const tokenVerification = await verifySiteBuilderToken(authHeader, communitySlug)

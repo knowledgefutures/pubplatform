@@ -282,9 +282,7 @@ export function getAvailableResponses(
  * For example, after sending an Accept for a review offer, you may want
  * to follow up with an Announce Review.
  */
-export function getAvailableFollowUps(
-	payload: CoarNotifyPayload
-): Array<"Announce Review"> {
+export function getAvailableFollowUps(payload: CoarNotifyPayload): Array<"Announce Review"> {
 	const types = Array.isArray(payload.type) ? payload.type : [payload.type]
 
 	if (types.includes("Accept")) {
