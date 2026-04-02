@@ -20,9 +20,6 @@ on:
       image-sha:
         description: 'Full GHCR image ref with SHA tag'
         value: ${{ jobs.build.outputs.image-sha }}
-    secrets:
-      SENTRY_AUTH_TOKEN:
-        required: true
 
 jobs:
   build:
