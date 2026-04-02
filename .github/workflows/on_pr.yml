@@ -7,6 +7,7 @@ on:
 permissions:
     id-token: write
     contents: read
+    packages: write
 
 jobs:
     path-filter:
@@ -88,6 +89,9 @@ jobs:
         needs:
             - path-filter
             - skip_build_sha
+        permissions:
+            contents: read
+            packages: write
         uses: ./.github/workflows/ghcr-build-all.yml
 
     e2e:

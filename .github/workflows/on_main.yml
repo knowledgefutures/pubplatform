@@ -5,12 +5,19 @@ on:
         branches:
             - main
 
+permissions:
+    contents: read
+    packages: write
+
 jobs:
     ci:
         uses: ./.github/workflows/ci.yml
 
     build-all:
         needs: ci
+        permissions:
+            contents: read
+            packages: write
         uses: ./.github/workflows/ghcr-build-all.yml
         with:
             publish_latest: true
