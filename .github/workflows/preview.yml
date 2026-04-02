@@ -119,7 +119,35 @@ jobs:
                     sudo docker stack services "$STACK_NAME"
                     sudo docker image prune -f
 
-                  EOS
+
+                    # wait until rollout is complete and then clear cache
+                    wait_rollout() {
+                      echo "Beginning wait for rollout..."
+                      svc="$1"
+                      timeout="${2:-600}"
+                      end=$((SECONDS+timeout))
+
+                      while (( SECONDS < end )); do
+                        desired="$(sudo docker service inspect "$svc" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "")"
+                        running="$(sudo docker service ps "$svc" --filter desired-state=running --format '{{.CurrentState}}' 2>/dev/null | grep -c '^Running' || true)"
+                        state="$(sudo docker service inspect "$svc" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || echo "")"
+                        echo "  $svc: desired=$desired running=$running state=$state"
+                      
+                        if [[ -n "$desired" && "$running" == "$desired" ]] && { [[ -z "$state" ]] || [[ "$state" == "completed" ]]; }; then
+                          echo "  $svc rollout complete"
+                          return 0
+                        fi
+                      
+                        sleep 5
+                      done
+                      
+                      echo "Rollout timeout for $svc"
+                      return 1
+                    }
+
+                    wait_rollout $STACK_NAME 600
+
+                    EOS
 
             - name: Teardown preview stack
               if: inputs.action == 'teardown'
