@@ -93,6 +93,8 @@ jobs:
             contents: read
             packages: write
         uses: ./.github/workflows/ghcr-build-all.yml
+        secrets:
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     e2e:
         if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') && always() && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')

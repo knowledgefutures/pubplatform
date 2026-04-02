@@ -19,6 +19,9 @@ on:
       site-builder-image:
         description: 'Site builder image ref'
         value: ${{ jobs.build-site-builder.outputs.image-sha }}
+    secrets:
+      SENTRY_AUTH_TOKEN:
+        required: true
 
 jobs:
   build-base:
@@ -26,6 +29,8 @@ jobs:
     with:
       ghcr_image_name: platform-migrations
       publish_latest: ${{ inputs.publish_latest }}
+      secrets:
+        SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
   build-core:
     uses: ./.github/workflows/ghcr-build-template.yml
@@ -33,6 +38,8 @@ jobs:
       package: core
       ghcr_image_name: platform
       publish_latest: ${{ inputs.publish_latest }}
+      secrets:
+        SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
   build-jobs:
     uses: ./.github/workflows/ghcr-build-template.yml
@@ -41,6 +48,8 @@ jobs:
       target: jobs
       ghcr_image_name: platform-jobs
       publish_latest: ${{ inputs.publish_latest }}
+      secrets:
+        SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
 
   build-site-builder:
     uses: ./.github/workflows/ghcr-build-template.yml
@@ -49,3 +58,5 @@ jobs:
       target: jobs
       ghcr_image_name: platform-site-builder
       publish_latest: ${{ inputs.publish_latest }}
+      secrets:
+        SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
