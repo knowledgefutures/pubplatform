@@ -1,86 +1,91 @@
 name: ghcr build template
 
 on:
-    workflow_call:
-        inputs:
-            package:
-                type: string
-            runner:
-                type: string
-                default: ubuntu-latest
-            target:
-                type: string
-            ghcr_image_name:
-                type: string
-                required: true
-            publish_latest:
-                type: boolean
-                default: false
-        outputs:
-            image-sha:
-                description: "Full GHCR image ref with SHA tag"
-                value: ${{ jobs.build.outputs.image-sha }}
+  workflow_call:
+    inputs:
+      package:
+        type: string
+      runner:
+        type: string
+        default: ubuntu-latest
+      target:
+        type: string
+      ghcr_image_name:
+        type: string
+        required: true
+      publish_latest:
+        type: boolean
+        default: false
+    outputs:
+      image-sha:
+        description: 'Full GHCR image ref with SHA tag'
+        value: ${{ jobs.build.outputs.image-sha }}
+    secrets:
+      SENTRY_AUTH_TOKEN:
+        required: true
 
 jobs:
-    build:
-        name: Build
-        runs-on: ${{ inputs.runner }}
-        permissions:
-            contents: read
-            packages: write
+  build:
+    name: Build
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      contents: read
+      packages: write
 
-        outputs:
-            image-sha: ${{ steps.label.outputs.label }}
+    outputs:
+      image-sha: ${{ steps.label.outputs.label }}
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-            - name: Login to GitHub Container Registry
-              uses: docker/login-action@v3
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-            - name: Compute image tags
-              id: label
-              run: |
-                  sha_short=$(git describe --always --abbrev=40 --dirty)
+      - name: Compute image tags
+        id: label
+        run: |
+          sha_short=$(git describe --always --abbrev=40 --dirty)
 
-                  if [[ -z "${{ inputs.package }}" ]]; then
-                      echo "target=monorepo" >> $GITHUB_OUTPUT
-                  else
-                      echo "target=${{ inputs.target || format('next-app-{0}', inputs.package) }}" >> $GITHUB_OUTPUT
-                  fi
+          if [[ -z "${{ inputs.package }}" ]]; then
+              echo "target=monorepo" >> $GITHUB_OUTPUT
+          else
+              echo "target=${{ inputs.target || format('next-app-{0}', inputs.package) }}" >> $GITHUB_OUTPUT
+          fi
 
-                  echo "label=ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:$sha_short" >> $GITHUB_OUTPUT
+          echo "label=ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:$sha_short" >> $GITHUB_OUTPUT
 
-                  TAGS="ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:$sha_short"
-                  if [[ "${{ inputs.publish_latest }}" == "true" ]]; then
-                      TAGS="$TAGS,ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:latest"
-                  fi
-                  echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          TAGS="ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:$sha_short"
+          if [[ "${{ inputs.publish_latest }}" == "true" ]]; then
+              TAGS="$TAGS,ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:latest"
+          fi
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
-            - name: Build and push
-              uses: docker/build-push-action@v6
-              with:
-                  context: .
-                  cache-from: type=gha,scope=${{ inputs.ghcr_image_name }}
-                  cache-to: type=gha,mode=max,scope=${{ inputs.ghcr_image_name }}
-                  build-args: |
-                      PACKAGE=${{ inputs.package }}
-                      CI=true
-                  secrets: |
-                      SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-                  target: ${{ steps.label.outputs.target }}
-                  tags: ${{ steps.label.outputs.tags }}
-                  platforms: linux/amd64
-                  push: true
-                  provenance: false
-                  sbom: false
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        with:
+          context: .
+          cache-from: type=gha,scope=${{ inputs.ghcr_image_name }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.ghcr_image_name }}
+          build-args: |
+            PACKAGE=${{ inputs.package }}
+            CI=true
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ env.SENTRY_AUTH_TOKEN }}
+          target: ${{ steps.label.outputs.target }}
+          tags: ${{ steps.label.outputs.tags }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          sbom: false
