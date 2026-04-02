@@ -91,6 +91,8 @@ jobs:
           build-args: |
             PACKAGE=core
             CI=true
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           target: next-app-core
           tags: |
             ghcr.io/pubpub/platform:${{ steps.vars.outputs.image_tag }}
@@ -108,6 +110,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=platform-migrations
           build-args: |
             CI=true
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           target: monorepo
           tags: |
             ghcr.io/pubpub/platform-migrations:${{ steps.vars.outputs.image_tag }}
@@ -126,6 +130,8 @@ jobs:
           build-args: |
             PACKAGE=jobs
             CI=true
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           target: jobs
           tags: |
             ghcr.io/pubpub/platform-jobs:${{ steps.vars.outputs.image_tag }}
@@ -144,6 +150,8 @@ jobs:
           build-args: |
             PACKAGE=site-builder
             CI=true
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           target: jobs
           tags: |
             ghcr.io/pubpub/platform-site-builder:${{ steps.vars.outputs.image_tag }}
