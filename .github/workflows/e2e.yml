@@ -85,10 +85,10 @@ jobs:
               env:
                   IMAGE_TAG: ${{ steps.gettag.outputs.tag }}
               run: |
-                  echo "core_label=ghcr.io/pubpub/platform:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "jobs_label=ghcr.io/pubpub/platform-jobs:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "base_label=ghcr.io/pubpub/platform-migrations:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "site_builder_label=ghcr.io/pubpub/platform-site-builder:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "core_label=ghcr.io/knowledgefutures/platform:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "jobs_label=ghcr.io/knowledgefutures/platform-jobs:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "base_label=ghcr.io/knowledgefutures/platform-migrations:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "site_builder_label=ghcr.io/knowledgefutures/platform-site-builder:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile --prefer-offline

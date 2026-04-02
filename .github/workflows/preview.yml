@@ -66,7 +66,7 @@ jobs:
                   PR_NUMBER: ${{ steps.pr.outputs.number }}
               run: |
                   ssh "${SSH_USER}@${SSH_HOST}" \
-                    "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' STACK_NAME='${STACK_NAME}' PREVIEW_HOST='${PREVIEW_HOST}' PR_NUMBER='${PR_NUMBER}' bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
+                    "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' STACK_NAME='${STACK_NAME}' PREVIEW_HOST='${PREVIEW_HOST}' PR_NUMBER='${PR_NUMBER}'  bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
                     set -euo pipefail
 
                     REPO="${1:?missing repo}"
@@ -78,6 +78,7 @@ jobs:
                     : "${STACK_NAME:?missing STACK_NAME}"
                     : "${PREVIEW_HOST:?missing PREVIEW_HOST}"
                     : "${PR_NUMBER:?missing PR_NUMBER}"
+                    : "${ENV_FILE:?missing ENV_FILE}"
 
                     REPO_NAME="${REPO##*/}"
                     APP_DIR="/srv/${REPO_NAME}"
@@ -98,18 +99,23 @@ jobs:
 
                     cd infra
 
+                    sops -d --input-type dotenv --output-type dotenv ".env.preview.enc" > .env
+
                     if ! sudo docker info --format '{{.Swarm.LocalNodeState}}' | grep -qx active; then
                       sudo docker swarm init --advertise-addr "$(hostname -I | awk '{print $1}')"
                     fi
 
                     echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-                    echo "deploying preview stack $STACK_NAME with IMAGE_TAG=$IMAGE_TAG at $PREVIEW_HOST"
+                    echo "IMAGE_TAG in shell: [$IMAGE_TAG]"
+            
+                    # For some reason, not pulling explicitly makes the docker stack deploy throw an error that it can't find the package.
+                    sudo docker pull ghcr.io/knowledgefutures/platform:"$IMAGE_TAG"
 
+                    # deploy/update stack
                     sudo env IMAGE_TAG="$IMAGE_TAG" PREVIEW_HOST="$PREVIEW_HOST" \
                       docker stack deploy -c stack.preview.yml \
-                      --with-registry-auth --resolve-image always \
-                      "$STACK_NAME"
+                      --with-registry-auth --resolve-image always --prune "$STACK_NAME"
 
                     sudo docker stack services "$STACK_NAME"
                     sudo docker image prune -f
