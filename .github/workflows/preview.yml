@@ -78,7 +78,6 @@ jobs:
                     : "${STACK_NAME:?missing STACK_NAME}"
                     : "${PREVIEW_HOST:?missing PREVIEW_HOST}"
                     : "${PR_NUMBER:?missing PR_NUMBER}"
-                    : "${ENV_FILE:?missing ENV_FILE}"
 
                     REPO_NAME="${REPO##*/}"
                     APP_DIR="/srv/${REPO_NAME}"
