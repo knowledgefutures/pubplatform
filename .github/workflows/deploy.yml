@@ -1,0 +1,261 @@
+name: Deploy to Hetzner
+
+run-name: >-
+  ${{
+    github.event_name == 'release' && format('Deploy prod: {0}', github.event.release.tag_name) ||
+    github.event_name == 'workflow_run' && format('Deploy staging: {0}', github.event.workflow_run.head_commit.message) ||
+    format('Deploy: {0}', github.sha)
+  }}
+
+concurrency:
+  group: >-
+    deploy-${{
+      github.event_name == 'release' && format('release-{0}', github.event.release.tag_name) ||
+      github.event_name == 'workflow_run' && format('ci-{0}', github.event.workflow_run.head_branch) ||
+      github.ref
+    }}
+  cancel-in-progress: true
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_ci_check:
+        description: Deploy even if CI failed
+        required: false
+        default: false
+        type: boolean
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+      host: ${{ steps.vars.outputs.host }}
+      env_file: ${{ steps.vars.outputs.env_file }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set deployment vars
+        id: vars
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "image_tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.SSH_HOST_PROD }}" >> $GITHUB_OUTPUT
+            echo "env_file=.env.enc" >> $GITHUB_OUTPUT
+            echo "publish_latest=false" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.SSH_HOST_STAGING }}" >> $GITHUB_OUTPUT
+            echo "env_file=.env.staging.enc" >> $GITHUB_OUTPUT
+            echo "publish_latest=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push platform
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=platform
+          cache-to: type=gha,mode=max,scope=platform
+          build-args: |
+            PACKAGE=core
+            CI=true
+          target: next-app-core
+          tags: |
+            ghcr.io/pubpub/platform:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.publish_latest == 'true' && 'ghcr.io/pubpub/platform:latest' || '' }}
+          platforms: linux/amd64
+
+      - name: Build and push platform-migrations
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=platform-migrations
+          cache-to: type=gha,mode=max,scope=platform-migrations
+          build-args: |
+            CI=true
+          target: monorepo
+          tags: |
+            ghcr.io/pubpub/platform-migrations:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.publish_latest == 'true' && 'ghcr.io/pubpub/platform-migrations:latest' || '' }}
+          platforms: linux/amd64
+
+      - name: Build and push platform-jobs
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=platform-jobs
+          cache-to: type=gha,mode=max,scope=platform-jobs
+          build-args: |
+            PACKAGE=jobs
+            CI=true
+          target: jobs
+          tags: |
+            ghcr.io/pubpub/platform-jobs:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.publish_latest == 'true' && 'ghcr.io/pubpub/platform-jobs:latest' || '' }}
+          platforms: linux/amd64
+
+      - name: Build and push platform-site-builder
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=platform-site-builder
+          cache-to: type=gha,mode=max,scope=platform-site-builder
+          build-args: |
+            PACKAGE=site-builder
+            CI=true
+          target: jobs
+          tags: |
+            ghcr.io/pubpub/platform-site-builder:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.publish_latest == 'true' && 'ghcr.io/pubpub/platform-site-builder:latest' || '' }}
+          platforms: linux/amd64
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ needs.build.outputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy over SSH
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ needs.build.outputs.host }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          ENV_FILE: ${{ needs.build.outputs.env_file }}
+        run: |
+          ssh "${SSH_USER}@${SSH_HOST}" \
+            "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' ENV_FILE='${ENV_FILE}' bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
+            set -euo pipefail
+
+            REPO="${1:?missing repo}"
+            BRANCH="${2:-main}"
+
+            : "${IMAGE_TAG:?missing IMAGE_TAG}"
+            : "${GHCR_USER:?missing GHCR_USER}"
+            : "${GHCR_TOKEN:?missing GHCR_TOKEN}"
+
+            REPO_NAME="${REPO##*/}"
+            APP_DIR="/srv/${REPO_NAME}"
+            REPO_SSH="git@github.com:${REPO}.git"
+
+            if [[ -z "$REPO_NAME" || -z "$APP_DIR" ]]; then
+              echo "bad derived paths: REPO='$REPO' REPO_NAME='$REPO_NAME' APP_DIR='$APP_DIR'"
+              exit 1
+            fi
+
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
+            chmod 600 ~/.ssh/known_hosts
+
+            if [[ ! -d "${APP_DIR}/.git" ]]; then
+              sudo mkdir -p "${APP_DIR}"
+              sudo chown -R "$USER:$USER" "${APP_DIR}"
+              git clone --branch "${BRANCH}" "${REPO_SSH}" "${APP_DIR}"
+            fi
+
+            cd "${APP_DIR}"
+            git fetch --prune --tags origin
+            git checkout --detach "${IMAGE_TAG}" 2>/dev/null || git checkout --detach "origin/${BRANCH}"
+
+            cd infra
+            umask 077
+
+            : "${ENV_FILE:?missing ENV_FILE}"
+            sops -d --input-type dotenv --output-type dotenv "$ENV_FILE" > .env
+
+            if ! sudo docker info --format '{{.Swarm.LocalNodeState}}' | grep -qx active; then
+              sudo docker swarm init --advertise-addr "$(hostname -I | awk '{print $1}')"
+            fi
+
+            echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            echo "deploying with IMAGE_TAG=$IMAGE_TAG"
+
+            sudo env IMAGE_TAG="$IMAGE_TAG" \
+              docker stack deploy -c stack.yml \
+              --with-registry-auth --resolve-image always --prune \
+              pubpub
+
+            sudo docker stack services pubpub
+            sudo docker image prune -f
+
+            # wait for platform rollout
+            wait_rollout() {
+              echo "waiting for rollout of $1..."
+              svc="$1"
+              timeout="${2:-600}"
+              end=$((SECONDS+timeout))
+
+              while (( SECONDS < end )); do
+                desired="$(sudo docker service inspect "$svc" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "")"
+                running="$(sudo docker service ps "$svc" --filter desired-state=running --format '{{.CurrentState}}' 2>/dev/null | grep -c '^Running' || true)"
+                state="$(sudo docker service inspect "$svc" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || echo "")"
+                echo "  $svc: desired=$desired running=$running state=$state"
+
+                if [[ -n "$desired" && "$running" == "$desired" ]] && { [[ -z "$state" ]] || [[ "$state" == "completed" ]]; }; then
+                  echo "  $svc rollout complete"
+                  return 0
+                fi
+
+                sleep 5
+              done
+
+              echo "rollout timeout for $svc"
+              return 1
+            }
+
+            wait_rollout pubpub_platform 600
+
+          EOS

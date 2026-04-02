@@ -1,0 +1,51 @@
+name: docker build to GHCR
+
+on:
+    workflow_call:
+        inputs:
+            publish_latest:
+                type: boolean
+                default: false
+        outputs:
+            core-image:
+                description: "Core image ref"
+                value: ${{ jobs.build-core.outputs.image-sha }}
+            base-image:
+                description: "Base/migrations image ref"
+                value: ${{ jobs.build-base.outputs.image-sha }}
+            jobs-image:
+                description: "Jobs image ref"
+                value: ${{ jobs.build-jobs.outputs.image-sha }}
+            site-builder-image:
+                description: "Site builder image ref"
+                value: ${{ jobs.build-site-builder.outputs.image-sha }}
+
+jobs:
+    build-base:
+        uses: ./.github/workflows/ghcr-build-template.yml
+        with:
+            ghcr_image_name: platform-migrations
+            publish_latest: ${{ inputs.publish_latest }}
+
+    build-core:
+        uses: ./.github/workflows/ghcr-build-template.yml
+        with:
+            package: core
+            ghcr_image_name: platform
+            publish_latest: ${{ inputs.publish_latest }}
+
+    build-jobs:
+        uses: ./.github/workflows/ghcr-build-template.yml
+        with:
+            package: jobs
+            target: jobs
+            ghcr_image_name: platform-jobs
+            publish_latest: ${{ inputs.publish_latest }}
+
+    build-site-builder:
+        uses: ./.github/workflows/ghcr-build-template.yml
+        with:
+            package: site-builder
+            target: jobs
+            ghcr_image_name: platform-site-builder
+            publish_latest: ${{ inputs.publish_latest }}

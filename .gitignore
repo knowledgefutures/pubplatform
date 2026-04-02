@@ -72,3 +72,10 @@ storybook-static
 ./playwright
 
 .local_data
+
+# infra decrypted env files (encrypted versions are tracked)
+infra/.env
+infra/.env.staging
+
+!.env*.enc
+!.env.example

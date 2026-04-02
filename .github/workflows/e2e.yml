@@ -1,25 +1,20 @@
 on:
     workflow_call:
         inputs:
-            image-tag-override: # example: latest, 7037e37a18a379d583164441baff9e594cc479f8
-                type: string # use this to force a container version.
-        secrets:
-            AWS_ACCESS_KEY_ID:
-                required: true
-            AWS_SECRET_ACCESS_KEY:
-                required: true
+            image-tag-override:
+                type: string
 
 env:
     CI: true
-    AWS_REGION: us-east-1
-
-    ECR_REPOSITORY_PREFIX: pubpub-v7
-    CONTAINER_NAME: core
 
 jobs:
     integration-tests:
         name: Integration tests
         runs-on: ubuntu-latest
+
+        permissions:
+            contents: read
+            packages: read
 
         strategy:
             matrix:
@@ -52,7 +47,6 @@ jobs:
                   echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
             - name: Setup pnpm cache
-              # since this always runs after CI, there's no need to save the cache afterwards, since it's guaranteed to be the same
               uses: actions/cache/restore@v4
               with:
                   path: ${{ steps.get-store-path.outputs.STORE_PATH }}
@@ -60,7 +54,6 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-pnpm-store-
 
-            # mostly to skip preconstruct build
             - name: Setup turbo cache
               uses: actions/cache/restore@v4
               with:
@@ -69,15 +62,7 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-turbo-
 
-            - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                  role-to-assume: ${{ vars.IAM_ROLE_TO_ASSUME }}
-                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                  aws-region: ${{ env.AWS_REGION }}
-
-            - name: Get image tag based on SHA
+            - name: Get image tag
               id: gettag
               run: |
                   if [ -n "${{ inputs.image-tag-override }}" ]; then
@@ -88,20 +73,22 @@ jobs:
                       echo "Using current SHA as image tag"
                   fi
 
-            - name: Login to Amazon ECR
-              id: login-ecr
-              uses: aws-actions/amazon-ecr-login@v2
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Get image labels
+            - name: Compute image refs
               id: label
               env:
-                  ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
                   IMAGE_TAG: ${{ steps.gettag.outputs.tag }}
               run: |
-                  echo "core_label=$ECR_REGISTRY/${ECR_REPOSITORY_NAME_OVERRIDE:-$ECR_REPOSITORY_PREFIX-core}:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "jobs_label=$ECR_REGISTRY/${ECR_REPOSITORY_NAME_OVERRIDE:-$ECR_REPOSITORY_PREFIX-jobs}:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "base_label=$ECR_REGISTRY/$ECR_REPOSITORY_PREFIX:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "site_builder_label=$ECR_REGISTRY/${ECR_REPOSITORY_NAME_OVERRIDE:-$ECR_REPOSITORY_PREFIX-site-builder}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "core_label=ghcr.io/pubpub/platform:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "jobs_label=ghcr.io/pubpub/platform-jobs:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "base_label=ghcr.io/pubpub/platform-migrations:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "site_builder_label=ghcr.io/pubpub/platform-site-builder:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile --prefer-offline
@@ -115,7 +102,6 @@ jobs:
             - name: Run migrations and seed
               run: pnpm --filter core reset-base
               env:
-                  # 20241126: this prevents the arcadia seed from running, which contains a ton of pubs which potentially might slow down the tests
                   MINIMAL_SEED: true
                   SKIP_VALIDATION: true
 
@@ -124,16 +110,16 @@ jobs:
             - name: Start up core etc
               run: pnpm integration:setup
               env:
-                  INTEGRATION_TESTS_IMAGE: ${{steps.label.outputs.core_label}}
-                  SITE_BUILDER_IMAGE: ${{steps.label.outputs.site_builder_label}}
-                  JOBS_IMAGE: ${{steps.label.outputs.jobs_label}}
+                  INTEGRATION_TESTS_IMAGE: ${{ steps.label.outputs.core_label }}
+                  SITE_BUILDER_IMAGE: ${{ steps.label.outputs.site_builder_label }}
+                  JOBS_IMAGE: ${{ steps.label.outputs.jobs_label }}
 
             - name: Log out Container ID for health check
               id: log-container-id
               run: echo "CONTAINER_ID=$(docker compose -f docker-compose.test.yml ps integration-tests -q)" >> $GITHUB_OUTPUT
 
             - name: Wait until container is healthy
-              run: while [ "`docker inspect -f {{.State.Health.Status}} ${{steps.log-container-id.outputs.CONTAINER_ID}}`" != "healthy" ]; do     sleep .2; done
+              run: while [ "`docker inspect -f {{.State.Health.Status}} ${{ steps.log-container-id.outputs.CONTAINER_ID }}`" != "healthy" ]; do     sleep .2; done
 
             - name: Run integration tests
               run: pnpm playwright:test --filter ${{ matrix.package }} --env-mode=loose
@@ -143,12 +129,12 @@ jobs:
                   DATABASE_URL: postgresql://postgres:postgres@localhost:54322/postgres
 
             - name: Print container logs
-              if: ${{failure() || cancelled()}}
+              if: ${{ failure() || cancelled() }}
               run: docker compose -f docker-compose.test.yml --profile integration logs -t
               env:
-                  INTEGRATION_TESTS_IMAGE: ${{steps.label.outputs.core_label}}
-                  SITE_BUILDER_IMAGE: ${{steps.label.outputs.site_builder_label}}
-                  JOBS_IMAGE: ${{steps.label.outputs.jobs_label}}
+                  INTEGRATION_TESTS_IMAGE: ${{ steps.label.outputs.core_label }}
+                  SITE_BUILDER_IMAGE: ${{ steps.label.outputs.site_builder_label }}
+                  JOBS_IMAGE: ${{ steps.label.outputs.jobs_label }}
 
             - name: Upload core playwright snapshots artifact
               if: failure() && matrix.package == 'core'

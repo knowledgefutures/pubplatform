@@ -1,13 +1,8 @@
-# Based on https://docs.github.com/en/actions/deployment/deploying-to-your-cloud-provider/deploying-to-amazon-elastic-container-service
-
 name: PR Updated triggers
 
 on:
     pull_request:
         types: [labeled, unlabeled, synchronize, closed, reopened, opened]
-
-env:
-    AWS_REGION: us-east-1
 
 permissions:
     id-token: write
@@ -29,7 +24,6 @@ jobs:
                   filters: |
                       docs:
                           - 'docs/**'
-
 
     # you can skip the build by adding 'skip-build' to the commit message, useful when testing tests
     skip_build_sha:
@@ -62,20 +56,17 @@ jobs:
               run: |
                   pr_number="${{ github.event.pull_request.number }}"
                   
-                  # get all workflow runs for this PR
                   gh api "/repos/${{ github.repository }}/actions/workflows/on_pr.yml/runs?event=pull_request&per_page=100" \
                       --jq ".workflow_runs[] | select(.pull_requests[]?.number == ${pr_number}) | select(.id < ${{ github.run_id }}) | {id: .id, sha: .head_sha, created: .created_at}" \
                       | jq -s 'sort_by(.created) | reverse | .[].id' -r \
                       | while read run_id; do
                           echo "Checking run: $run_id"
-                          # check if build-all job succeeded in this run
                           run=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs")
                           echo "Run: $run"
                           all_success=$(echo "$run" | jq '[.jobs[] | select(.name | contains("build-all")) | .conclusion] | all(. == "success")')
                           echo "All success for $run_id: $all_success"
 
                           if [ "$all_success" == "true" ]; then
-                              # get the SHA for this run
                               successful_sha=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}" --jq '.head_sha')
                               echo "last-successful-build-sha=${successful_sha}" >> $GITHUB_OUTPUT
                               echo "Found last successful build at SHA: $successful_sha (run: $run_id)"
@@ -97,10 +88,7 @@ jobs:
         needs:
             - path-filter
             - skip_build_sha
-        uses: ./.github/workflows/ecrbuild-all.yml
-        secrets:
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        uses: ./.github/workflows/ghcr-build-all.yml
 
     e2e:
         if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') && always() && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
@@ -111,58 +99,39 @@ jobs:
         uses: ./.github/workflows/e2e.yml
         with:
             image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
-        secrets:
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
     deploy-preview:
-        if: needs.build-all.result == 'success'
-        uses: ./.github/workflows/pull-preview.yml
+        if: needs.build-all.result == 'success' && contains(github.event.pull_request.labels.*.name, 'preview')
+        uses: ./.github/workflows/preview.yml
         needs:
             - build-all
         permissions:
             contents: read
-            deployments: write
             pull-requests: write
-            statuses: write
         with:
-            # PLATFORM_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7-core:2b9a81a279c4e405bbedcdbb697c897ded52fbc0
-            # JOBS_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7-jobs:c786662f4899de16a621e366a485eca5adda4d6a
-            # MIGRATIONS_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7:c786662f4899de16a621e366a485eca5adda4d6a
-            # SITE_BUILDER_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7-site-builder:c786662f4899de16a621e366a485eca5adda4d6a
-            PLATFORM_IMAGE: ${{ needs.build-all.outputs.core-image }}
-            JOBS_IMAGE: ${{ needs.build-all.outputs.jobs-image }}
-            MIGRATIONS_IMAGE: ${{ needs.build-all.outputs.base-image }}
-            SITE_BUILDER_IMAGE: ${{ needs.build-all.outputs.site-builder-image }}
-            AWS_REGION: "us-east-1"
-            COMPOSE_FILES: docker-compose.preview.pr.yml
+            action: deploy
+            image_tag: ${{ github.event.pull_request.head.sha }}
         secrets:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            GH_PAT_PR_PREVIEW_CLEANUP: ${{ secrets.GH_PAT_PR_PREVIEW_CLEANUP }}
-            PREVIEW_DATACITE_REPOSITORY_ID: ${{ secrets.PREVIEW_DATACITE_REPOSITORY_ID }}
-            PREVIEW_DATACITE_PASSWORD: ${{ secrets.PREVIEW_DATACITE_PASSWORD }}
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST_PREVIEW: ${{ secrets.SSH_HOST_PREVIEW }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
     close-preview:
-        uses: ./.github/workflows/pull-preview.yml
-        if: ${{(github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name,  'preview')) || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')}}
+        if: (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+        uses: ./.github/workflows/preview.yml
         permissions:
             contents: read
-            deployments: write
             pull-requests: write
-            statuses: write
         with:
-            PLATFORM_IMAGE: "x" # not used
-            JOBS_IMAGE: "x" # not used
-            MIGRATIONS_IMAGE: "x" # not used
-            SITE_BUILDER_IMAGE: "x" # not used
-            AWS_REGION: "us-east-1"
+            action: teardown
         secrets:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            GH_PAT_PR_PREVIEW_CLEANUP: ${{ secrets.GH_PAT_PR_PREVIEW_CLEANUP }}
-            PREVIEW_DATACITE_REPOSITORY_ID: ${{ secrets.PREVIEW_DATACITE_REPOSITORY_ID }}
-            PREVIEW_DATACITE_PASSWORD: ${{ secrets.PREVIEW_DATACITE_PASSWORD }}
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST_PREVIEW: ${{ secrets.SSH_HOST_PREVIEW }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
     deploy-docs-preview:
         permissions:

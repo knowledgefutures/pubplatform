@@ -1,0 +1,158 @@
+services:
+    proxy:
+        image: ghcr.io/pubpub/caddy-sites:latest
+        env_file: [.env]
+        volumes:
+            - ./Caddyfile.preview:/etc/caddy/Caddyfile:ro
+            - caddy_data:/data
+            - caddy_config:/config
+        networks: [appnet]
+        ports:
+            - target: 80
+              published: 80
+              protocol: tcp
+              mode: host
+            - target: 443
+              published: 443
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    platform:
+        image: ghcr.io/pubpub/platform:${IMAGE_TAG}
+        env_file: [.env]
+        environment:
+            HOSTNAME: "0.0.0.0"
+            NODE_ENV: production
+            PORT: "3000"
+            PUBPUB_URL: https://${PREVIEW_HOST}
+            SITE_BUILDER_ENDPOINT: http://site-builder:4000
+            FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
+        networks: [appnet]
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - >
+                    node -e "require('http')
+                    .get('http://127.0.0.1:3000/api/health', r => process.exit(r.statusCode < 400 ? 0 : 1))
+                    .on('error', () => process.exit(1));"
+            interval: 10s
+            timeout: 3s
+            retries: 6
+            start_period: 60s
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    platform-jobs:
+        image: ghcr.io/pubpub/platform-jobs:${IMAGE_TAG}
+        env_file: [.env]
+        environment:
+            NODE_ENV: production
+            PUBPUB_URL: http://platform:3000
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    platform-migrations:
+        image: ghcr.io/pubpub/platform-migrations:${IMAGE_TAG}
+        env_file: [.env]
+        command: ["pnpm", "--filter", "core", "reset"]
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                max_attempts: 3
+
+    site-builder:
+        image: ghcr.io/pubpub/platform-site-builder:${IMAGE_TAG}
+        env_file: [.env]
+        environment:
+            NODE_ENV: production
+            PUBPUB_URL: http://platform:3000
+            PORT: "4000"
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    db:
+        image: postgres:15
+        environment:
+            POSTGRES_USER: preview
+            POSTGRES_PASSWORD: preview
+            POSTGRES_DB: preview
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    cache:
+        image: valkey/valkey:8-alpine
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    minio:
+        image: minio/minio:latest
+        environment:
+            MINIO_ROOT_USER: minioadmin
+            MINIO_ROOT_PASSWORD: minioadmin
+        command: server --console-address ":9001" /data
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    minio-init:
+        image: minio/mc:latest
+        environment:
+            MINIO_ROOT_USER: minioadmin
+            MINIO_ROOT_PASSWORD: minioadmin
+            ASSETS_BUCKET_NAME: assets
+            ASSETS_UPLOAD_KEY: preview-key
+            ASSETS_UPLOAD_SECRET_KEY: preview-secret
+        entrypoint: >
+            /bin/sh -c '
+            /usr/bin/mc alias set myminio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
+            /usr/bin/mc mb --ignore-existing myminio/"$${ASSETS_BUCKET_NAME}";
+            /usr/bin/mc anonymous set download myminio/"$${ASSETS_BUCKET_NAME}";
+            /usr/bin/mc admin user add myminio "$${ASSETS_UPLOAD_KEY}" "$${ASSETS_UPLOAD_SECRET_KEY}";
+            /usr/bin/mc admin policy attach myminio readwrite --user "$${ASSETS_UPLOAD_KEY}";'
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                max_attempts: 5
+
+    inbucket:
+        image: inbucket/inbucket:latest
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+networks:
+    appnet:
+        driver: overlay
+
+volumes:
+    pgdata:
+    caddy_data:
+    caddy_config:

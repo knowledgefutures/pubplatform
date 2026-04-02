@@ -1,0 +1,53 @@
+{
+    admin :2019
+
+    on_demand_tls {
+        interval 2m
+        burst 5
+    }
+}
+
+:443 {
+    tls {
+        on_demand
+    }
+
+    encode gzip
+
+    handle_path /assets* {
+        reverse_proxy minio:9000
+    }
+
+    handle_path /assets-ui* {
+        reverse_proxy minio:9001
+    }
+
+    handle_path /site-builder* {
+        reverse_proxy site-builder:4000
+    }
+
+    handle_path /sites/* {
+        root * /sites
+        file_server {
+            fs s3 {
+                bucket {$ASSETS_BUCKET_NAME:assets}
+                region {$ASSETS_REGION:us-east-1}
+                endpoint {$S3_ENDPOINT:http://minio:9000}
+                access_key {$ASSETS_UPLOAD_KEY}
+                secret_key {$ASSETS_UPLOAD_SECRET_KEY}
+            }
+        }
+    }
+
+    handle_path /emails/* {
+        reverse_proxy inbucket:9000
+    }
+
+    handle {
+        reverse_proxy platform:3000
+    }
+}
+
+:80 {
+    respond "OK" 200
+}

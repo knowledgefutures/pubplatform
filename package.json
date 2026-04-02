@@ -36,7 +36,13 @@
 		"dev:teardown": "docker compose -f docker-compose.dev.yml down -v",
 		"integration:setup": "docker compose -f docker-compose.test.yml --profile integration up -d",
 		"integration:teardown": "docker compose -f docker-compose.test.yml --profile integration down -v",
-		"context-editor:playwright": "pnpm --filter context-editor run playwright:test"
+		"context-editor:playwright": "pnpm --filter context-editor run playwright:test",
+		"secrets:encrypt": "cd infra && sops -e --input-type dotenv --output-type dotenv --output .env.enc .env",
+		"secrets:encrypt:preview": "cd infra && sops -e --input-type dotenv --output-type dotenv --output .env.preview.enc .env.preview",
+		"secrets:encrypt:sandbox": "cd infra && sops -e --input-type dotenv --output-type dotenv --output .env.sandbox.enc .env.sandbox",
+		"secrets:decrypt": "cd infra && sops -d --input-type dotenv --output-type dotenv --output .env .env.enc",
+		"secrets:decrypt:preview": "cd infra && sops -d --input-type dotenv --output-type dotenv --output .env.preview .env.preview.enc",
+		"secrets:decrypt:sandbox": "cd infra && sops -d --input-type dotenv --output-type dotenv --output .env.sandbox .env.sandbox.enc"
 	},
 	"devDependencies": {
 		"@babel/core": "7.28.3",
@@ -54,7 +60,9 @@
 		"turbo": "^2.5.6"
 	},
 	"preconstruct": {
-		"packages": ["packages/*"],
+		"packages": [
+			"packages/*"
+		],
 		"exports": true,
 		"___experimentalFlags_WILL_CHANGE_IN_PATCH": {
 			"typeModule": true,
