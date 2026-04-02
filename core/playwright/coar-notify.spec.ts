@@ -678,8 +678,6 @@ const us4Seed = createSeed({
 							},
 						],
 					},
-					resolver:
-						'$.pub.id = {{ $replace($replace($eval($.pub.values.payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 					actions: [
 						{
 							action: Action.createPub,
@@ -692,7 +690,7 @@ const us4Seed = createSeed({
 								relationConfig: {
 									fieldSlug: `${us4Slug}:relatedpub`,
 									relatedPubId: "{{ $.pub.id }}",
-									value: "Submission",
+									value: "Notification",
 									direction: "source",
 								},
 							},
@@ -847,13 +845,19 @@ test.describe("User Story 2: Review Group Receives Review Request", () => {
 
 		await mockPreprintRepo.sendNotification(webhookUrl, incomingOffer)
 
-		// Verify Notification was created
+		// Verify Notification was created in Inbox
 		await page.goto(`/c/${us2Community.community.slug}/activity/automations`)
 		const card = page.getByTestId(/automation-run-card-.*-Process COAR Notification/).first()
 		await expect(card).toBeVisible({ timeout: 15000 })
 
+		// Manually accept the notification to trigger the automation chain
+		await stagesManagePage.goTo()
+		await stagesManagePage.openStagePanelTab("Inbox", "Pubs")
+		await page.getByRole("button", { name: "Inbox" }).first().click()
+		await page.getByText("Move to Accepted").click()
+
 		// The automation chain runs:
-		// Process COAR Notification → Create Review for Offer → Start Review → Finish Review → Announce Review
+		// Accept → Create Review for Offer → Start Review → Finish Review → Announce Review
 
 		// Verify mock repo receives the Announce Review
 		await expect
