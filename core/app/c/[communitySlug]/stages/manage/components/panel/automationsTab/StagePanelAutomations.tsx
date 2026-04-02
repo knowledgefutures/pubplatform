@@ -1,5 +1,6 @@
 import type { CommunitiesId, UsersId } from "db/public"
 import type { FullAutomation } from "db/types"
+import type { AutomationValidationResult } from "~/lib/server/blueprint/validate"
 import type { CommunityStage } from "~/lib/server/stages"
 
 import { Card, CardContent, CardTitle } from "ui/card"
@@ -16,9 +17,13 @@ type Props = {
 	stage: CommunityStage
 	communityId: CommunitiesId
 	automations: FullAutomation[]
+	validationResults?: AutomationValidationResult[]
 }
 
 export const StagePanelAutomations = (props: Props) => {
+	const getIssuesForAutomation = (automationId: string) =>
+		props.validationResults?.find((r) => r.automationId === automationId)?.issues
+
 	return (
 		<Card className="h-full">
 			<StagePanelCardHeader>
@@ -37,6 +42,7 @@ export const StagePanelAutomations = (props: Props) => {
 								communityId={props.stage.communityId as CommunitiesId}
 								automation={automation}
 								key={automation.id}
+								validationIssues={getIssuesForAutomation(automation.id)}
 							/>
 						))}
 					</ItemGroup>

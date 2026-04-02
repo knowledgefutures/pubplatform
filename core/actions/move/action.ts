@@ -18,3 +18,7 @@ export const action = defineAction({
 	description: "Move a pub into a different stage",
 	icon: MoveHorizontal,
 })
+
+// is this field a weak ref to foreignkey?
+// is this field sensitive/should not be copied?
+//

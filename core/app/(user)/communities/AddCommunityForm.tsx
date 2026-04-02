@@ -110,7 +110,7 @@ export const AddCommunityForm = (props: Props) => {
 						</FormItem>
 					)}
 				/>
-				<Button type="submit" disabled={form.formState.isSubmitting}>
+				<Button size="sm" type="submit" disabled={form.formState.isSubmitting}>
 					{form.formState.isSubmitting ? (
 						<Loader2 />
 					) : (

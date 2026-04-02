@@ -26,6 +26,7 @@ import {
 	removeAutomation,
 	upsertAutomationWithCycleCheck,
 } from "~/lib/server/automations"
+import { validateCommunityActionConfigs } from "~/lib/server/blueprint/validate"
 import { autoRevalidate } from "~/lib/server/cache/autoRevalidate"
 import { revalidateTagsForCommunity } from "~/lib/server/cache/revalidate"
 import { findCommunityBySlug } from "~/lib/server/community"
@@ -554,4 +555,24 @@ export const setStageMemberRole = defineServerAction(async function setStageMemb
 			.where("userId", "=", userId)
 			.set({ role })
 	).execute()
+})
+
+export const validateAutomations = defineServerAction(async function validateAutomations(
+	communityId: CommunitiesId
+) {
+	const { user } = await getLoginData()
+	if (!user) {
+		return ApiError.NOT_LOGGED_IN
+	}
+
+	try {
+		const results = await validateCommunityActionConfigs(communityId)
+		return { results }
+	} catch (error) {
+		logger.error({ msg: "Failed to validate automations", err: error })
+		return {
+			title: "Validation failed",
+			error: "An unexpected error occurred while validating automation configs",
+		}
+	}
 })

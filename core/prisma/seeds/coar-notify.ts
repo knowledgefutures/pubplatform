@@ -1,4 +1,4 @@
-import type { CommunitiesId, StagesId, UsersId } from "db/public"
+import type { CommunitiesId, UsersId } from "db/public"
 
 import {
 	Action,
@@ -13,20 +13,6 @@ import { seedCommunity } from "../seed/seedCommunity"
 
 export async function seedCoarNotify(communityId?: CommunitiesId) {
 	const adminId = "dddddddd-dddd-4ddd-dddd-dddddddddd01" as UsersId
-
-	const STAGE_IDS = {
-		// Incoming notification processing stages
-		Inbox: "dddddddd-dddd-4ddd-dddd-dddddddddd10" as StagesId,
-		Accepted: "dddddddd-dddd-4ddd-dddd-dddddddddd12" as StagesId,
-		Rejected: "dddddddd-dddd-4ddd-dddd-dddddddddd13" as StagesId,
-		// Review workflow stages (for Reviews created from Notifications)
-		ReviewInbox: "dddddddd-dddd-4ddd-dddd-dddddddddd15" as StagesId,
-		Reviewing: "dddddddd-dddd-4ddd-dddd-dddddddddd16" as StagesId,
-		Published: "dddddddd-dddd-4ddd-dddd-dddddddddd14" as StagesId,
-		// Outbound review request stages (for our Submissions)
-		Submissions: "dddddddd-dddd-4ddd-dddd-dddddddddd17" as StagesId,
-		AwaitingResponse: "dddddddd-dddd-4ddd-dddd-dddddddddd18" as StagesId,
-	}
 
 	const WEBHOOK_PATH = "coar-inbox"
 
@@ -102,7 +88,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 			],
 			stages: {
 				Inbox: {
-					id: STAGE_IDS.Inbox,
 					automations: {
 						"Process COAR Notification": {
 							icon: {
@@ -115,7 +100,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 									config: { path: WEBHOOK_PATH },
 								},
 							],
-							// Only process incoming Offer notifications (review requests from external services)
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -130,7 +114,7 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 								{
 									action: Action.createPub,
 									config: {
-										stage: STAGE_IDS.Inbox,
+										stage: "Inbox",
 										formSlug: "notification-default-editor",
 										pubValues: {
 											Title: "URL: {{ $.json.object.id }} - Type: {{ $join($.json.type, ', ') }}",
@@ -141,7 +125,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 								},
 							],
 						},
-						// Manual action to accept an incoming review request
 						"Accept Request": {
 							icon: {
 								name: "check",
@@ -166,11 +149,10 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 							actions: [
 								{
 									action: Action.move,
-									config: { stage: STAGE_IDS.Accepted },
+									config: { stage: "Accepted" },
 								},
 							],
 						},
-						// Manual action to reject an incoming review request
 						"Reject Request": {
 							icon: {
 								name: "x",
@@ -195,14 +177,13 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 							actions: [
 								{
 									action: Action.move,
-									config: { stage: STAGE_IDS.Rejected },
+									config: { stage: "Rejected" },
 								},
 							],
 						},
 					},
 				},
 				ReviewInbox: {
-					id: STAGE_IDS.ReviewInbox,
 					automations: {
 						"Start Review": {
 							icon: {
@@ -211,13 +192,12 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 							},
 							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
-								{ action: Action.move, config: { stage: STAGE_IDS.Reviewing } },
+								{ action: Action.move, config: { stage: "Reviewing" } },
 							],
 						},
 					},
 				},
 				Reviewing: {
-					id: STAGE_IDS.Reviewing,
 					automations: {
 						"Finish Review": {
 							icon: {
@@ -226,16 +206,13 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 							},
 							triggers: [{ event: AutomationEvent.pubEnteredStage, config: {} }],
 							actions: [
-								{ action: Action.move, config: { stage: STAGE_IDS.Published } },
+								{ action: Action.move, config: { stage: "Published" } },
 							],
 						},
 					},
 				},
-				// Entry point for our own submissions that we want to request reviews for
 				Submissions: {
-					id: STAGE_IDS.Submissions,
 					automations: {
-						// Manual action to request a review from a remote repository
 						"Request Review": {
 							icon: {
 								name: "send",
@@ -260,17 +237,14 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 							actions: [
 								{
 									action: Action.move,
-									config: { stage: STAGE_IDS.AwaitingResponse },
+									config: { stage: "AwaitingResponse" },
 								},
 							],
 						},
 					},
 				},
-				// Waiting for response from external service after requesting a review
 				AwaitingResponse: {
-					id: STAGE_IDS.AwaitingResponse,
 					automations: {
-						// Send the Offer when a submission enters this stage
 						"Send Review Offer": {
 							icon: {
 								name: "send",
@@ -329,7 +303,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 								},
 							],
 						},
-						// Process incoming responses (Accept/Reject/Announce) from external services
 						"Process Response": {
 							icon: {
 								name: "mail",
@@ -341,7 +314,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 									config: { path: WEBHOOK_PATH },
 								},
 							],
-							// Only process Accept, Reject, or Announce responses (not Offer)
 							condition: {
 								type: AutomationConditionBlockType.AND,
 								items: [
@@ -353,8 +325,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 									},
 								],
 							},
-							// Resolver finds the Submission pub that matches the inReplyTo field
-							// The inReplyTo will be like "urn:uuid:<pub-id>" from our sent Offer
 							resolver: `{{ $replace($.json.inReplyTo, "http://localhost:3000/c/coar-notify/pub/", "") }} = $.pub.id`,
 							actions: [
 								{
@@ -368,7 +338,6 @@ export async function seedCoarNotify(communityId?: CommunitiesId) {
 					},
 				},
 				Published: {
-					id: STAGE_IDS.Published,
 					automations: {
 						"Announce Review": {
 							icon: {
@@ -485,7 +454,6 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 										subpath: "reviews",
 										pages: [
 											{
-												// Individual review page - one per Review pub
 												slug: "$.pub.id",
 												filter: '$.pub.pubType.name = "Review"',
 												extension: "html",
@@ -510,7 +478,6 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 '</article>'`,
 											},
 											{
-												// JSON manifest - companion metadata for each review
 												slug: "$.pub.id",
 												filter: '$.pub.pubType.name = "Review"',
 												extension: "json",
@@ -522,7 +489,6 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 })`,
 											},
 											{
-												// Index page - lists all published reviews
 												slug: '"/"',
 												filter: '$.pub.pubType.name = "Review"',
 												extension: "html",
@@ -540,7 +506,6 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 					},
 				},
 				Accepted: {
-					id: STAGE_IDS.Accepted,
 					automations: {
 						"Send Accept Acknowledgement": {
 							icon: {
@@ -597,7 +562,6 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 								},
 							],
 						},
-						// Create a Review pub after accepting the request
 						"Create Review for Notification": {
 							icon: {
 								name: "plus-circle",
@@ -623,7 +587,7 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 								{
 									action: Action.createPub,
 									config: {
-										stage: STAGE_IDS.ReviewInbox,
+										stage: "ReviewInbox",
 										formSlug: "review-default-editor",
 										pubValues: {
 											Title: "Review for: {{ $.pub.values.title }}",
@@ -641,7 +605,6 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 					},
 				},
 				Rejected: {
-					id: STAGE_IDS.Rejected,
 					automations: {
 						"Send Reject Acknowledgement": {
 							icon: {
@@ -703,18 +666,15 @@ pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: aut
 				},
 			},
 			stageConnections: {
-				// Incoming notification flow: process and either accept, reject, or create review
 				Inbox: {
 					to: ["Accepted", "Rejected"],
 				},
-				// Review workflow (for Reviews created from Notifications)
 				ReviewInbox: {
 					to: ["Reviewing"],
 				},
 				Reviewing: {
 					to: ["Published"],
 				},
-				// Outbound request flow: our submissions requesting external reviews
 				Submissions: {
 					to: ["AwaitingResponse"],
 				},

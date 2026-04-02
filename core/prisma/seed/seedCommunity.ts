@@ -76,7 +76,10 @@ import {
 } from "~/lib/server/apiAccessTokens"
 import { insertForm } from "~/lib/server/form"
 import { InviteService } from "~/lib/server/invites/InviteService"
+import { insertCommunityMemberships, insertStageMemberships } from "~/lib/server/member"
+import { createMoveConstraint, createStage } from "~/lib/server/stages"
 import { generateToken } from "~/lib/server/token"
+import { addUser } from "~/lib/server/user"
 import { slugifyString } from "~/lib/string"
 
 export type PubFieldsInitializer = Record<
@@ -124,9 +127,22 @@ export type UsersInitializer = Record<
 			isVerified?: boolean
 	  }
 	| {
+			/** reference an existing user by id */
 			id: UsersId
 			existing: true
-			role: MemberRole
+			role?: MemberRole | null
+	  }
+	| {
+			/** reference an existing user by slug */
+			slug: string
+			existing: true
+			role?: MemberRole | null
+	  }
+	| {
+			/** reference an existing user by email */
+			email: string
+			existing: true
+			role?: MemberRole | null
 	  }
 >
 
@@ -982,29 +998,23 @@ export async function seedCommunity<
 		])
 	) as PubTypesByName<PT, PF>
 
-	await Promise.all(
-		Object.values(pubTypesWithPubFieldsByName).map((pubType) =>
-			insertForm(
-				{ ...pubType, fields: Object.values(pubType.fields) },
-				`${pubType.name} Editor (Default)`,
-				pubType.defaultForm.slug,
-				communityId,
-				true,
-				trx
-			).executeTakeFirst()
-		)
+	// separate new users from existing user references
+	const newUsers = Object.entries(props.users ?? {}).filter(
+		(user): user is [string, (typeof user)[1] & { existing?: false }] => !user[1].existing
 	)
 
-	const newUsers = Object.entries(props.users ?? {}).filter(
-		(user): user is [string, (typeof user)[1] & { existing: false }] => !user[1].existing
+	const existingUserRefs = Object.entries(props.users ?? {}).filter(
+		(user): user is [string, (typeof user)[1] & { existing: true }] => !!user[1].existing
 	)
+
+	// create new users using addUser
 	const newUserValues = await Promise.all(
 		newUsers.map(async ([slug, userInfo]) => ({
 			id: userInfo.id ?? (crypto.randomUUID() as UsersId),
 			slug:
 				options?.randomSlug === false
 					? (userInfo.slug ?? slug)
-					: `${userInfo.slug ?? slug}-${randomSlugSuffix}`,
+					: `${userInfo.slug ?? slug}${randomSlugSuffix}`,
 			email: userInfo.email ?? faker.internet.email(),
 			firstName: userInfo.firstName ?? faker.person.firstName(),
 			lastName: userInfo.lastName ?? faker.person.lastName(),
@@ -1012,46 +1022,71 @@ export async function seedCommunity<
 			passwordHash: await createPasswordHash(userInfo.password ?? faker.internet.password()),
 			isSuperAdmin: userInfo.isSuperAdmin ?? false,
 			isVerified: userInfo.isVerified !== false,
-			// the key of the user initializer
 		}))
 	)
 
-	const createdUsers = newUserValues.length
-		? await trx.insertInto("users").values(newUserValues).returningAll().execute()
-		: []
+	const createdUsers: Users[] = []
+	for (const userValue of newUserValues) {
+		const user = await addUser(userValue, trx).executeTakeFirstOrThrow()
+		// addUser returns SafeUser without passwordHash, but we need the full Users type
+		createdUsers.push({ ...user, passwordHash: userValue.passwordHash })
+	}
 
-	// we use the index of the userinitializers as the slug for the users, even though
-	// it could be something else. it just makes finding it back easier
+	// resolve existing user references by id, slug, or email
+	const resolvedExistingUsers: Array<[string, Users & { role?: MemberRole | null }]> = []
+	for (const [key, userRef] of existingUserRefs) {
+		let existingUser: Users | undefined
+
+		if ("id" in userRef && userRef.id) {
+			existingUser = await trx
+				.selectFrom("users")
+				.selectAll()
+				.where("id", "=", userRef.id)
+				.executeTakeFirst()
+		} else if ("slug" in userRef && userRef.slug) {
+			existingUser = await trx
+				.selectFrom("users")
+				.selectAll()
+				.where("slug", "=", userRef.slug)
+				.executeTakeFirst()
+		} else if ("email" in userRef && userRef.email) {
+			existingUser = await trx
+				.selectFrom("users")
+				.selectAll()
+				.where("email", "=", userRef.email)
+				.executeTakeFirst()
+		}
+
+		if (!existingUser) {
+			throw new Error(
+				`Could not find existing user referenced by ${JSON.stringify(userRef)}`
+			)
+		}
+
+		resolvedExistingUsers.push([key, { ...existingUser, role: userRef.role }])
+	}
+
+	// combine new and existing users
 	const usersBySlug = Object.fromEntries([
 		...newUsers.map(([slug], idx) => [slug, { ...newUsers[idx][1], ...createdUsers[idx] }]),
-		...Object.entries(props.users ?? {})
-			.filter(
-				(user): user is [string, (typeof user)[1] & { existing: true }] =>
-					!!user[1].existing
-			)
-			.map(([slug, userInfo]) => [slug, userInfo]),
+		...resolvedExistingUsers,
 	]) as UsersBySlug<U>
 
+	// create community memberships for users with roles
 	const possibleMembers = Object.entries(usersBySlug)
 		.filter(([, userInfo]) => !!userInfo.role)
-		.flatMap(([, userWithRole]) => {
-			return [
-				{
-					id: userWithRole.existing ? undefined : userWithRole.id,
-					userId: userWithRole.id,
-					communityId,
-					role: userWithRole.role!,
-				} satisfies NewCommunityMemberships,
-			]
-		})
+		.map(([, userWithRole]) => ({
+			userId: userWithRole.id,
+			communityId,
+			role: userWithRole.role!,
+			forms: [] as FormsId[],
+		}))
 
-	const createdMembers = possibleMembers?.length
-		? await trx
-				.insertInto("community_memberships")
-				.values(possibleMembers)
-				.returningAll()
-				.execute()
-		: []
+	const createdMembers: CommunityMemberships[] = []
+	for (const memberData of possibleMembers) {
+		const members = await insertCommunityMemberships(memberData, trx).execute()
+		createdMembers.push(...members)
+	}
 
 	const usersWithMemberShips = Object.fromEntries(
 		Object.entries(usersBySlug)
@@ -1067,20 +1102,21 @@ export async function seedCommunity<
 
 	const stageList = Object.entries(props.stages ?? {})
 
-	const createdStages = stageList.length
-		? await trx
-				.insertInto("stages")
-				.values(
-					stageList.map(([stageName, stageInfo], idx) => ({
-						id: stageInfo.id,
-						communityId,
-						name: stageName,
-						order: `${(idx + 10).toString(36)}${(idx + 10).toString(36)}`,
-					}))
-				)
-				.returningAll()
-				.execute()
-		: []
+	// create stages using createStage
+	const createdStages: Stages[] = []
+	for (let idx = 0; idx < stageList.length; idx++) {
+		const [stageName, stageInfo] = stageList[idx]
+		const stage = await createStage(
+			{
+				id: stageInfo.id,
+				communityId,
+				name: stageName,
+				order: `${(idx + 10).toString(36)}${(idx + 10).toString(36)}`,
+			},
+			trx
+		).executeTakeFirstOrThrow()
+		createdStages.push(stage)
+	}
 
 	const consolidatedStages = createdStages.map((stage, idx) => ({
 		...stageList[idx][1],
@@ -1088,6 +1124,7 @@ export async function seedCommunity<
 	}))
 	//
 
+	// create stage memberships using insertStageMemberships
 	const stageMembers = consolidatedStages
 		.flatMap((stage) => {
 			if (!stage.members) return []
@@ -1099,83 +1136,79 @@ export async function seedCommunity<
 			}))
 		})
 		.filter(
-			(stageMember) => stageMember.user.member !== undefined && stageMember.role !== undefined
+			(stageMember) =>
+				stageMember.user?.member !== undefined && stageMember.role !== undefined
 		)
 
-	const stageMemberships =
-		stageMembers.length > 0
-			? await trx
-					.insertInto("stage_memberships")
-					.values(() =>
-						stageMembers.map((stageMember) => ({
-							role: stageMember.role!,
-							stageId: stageMember.stage.id,
-							userId: stageMember.user.id,
-						}))
-					)
-					.returningAll()
-					.execute()
-			: []
+	const stageMemberships = []
+	for (const stageMember of stageMembers) {
+		const result = await insertStageMemberships(
+			{
+				role: stageMember.role!,
+				stageId: stageMember.stage.id,
+				userId: stageMember.user.id,
+				forms: [] as FormsId[],
+			},
+			trx
+		).execute()
+		stageMemberships.push(...result)
+	}
 
-	const stageConnectionsList = props.stageConnections
-		? await db
-				.insertInto("move_constraint")
-				.values(
-					Object.entries(props.stageConnections).flatMap(([stage, destinations]) => {
-						if (!destinations) {
-							return []
-						}
+	// create stage connections using createMoveConstraint
+	const stageConnectionsList = []
+	if (props.stageConnections) {
+		for (const [stage, destinations] of Object.entries(props.stageConnections)) {
+			if (!destinations) continue
 
-						const currentStageId = consolidatedStages.find(
-							(consolidatedStage) => consolidatedStage.name === stage
-						)?.id
+			const currentStageId = consolidatedStages.find(
+				(consolidatedStage) => consolidatedStage.name === stage
+			)?.id
 
-						if (!currentStageId) {
-							throw new Error(
-								`Something went wrong during the creation of stage connections. Stage ${stage} not found in the output of the created stages.`
-							)
-						}
-
-						const { to, from } = destinations
-
-						const tos =
-							to?.map((dest) => {
-								const toStage = consolidatedStages.find(
-									(stage) => stage.name === dest
-								)
-								if (!toStage) {
-									throw new Error(
-										`Something went wrong during the creation of stage connections. Stage ${String(dest)} not found in the output of the created stages.`
-									)
-								}
-								return {
-									stageId: currentStageId,
-									destinationId: toStage.id,
-								}
-							}) ?? []
-
-						const froms =
-							from?.map((dest) => {
-								const fromStage = consolidatedStages.find(
-									(stage) => stage.name === dest
-								)
-								if (!fromStage) {
-									throw new Error(
-										`Something went wrong during the creation of stage connections. Stage ${String(dest)} not found in the output of the created stages.`
-									)
-								}
-								return {
-									stageId: fromStage.id,
-									destinationId: currentStageId,
-								}
-							}) ?? []
-
-						return [...tos, ...froms]
-					})
+			if (!currentStageId) {
+				throw new Error(
+					`Something went wrong during the creation of stage connections. Stage ${stage} not found in the output of the created stages.`
 				)
-				.returningAll()
-				.execute()
-		: []
+			}
+
+			const { to, from } = destinations
+
+			// create "to" connections
+			for (const dest of to ?? []) {
+				const toStage = consolidatedStages.find((s) => s.name === dest)
+				if (!toStage) {
+					throw new Error(
+						`Something went wrong during the creation of stage connections. Stage ${String(dest)} not found in the output of the created stages.`
+					)
+				}
+				const constraint = await createMoveConstraint(
+					{
+						stageId: currentStageId,
+						destinationId: toStage.id,
+					},
+					trx
+				).executeTakeFirstOrThrow()
+				stageConnectionsList.push(constraint)
+			}
+
+			// create "from" connections
+			for (const dest of from ?? []) {
+				const fromStage = consolidatedStages.find((s) => s.name === dest)
+				if (!fromStage) {
+					throw new Error(
+						`Something went wrong during the creation of stage connections. Stage ${String(dest)} not found in the output of the created stages.`
+					)
+				}
+				const constraint = await createMoveConstraint(
+					{
+						stageId: fromStage.id,
+						destinationId: currentStageId,
+					},
+					trx
+				).executeTakeFirstOrThrow()
+				stageConnectionsList.push(constraint)
+			}
+		}
+	}
 
 	const createPubRecursiveInput = props.pubs
 		? makePubInitializerMatchCreatePubRecursiveInput({
@@ -1224,6 +1257,7 @@ export async function seedCommunity<
 			}))
 	)
 
+	console.log("formList", formList)
 	const createdForms =
 		formList.length > 0
 			? await trx
@@ -1301,6 +1335,30 @@ export async function seedCommunity<
 					.execute()
 			: []
 
+	// check if we don't end up creating duplicate forms (mostly relevant when importing a template)
+
+	const toBeInsertedDefaultForms = Object.values(pubTypesWithPubFieldsByName).filter(
+		(pubType) =>
+			!createdForms.some(
+				(form) =>
+					form.pubTypeId === pubType.id &&
+					(form.isDefault || form.name === `${pubType.name} Editor (Default)`)
+			)
+	)
+
+	await Promise.all(
+		toBeInsertedDefaultForms.map((pubType) =>
+			insertForm(
+				{ ...pubType, fields: Object.values(pubType.fields) },
+				`${pubType.name} Editor (Default)`,
+				pubType.defaultForm.slug,
+				communityId,
+				true,
+				trx
+			).executeTakeFirst()
+		)
+	)
+
 	if (createdForms.length && formElementsWithRelatedPubTypes.length) {
 		const feee = createdForms.flatMap((form) =>
 			form.elements.flatMap((fe, feIdx) => {
@@ -1352,6 +1410,24 @@ export async function seedCommunity<
 	) as unknown as FormsByName<F>
 
 	const { upsertAutomation } = await import("~/lib/server/automations")
+	const { rewriteConfigToIds, createEmptyEntityLookup } = await import(
+		"~/lib/server/blueprint/configRewriter"
+	)
+
+	// build entity lookup for rewriting symbolic names in action configs to IDs
+	const entityLookup = createEmptyEntityLookup()
+	for (const stage of createdStages) {
+		entityLookup.stages.set(stage.name, stage.id)
+	}
+	for (const form of createdForms) {
+		entityLookup.forms.set(form.slug, form.id)
+	}
+	for (const field of createdPubFields) {
+		entityLookup.fields.set(field.name, field.slug)
+	}
+	for (const [slug, user] of Object.entries(usersBySlug)) {
+		entityLookup.members.set(slug, (user as Users).id)
+	}
 
 	const initialCreatedAutomations: Automations[] = []
 	for (const stage of consolidatedStages) {
@@ -1365,10 +1441,19 @@ export async function seedCommunity<
 					name: automationName,
 					id: crypto.randomUUID() as AutomationsId,
 					...automation,
-					actions: automation.actions.map((action) => ({
-						id: crypto.randomUUID() as ActionInstancesId,
-						...action,
-					})),
+					actions: automation.actions.map((action) => {
+						// rewrite symbolic references (stage names, form slugs, etc.) to real IDs
+						const { config: rewrittenConfig } = rewriteConfigToIds(
+							action.action,
+							action.config as Record<string, unknown>,
+							entityLookup
+						)
+						return {
+							id: crypto.randomUUID() as ActionInstancesId,
+							...action,
+							config: rewrittenConfig,
+						}
+					}),
 				}
 			}
 		)

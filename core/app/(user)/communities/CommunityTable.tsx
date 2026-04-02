@@ -2,20 +2,21 @@
 
 import type { TableCommunity } from "./getCommunityTableColumns"
 
-import { useRouter } from "next/navigation"
+import * as React from "react"
 
 import { DataTable } from "~/app/components/DataTable/DataTable"
 import { getCommunityTableColumns } from "./getCommunityTableColumns"
 
-export const CommunityTable = ({ communities }: { communities: TableCommunity[] }) => {
-	const communityTableColumns = getCommunityTableColumns()
-	const router = useRouter()
-	return (
-		<DataTable
-			columns={communityTableColumns}
-			data={communities}
-			searchBy="slug"
-			onRowClick={(row) => router.push(`/c/${row.original.slug}/stages`)}
-		/>
+type CommunityTableProps = {
+	communities: TableCommunity[]
+	onCreateCopy?: (template: string) => void
+}
+
+export const CommunityTable = ({ communities, onCreateCopy }: CommunityTableProps) => {
+	const communityTableColumns = React.useMemo(
+		() => getCommunityTableColumns({ onCreateCopy }),
+		[onCreateCopy]
 	)
+
+	return <DataTable columns={communityTableColumns} data={communities} searchBy="slug" />
 }

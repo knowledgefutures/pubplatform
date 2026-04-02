@@ -3,6 +3,7 @@ import z from "zod"
 
 import { Action } from "db/public"
 
+import { formSlug, stage } from "../_lib/zodTypes"
 import { defineAction } from "../types"
 
 /**
@@ -36,8 +37,8 @@ export const action = defineAction({
 	description: "Create a new pub",
 	config: {
 		schema: z.object({
-			stage: z.string().uuid(),
-			formSlug: z.string(),
+			stage: stage().describe("The stage the new pub will be created in"),
+			formSlug: formSlug().describe("The form slug that determines the pub type"),
 			pubValues: z.record(z.unknown()),
 			relationConfig: relationConfigSchema.describe(
 				"Optional configuration for relating the new pub to an existing pub"

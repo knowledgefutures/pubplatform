@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 import { Button } from "ui/button"
-import { ChevronsUpDown, UserRoundCog } from "ui/icon"
+import { ChevronsUpDown, Layers, UserRoundCog } from "ui/icon"
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover"
 import { Separator } from "ui/separator"
 import { SidebarMenuButton } from "ui/sidebar"
@@ -52,6 +52,22 @@ export default async function LoginSwitcher() {
 								Settings
 							</Link>
 						</Button>
+						{user.isSuperAdmin && (
+							<Button
+								variant="ghost"
+								size="sm"
+								asChild
+								className="w-full justify-start gap-2 rounded-none"
+							>
+								<Link
+									className="flex w-full items-center justify-start gap-2"
+									href="/communities"
+								>
+									<Layers size="14" strokeWidth={1.5} />
+									Communities
+								</Link>
+							</Button>
+						)}
 						<Separator className="mx-1" />
 						<LogoutButton
 							variant="ghost"

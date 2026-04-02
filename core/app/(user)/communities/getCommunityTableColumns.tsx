@@ -15,8 +15,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "ui/dropdown-menu"
-import { MoreVertical } from "ui/icon"
+import { ExternalLink, MoreVertical } from "ui/icon"
 
+import { CloneCommunityButton } from "./CloneCommunityButton"
+import { ExportTemplateButton } from "./ExportTemplateButton"
 import { RemoveCommunityButton } from "./RemoveCommunityButton"
 
 export type TableCommunity = {
@@ -27,7 +29,11 @@ export type TableCommunity = {
 	created: Date
 }
 
-export const getCommunityTableColumns = () =>
+type GetCommunityTableColumnsOptions = {
+	onCreateCopy?: (template: string) => void
+}
+
+export const getCommunityTableColumns = (options?: GetCommunityTableColumnsOptions) =>
 	[
 		{
 			id: "select",
@@ -73,7 +79,13 @@ export const getCommunityTableColumns = () =>
 			header: ({ column }) => <DataTableColumnHeader column={column} title="Slug" />,
 			accessorKey: "slug",
 			cell: ({ row }) => (
-				<Link href={`/c/${row.getValue("slug")}/pubs`}>{row.original.slug}</Link>
+				<Link
+					href={`/c/${row.getValue("slug")}/stages`}
+					target="_blank"
+					className="flex items-center gap-1 font-mono hover:underline"
+				>
+					{row.original.slug} <ExternalLink className="size-4" />
+				</Link>
 			),
 		},
 		{
@@ -94,7 +106,18 @@ export const getCommunityTableColumns = () =>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuLabel>Menu</DropdownMenuLabel>
+							<DropdownMenuLabel>Actions</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<ExportTemplateButton
+								communityId={row.original.id}
+								communityName={row.original.name}
+								onCreateCopy={options?.onCreateCopy}
+							/>
+							<CloneCommunityButton
+								communityId={row.original.id}
+								communityName={row.original.name}
+								communitySlug={row.original.slug}
+							/>
 							<DropdownMenuSeparator />
 							<div className="w-full">
 								<RemoveCommunityButton community={row.original} />
