@@ -62,11 +62,11 @@ jobs:
               echo "target=${{ inputs.target || format('next-app-{0}', inputs.package) }}" >> $GITHUB_OUTPUT
           fi
 
-          echo "label=ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:$sha_short" >> $GITHUB_OUTPUT
+          echo "label=ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:$sha_short" >> $GITHUB_OUTPUT
 
-          TAGS="ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:$sha_short"
+          TAGS="ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:$sha_short"
           if [[ "${{ inputs.publish_latest }}" == "true" ]]; then
-              TAGS="$TAGS,ghcr.io/pubpub/${{ inputs.ghcr_image_name }}:latest"
+              TAGS="$TAGS,ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:latest"
           fi
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
