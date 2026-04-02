@@ -10,10 +10,11 @@ import type {
 import type { FullAutomation } from "db/types"
 
 import { useCallback } from "react"
-import { Copy, Pencil, Trash2 } from "lucide-react"
+import { AlertTriangle, Copy, Pencil, Trash2 } from "lucide-react"
 
 import { DynamicIcon, type IconConfig } from "ui/dynamic-icon"
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "ui/item"
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip"
 import { toast } from "ui/use-toast"
 
 import { getTriggerByName } from "~/actions/_lib/triggers"
@@ -21,10 +22,18 @@ import { EllipsisMenu, EllipsisMenuButton } from "~/app/components/EllipsisMenu"
 import { didSucceed, useServerAction } from "~/lib/serverActions"
 import { deleteAutomation, duplicateAutomation } from "../../../actions"
 
+type ValidationIssue = {
+	actionName: string
+	field: string
+	message: string
+	severity: "error" | "warning"
+}
+
 type Props = {
 	stageId: StagesId
 	communityId: CommunitiesId
 	automation: FullAutomation
+	validationIssues?: ValidationIssue[]
 }
 
 import { useEffect, useState } from "react"
@@ -209,6 +218,30 @@ export const StagePanelAutomation = (props: Props) => {
 			</ItemContent>
 
 			<ItemActions>
+				{props.validationIssues && props.validationIssues.length > 0 && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<AlertTriangle
+								size={14}
+								className={cn(
+									props.validationIssues.some((i) => i.severity === "error")
+										? "text-destructive"
+										: "text-amber-500"
+								)}
+							/>
+						</TooltipTrigger>
+						<TooltipContent className="max-w-xs">
+							<p className="font-medium text-xs">Config issues:</p>
+							<ul className="mt-1 space-y-0.5 text-xs">
+								{props.validationIssues.map((issue, idx) => (
+									<li key={idx}>
+										{issue.field}: {issue.message}
+									</li>
+								))}
+							</ul>
+						</TooltipContent>
+					</Tooltip>
+				)}
 				<div className="flex items-center gap-2 rounded-full">
 					{triggerIcons.map((icon) => (
 						<icon.display.icon key={icon.event} className="size-2.5 text-xs" />

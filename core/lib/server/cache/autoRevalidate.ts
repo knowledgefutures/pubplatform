@@ -4,6 +4,7 @@ import type { AutoRevalidateOptions, DirectAutoOutput, ExecuteFn, QB } from "./t
 import { revalidatePath, revalidateTag } from "next/cache"
 
 import { logger } from "logger"
+import { tryCatch } from "utils/try-catch"
 
 import { env } from "~/lib/env/env"
 import { getCommunitySlug } from "./getCommunitySlug"
@@ -32,7 +33,15 @@ const executeWithRevalidate = <
 			return qb[method](...args) as ReturnType<Q[M]>
 		}
 
-		const communitySlug = options?.communitySlug ?? (await getCommunitySlug())
+		const [error, communitySlug] = options?.communitySlug
+			? await tryCatch(getCommunitySlug())
+			: [null, options?.communitySlug!]
+
+		if (error) {
+			logger.error(`Error getting community slug: ${error.message}`)
+			logger.error(compiledQuery.sql)
+			throw error
+		}
 
 		const communitySlugs = Array.isArray(communitySlug) ? communitySlug : [communitySlug]
 

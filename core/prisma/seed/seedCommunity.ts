@@ -1410,6 +1410,24 @@ export async function seedCommunity<
 	) as unknown as FormsByName<F>
 
 	const { upsertAutomation } = await import("~/lib/server/automations")
+	const { rewriteConfigToIds, createEmptyEntityLookup } = await import(
+		"~/lib/server/blueprint/configRewriter"
+	)
+
+	// build entity lookup for rewriting symbolic names in action configs to IDs
+	const entityLookup = createEmptyEntityLookup()
+	for (const stage of createdStages) {
+		entityLookup.stages.set(stage.name, stage.id)
+	}
+	for (const form of createdForms) {
+		entityLookup.forms.set(form.slug, form.id)
+	}
+	for (const field of createdPubFields) {
+		entityLookup.fields.set(field.name, field.slug)
+	}
+	for (const [slug, user] of Object.entries(usersBySlug)) {
+		entityLookup.members.set(slug, (user as Users).id)
+	}
 
 	const initialCreatedAutomations: Automations[] = []
 	for (const stage of consolidatedStages) {
@@ -1423,10 +1441,19 @@ export async function seedCommunity<
 					name: automationName,
 					id: crypto.randomUUID() as AutomationsId,
 					...automation,
-					actions: automation.actions.map((action) => ({
-						id: crypto.randomUUID() as ActionInstancesId,
-						...action,
-					})),
+					actions: automation.actions.map((action) => {
+						// rewrite symbolic references (stage names, form slugs, etc.) to real IDs
+						const { config: rewrittenConfig } = rewriteConfigToIds(
+							action.action,
+							action.config as Record<string, unknown>,
+							entityLookup
+						)
+						return {
+							id: crypto.randomUUID() as ActionInstancesId,
+							...action,
+							config: rewrittenConfig,
+						}
+					}),
 				}
 			}
 		)

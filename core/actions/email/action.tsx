@@ -7,7 +7,7 @@ import {
 	RenderWithPubToken,
 	renderWithPubTokens,
 } from "~/lib/server/render/pub/renderWithPubTokens"
-import { markdown, stringWithTokens } from "../_lib/zodTypes"
+import { markdown, member, stringWithTokens } from "../_lib/zodTypes"
 import { defineAction } from "../types"
 
 const emptyStringToUndefined = (arg: unknown) => {
@@ -34,7 +34,7 @@ const schema = z.object({
 			"The email address of the recipient(s). Either this or 'Recipient Member' must be set."
 		),
 	recipientMember: z
-		.preprocess(emptyStringToUndefined, z.string().uuid().optional())
+		.preprocess(emptyStringToUndefined, member().optional())
 		.optional()
 		.describe(
 			"Someone who is a member of the community. Either this or 'Recipient Email' must be set."

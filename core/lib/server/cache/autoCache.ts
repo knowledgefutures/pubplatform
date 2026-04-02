@@ -4,6 +4,7 @@ import type { AutoCacheOptions, DirectAutoOutput, ExecuteFn, SQB } from "./types
 import { cache } from "react"
 
 import { logger } from "logger"
+import { tryCatch } from "utils/try-catch"
 
 import { env } from "~/lib/env/env"
 import { createCacheTag, createCommunityCacheTags } from "./cacheTags"
@@ -78,7 +79,15 @@ const executeWithCache = <
 			return qb[method](...args) as ReturnType<Q[M]>
 		}
 
-		const communitySlug = options?.communitySlug ?? (await getCommunitySlug())
+		const [error, communitySlug] = options?.communitySlug
+			? await tryCatch(getCommunitySlug())
+			: [null, options?.communitySlug!]
+
+		if (error) {
+			logger.error(`Error getting community slug: ${error.message}`)
+			logger.error(compiledQuery.sql)
+			throw error
+		}
 
 		const tables = await cachedFindTables(compiledQuery, "select")
 
