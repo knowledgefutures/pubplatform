@@ -198,7 +198,7 @@ export const run = defineRun<typeof action>(
 							logger.error({ msg: "Error interpolating content", err: contentErr })
 						return {
 							id: pub.id,
-							title: getPubTitle(pub),
+							title: getPubTitle(pub as unknown as Parameters<typeof getPubTitle>[0]),
 							content: stringifyContent(content),
 							slug: interpolatedSlug,
 						}

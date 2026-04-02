@@ -1362,7 +1362,7 @@ export async function getIncomingRelations(
 	for (const [fieldSlug, pubIds] of pubIdsByField) {
 		result[fieldSlug] = [...pubIds]
 			.map((id) => pubsById.get(id as PubsId))
-			.filter((p): p is ProcessedPub => p !== undefined)
+			.filter((p) => p !== undefined)
 	}
 
 	return result
