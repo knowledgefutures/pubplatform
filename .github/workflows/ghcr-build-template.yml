@@ -76,6 +76,8 @@ jobs:
                   build-args: |
                       PACKAGE=${{ inputs.package }}
                       CI=true
+                  secrets: |
+                      SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
                   target: ${{ steps.label.outputs.target }}
                   tags: ${{ steps.label.outputs.tags }}
                   platforms: linux/amd64
