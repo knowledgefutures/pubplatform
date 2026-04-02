@@ -39,7 +39,7 @@ jobs:
               run: |
                   echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
                   echo "stack_name=preview-pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-                  echo "host=pr-${{ github.event.pull_request.number }}.preview.pubpub.org" >> $GITHUB_OUTPUT
+                  echo "host=pr-${{ github.event.pull_request.number }}.preview.pubstar.org" >> $GITHUB_OUTPUT
 
             - name: Start SSH agent
               uses: webfactory/ssh-agent@v0.9.0
@@ -62,10 +62,11 @@ jobs:
                   GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
                   IMAGE_TAG: ${{ inputs.image_tag }}
                   STACK_NAME: ${{ steps.pr.outputs.stack_name }}
-                  PREVIEW_HOST: ${{ steps.pr.outputs.host }}
+                  PREVIEW_HOST: ${{steps.pr.outputs.host }}
+                  PR_NUMBER: ${{ steps.pr.outputs.number }}
               run: |
                   ssh "${SSH_USER}@${SSH_HOST}" \
-                    "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' STACK_NAME='${STACK_NAME}' PREVIEW_HOST='${PREVIEW_HOST}' bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
+                    "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' STACK_NAME='${STACK_NAME}' PREVIEW_HOST='${PREVIEW_HOST}' PR_NUMBER='${PR_NUMBER}' bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
                     set -euo pipefail
 
                     REPO="${1:?missing repo}"
@@ -76,6 +77,7 @@ jobs:
                     : "${GHCR_TOKEN:?missing GHCR_TOKEN}"
                     : "${STACK_NAME:?missing STACK_NAME}"
                     : "${PREVIEW_HOST:?missing PREVIEW_HOST}"
+                    : "${PR_NUMBER:?missing PR_NUMBER}"
 
                     REPO_NAME="${REPO##*/}"
                     APP_DIR="/srv/${REPO_NAME}"
