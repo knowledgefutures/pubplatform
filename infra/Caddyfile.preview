@@ -1,5 +1,6 @@
 {
     admin :2019
+    debug
 
 }
 
@@ -31,6 +32,10 @@
 }
 
 :443 {
+    tls internal {
+        on_demand
+    }
+
     encode gzip
 
     handle_path /assets* {
