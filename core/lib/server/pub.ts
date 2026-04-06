@@ -1317,7 +1317,6 @@ const COUNT_OPTIONS = {
 	trx: db,
 } as const satisfies GetPubsWithRelatedValuesOptions
 
-
 export async function getPubsWithRelatedValues<Options extends GetPubsWithRelatedValuesOptions>(
 	props: Extract<PubIdOrPubTypeIdOrStageIdOrCommunityId, { pubId: PubsId }>,
 	options?: Options

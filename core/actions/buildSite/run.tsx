@@ -42,7 +42,6 @@ const extractValue = async (data: unknown, expression: string): Promise<unknown>
 	return interpolate(expression, data)
 }
 
-
 export const run = defineRun<typeof action>(
 	async ({ communityId, pub, config, automationRunId, lastModifiedBy }) => {
 		const community = await getCommunity(communityId)
@@ -125,9 +124,7 @@ export const run = defineRun<typeof action>(
 				// Single: slug doesn't reference $.pub — one page with all matched pubs as $.pubs
 				const isPerPub = page.slug.includes("$.pub")
 				if (!isPerPub) {
-					const pubProxies = pubs.map((p) =>
-						createPubProxy(p, communitySlug)
-					)
+					const pubProxies = pubs.map((p) => createPubProxy(p, communitySlug))
 					const context: Record<string, unknown> = {
 						pubs: pubProxies,
 						community: { id: community.id, name: community.name, slug: community.slug },
