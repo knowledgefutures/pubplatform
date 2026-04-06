@@ -36,8 +36,8 @@ services:
             SITE_BUILDER_ENDPOINT: http://site-builder:4000
             S3_PUBLIC_ENDPOINT: https://pr-${PR_NUMBER}.pubstar.org/assets
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
-            DB_RESET: true
-            DB_SEED: true
+            DB_RESET: "true"
+            DB_SEED: "true"
         networks: [appnet]
         healthcheck:
             test:
