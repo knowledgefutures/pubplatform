@@ -1,17 +1,9 @@
 {
     admin :2019
 
-    on_demand_tls {
-        interval 2m
-        burst 5
-    }
 }
 
 :443 {
-    tls {
-        on_demand
-    }
-
     encode gzip
 
     handle_path /assets* {
