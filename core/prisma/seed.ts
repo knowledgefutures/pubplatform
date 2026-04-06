@@ -16,11 +16,7 @@ const starterId = "bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb" as CommunitiesId
 const blankId = "cccccccc-cccc-4ccc-cccc-cccccccccccc" as CommunitiesId
 const coarNotifyId = "dddddddd-dddd-4ddd-dddd-dddddddddddd" as CommunitiesId
 
-async function main() {
-	// do not seed arcadia if the minimal seed flag is set
-	// this is because it will slow down ci/testing
-	// this flag is set in the `globalSetup.ts` file
-	// and in e2e.yml
+export async function seed() {
 	// eslint-disable-next-line no-restricted-properties
 	const shouldSeedLegacy = !process.env.MINIMAL_SEED
 
@@ -53,16 +49,22 @@ async function main() {
 
 	await seedCoarNotify(coarNotifyId)
 }
-main()
-	.then(async () => {
-		logger.info("Finished seeding, exiting...")
-		process.exit(0)
-	})
-	.catch(async (e) => {
-		if (!isUniqueConstraintError(e)) {
+
+// cli entrypoint: only auto-run when executed directly as a script
+const isCli = process.argv[1]?.endsWith("seed.ts") || process.argv[1]?.endsWith("seed.js")
+
+if (isCli) {
+	seed()
+		.then(async () => {
+			logger.info("Finished seeding, exiting...")
+			process.exit(0)
+		})
+		.catch(async (e) => {
+			if (!isUniqueConstraintError(e)) {
+				logger.error(e)
+				process.exit(1)
+			}
 			logger.error(e)
-			process.exit(1)
-		}
-		logger.error(e)
-		logger.info("Attempted to add duplicate entries, db is already seeded?")
-	})
+			logger.info("Attempted to add duplicate entries, db is already seeded?")
+		})
+}

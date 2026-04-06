@@ -36,6 +36,8 @@ services:
             SITE_BUILDER_ENDPOINT: http://site-builder:4000
             S3_PUBLIC_ENDPOINT: https://pr-${PR_NUMBER}.pubstar.org/assets
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
+            DB_RESET: true
+            DB_SEED: true
         networks: [appnet]
         healthcheck:
             test:
@@ -101,6 +103,8 @@ services:
         image: minio/minio:latest
         env_file: [.env]
         command: server --console-address ":9001" /data
+        environment:
+            MINIO_BROWSER_REDIRECT_URL: https://pr-${PR_NUMBER}.pubstar.org/assets-ui
         networks: [appnet]
         deploy:
             replicas: 1
