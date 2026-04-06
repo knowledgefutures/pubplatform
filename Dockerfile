@@ -139,4 +139,4 @@ COPY --from=withpackage --chown=node:node /usr/src/app/core/.env.docker ./core/.
 # migration sql files, applied automatically during startup instrumentation
 COPY --from=withpackage --chown=node:node /usr/src/app/core/prisma/migrations ./core/prisma/migrations
 
-CMD ["node", "core/server.js"]
+CMD ["node", "--enable-source-maps", "core/server.js"]

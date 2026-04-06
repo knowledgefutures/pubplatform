@@ -1,3 +1,5 @@
+// prettier-ignore
+export const poniesText = `
 <figure id="n2yd51k0l6v">
 	<img
 		id="n2yd51k0l6v"
@@ -160,7 +162,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>166</mn><mo>±</mo><mn>29</mn><mi>k</mi><mi>g</mi></mrow
-					><annotation encoding="application/x-tex">166 \pm 29 kg</annotation></semantics
+					><annotation encoding="application/x-tex">166 pm 29 kg</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -207,7 +209,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mo>=</mo><mn>10</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">= 10 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">= 10 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -216,7 +218,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>300</mn><mi>x</mi><mn>300</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">300x300 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">300x300 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -226,7 +228,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>1300</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">1300 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">1300 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -243,7 +245,7 @@
 							><mi>c</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>15 mm\cdot sec^{-1}</annotation
+						>15 mmcdot sec^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -257,7 +259,7 @@
 						><mn>22</mn><mo>−</mo><mn>24</mn><mi mathvariant="normal">°</mi
 						><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>22 - 24 \degree \text{C}</annotation
+						>22 - 24 degree \text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -268,7 +270,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>30</mn><mo>−</mo><mn>50</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">30 - 50\%</annotation></semantics
+					><annotation encoding="application/x-tex">30 - 50%</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -280,7 +282,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>70</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">70\%</annotation></semantics
+					><annotation encoding="application/x-tex">70%</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -311,7 +313,7 @@
 							><mi>l</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>2.2 g\cdot ml^{-1}</annotation
+						>2.2 gcdot ml^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -322,7 +324,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mi>α</mi></mrow
-					><annotation encoding="application/x-tex">\alpha</annotation></semantics
+					><annotation encoding="application/x-tex">alpha</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -332,7 +334,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mo>=</mo><mn>3.83</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">= 3.83 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">= 3.83 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -347,7 +349,7 @@
 							><mi>l</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.13 g\cdot ml^{-1}</annotation
+						>0.13 gcdot ml^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -374,7 +376,7 @@
 							><mi>v</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>40\% w\cdot v^{-1}</annotation
+						>40% wcdot v^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -386,7 +388,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mi>α</mi></mrow
-					><annotation encoding="application/x-tex">\alpha</annotation></semantics
+					><annotation encoding="application/x-tex">alpha</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -397,7 +399,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>0.22</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">0.22 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">0.22 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -409,7 +411,7 @@
 				><semantics
 					><mrow><mn>4</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>4\degree \text{C}</annotation
+						>4degree \text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -427,7 +429,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mo>=</mo><mn>250</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">= 250 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">= 250 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -442,7 +444,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>700</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">700 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">700 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -479,7 +481,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>70</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">70\%</annotation></semantics
+					><annotation encoding="application/x-tex">70%</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -510,7 +512,7 @@
 				><semantics
 					><mrow><mn>37</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>37\degree \text{C}</annotation
+						>37degree \text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -527,7 +529,7 @@
 							><mi>v</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.2\% w\cdot v^{-1}</annotation
+						>0.2% wcdot v^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -566,7 +568,7 @@
 							><mi>v</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.075\% w\cdot v^{-1}</annotation
+						>0.075% wcdot v^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -593,7 +595,7 @@
 							><mi>v</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>10\% v\cdot v^{-1}</annotation
+						>10% vcdot v^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -616,7 +618,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>1</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">1\%</annotation></semantics
+					><annotation encoding="application/x-tex">1%</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -632,7 +634,7 @@
 							><mi>L</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>100 U\cdot mL^{-1}</annotation
+						>100 Ucdot mL^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -649,7 +651,7 @@
 							><mi>L</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>100 \mu g\cdot mL^{-1}</annotation
+						>100 mu gcdot mL^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -667,7 +669,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>100</mn><mi>μ</mi><mi>l</mi></mrow
-					><annotation encoding="application/x-tex">100 \mu l</annotation></semantics
+					><annotation encoding="application/x-tex">100 mu l</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -695,7 +697,7 @@
 							><mi>l</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>100 ng\cdot ml^{-1}</annotation
+						>100 ngcdot ml^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -736,7 +738,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>10 \mu g\cdot kg^{-1}</annotation
+						>10 mu gcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -752,7 +754,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.1 mg\cdot kg^{-1}</annotation
+						>0.1 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -768,7 +770,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.06 mg\cdot kg^{-1}</annotation
+						>0.06 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -784,7 +786,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>2.2 mg\cdot kg^{-1}</annotation
+						>2.2 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -801,7 +803,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>10 \mu g\cdot kg^{-1}</annotation
+						>10 mu gcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -817,7 +819,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.5 mg\cdot kg^{-1}</annotation
+						>0.5 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -833,7 +835,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.6 mg\cdot kg^{-1}</annotation
+						>0.6 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -849,7 +851,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.1 - 0.2 mg\cdot kg^{-1}</annotation
+						>0.1 - 0.2 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -865,7 +867,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>10 - 15 mg\cdot kg^{-1}</annotation
+						>10 - 15 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -910,7 +912,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>20 mg\cdot kg^{-1}</annotation
+						>20 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -926,7 +928,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.6 mg\cdot kg^{-1}</annotation
+						>0.6 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -942,7 +944,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>5 mg\cdot kg^{-1}</annotation
+						>5 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1058,7 +1060,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.06mg\cdot kg^{-1}</annotation
+						>0.06mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1074,7 +1076,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>2.2 mg\cdot kg^{-1}</annotation
+						>2.2 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1091,7 +1093,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>1400 mg\cdot kg^{-1}</annotation
+						>1400 mgcdot kg^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1163,7 +1165,7 @@
 							><mi>n</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.250 N\cdot min^{-1}</annotation
+						>0.250 Ncdot min^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1185,7 +1187,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>200</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">200 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">200 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1196,7 +1198,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>10</mn><mo>−</mo><mn>12</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">10-12 \%</annotation></semantics
+					><annotation encoding="application/x-tex">10-12 %</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1224,7 +1226,7 @@
 				><semantics
 					><mrow><mn>60</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>60\degree \text{C}</annotation
+						>60degree \text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -1266,7 +1268,7 @@
 					><mrow
 						><mo>−</mo><mn>80</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>-80\degree \text{C}</annotation
+						>-80degree \text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -1318,7 +1320,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mo>=</mo><mn>200</mn><mi>μ</mi><mi>A</mi></mrow
-					><annotation encoding="application/x-tex">= 200 \mu A</annotation></semantics
+					><annotation encoding="application/x-tex">= 200 mu A</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1329,7 +1331,7 @@
 				><semantics
 					><mrow
 						><mo>=</mo><mn>30</mn><mi>μ</mi><msup><mi>m</mi><mn>3</mn></msup></mrow
-					><annotation encoding="application/x-tex">= 30 \mu m^{3}</annotation></semantics
+					><annotation encoding="application/x-tex">= 30 mu m^{3}</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1372,7 +1374,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>4</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">4\%</annotation></semantics
+					><annotation encoding="application/x-tex">4%</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1415,7 +1417,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>5</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">5 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">5 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1432,7 +1434,7 @@
 							><mi>l</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>1.083 mg\cdot ml^{-1}</annotation
+						>1.083 mgcdot ml^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1448,7 +1450,7 @@
 							><mi>l</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>0.06 mg\cdot ml^{-1}</annotation
+						>0.06 mgcdot ml^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1494,7 +1496,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>4</mn><mi mathvariant="normal">%</mi></mrow
-					><annotation encoding="application/x-tex">4\%</annotation></semantics
+					><annotation encoding="application/x-tex">4%</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1538,7 +1540,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mn>5</mn><mi>μ</mi><mi>m</mi></mrow
-					><annotation encoding="application/x-tex">5 \mu m</annotation></semantics
+					><annotation encoding="application/x-tex">5 mu m</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1562,7 +1564,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mo>±</mo></mrow
-					><annotation encoding="application/x-tex">\pm</annotation></semantics
+					><annotation encoding="application/x-tex">pm</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1607,7 +1609,7 @@
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mo>⋅</mo></mrow
-					><annotation encoding="application/x-tex">\cdot</annotation></semantics
+					><annotation encoding="application/x-tex">cdot</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -1624,7 +1626,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>199.7 \pm 67.7 \mu g\cdot \mu g^{-1}</annotation
+						>199.7 pm 67.7 mu gcdot mu g^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1640,7 +1642,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>3702 \pm 2111 U\cdot\mu g^{-1}</annotation
+						>3702 pm 2111 Ucdotmu g^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1836,7 +1838,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>30.46 \pm 15.95 \mu g\cdot\mu g^{-1}</annotation
+						>30.46 pm 15.95 mu gcdotmu g^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1852,7 +1854,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>24.44 \pm 15.31 \mu g\cdot g^{-1}</annotation
+						>24.44 pm 15.31 mu gcdot g^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1869,7 +1871,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>79.66 \pm 91.21 \mu g\cdot\mu g^{-1}</annotation
+						>79.66 pm 91.21 mu gcdotmu g^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1886,7 +1888,7 @@
 							><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup
 						></mrow
 					><annotation encoding="application/x-tex"
-						>134.21\pm 153.73 \mu g\cdot\mu g^{-1}</annotation
+						>134.21pm 153.73 mu gcdotmu g^{-1}</annotation
 					></semantics
 				></math
 			></span
@@ -1932,7 +1934,7 @@
 				><semantics
 					><mrow><mn>0.31</mn><mo>±</mo><mn>0.13</mn><mi>M</mi><mi>P</mi><mi>a</mi></mrow
 					><annotation encoding="application/x-tex"
-						>0.31 \pm 0.13 MPa</annotation
+						>0.31 pm 0.13 MPa</annotation
 					></semantics
 				></math
 			></span
@@ -1943,7 +1945,7 @@
 				><semantics
 					><mrow><mn>0.42</mn><mo>±</mo><mn>0.19</mn><mi>M</mi><mi>P</mi><mi>a</mi></mrow
 					><annotation encoding="application/x-tex"
-						>0.42 \pm 0.19 MPa</annotation
+						>0.42 pm 0.19 MPa</annotation
 					></semantics
 				></math
 			></span
@@ -1956,7 +1958,7 @@
 				><semantics
 					><mrow><mn>1.75</mn><mo>±</mo><mn>0.80</mn><mi>M</mi><mi>P</mi><mi>a</mi></mrow
 					><annotation encoding="application/x-tex"
-						>1.75 \pm 0.80 MPa</annotation
+						>1.75 pm 0.80 MPa</annotation
 					></semantics
 				></math
 			></span
@@ -1968,7 +1970,7 @@
 				><semantics
 					><mrow><mn>2.22</mn><mo>±</mo><mn>0.48</mn><mi>M</mi><mi>P</mi><mi>a</mi></mrow
 					><annotation encoding="application/x-tex"
-						>2.22 \pm 0.48 MPa</annotation
+						>2.22 pm 0.48 MPa</annotation
 					></semantics
 				></math
 			></span
@@ -1991,7 +1993,7 @@
 				><semantics
 					><mrow><mn>1.86</mn><mo>±</mo><mn>0.78</mn><mi>M</mi><mi>P</mi><mi>a</mi></mrow
 					><annotation encoding="application/x-tex"
-						>1.86 \pm 0.78 MPa</annotation
+						>1.86 pm 0.78 MPa</annotation
 					></semantics
 				></math
 			></span
@@ -2003,7 +2005,7 @@
 				><semantics
 					><mrow><mn>2.19</mn><mo>±</mo><mn>0.77</mn><mi>M</mi><mi>P</mi><mi>a</mi></mrow
 					><annotation encoding="application/x-tex"
-						>2.19 \pm 0.77 MPa</annotation
+						>2.19 pm 0.77 MPa</annotation
 					></semantics
 				></math
 			></span
@@ -2061,7 +2063,7 @@
 						><mn>6.14</mn><mi mathvariant="normal">%</mi><mo>±</mo><mn>10.09</mn
 						><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>6.14\% \pm 10.09\%</annotation
+						>6.14% pm 10.09%</annotation
 					></semantics
 				></math
 			></span
@@ -2075,7 +2077,7 @@
 						><mn>4.73</mn><mi mathvariant="normal">%</mi><mo>±</mo><mn>4.93</mn
 						><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>4.73\% \pm 4.93\%</annotation
+						>4.73% pm 4.93%</annotation
 					></semantics
 				></math
 			></span
@@ -2089,7 +2091,7 @@
 						><mn>81.38</mn><mi mathvariant="normal">%</mi><mo>±</mo><mn>15.37</mn
 						><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>81.38\% \pm 15.37\%</annotation
+						>81.38% pm 15.37%</annotation
 					></semantics
 				></math
 			></span
@@ -2103,7 +2105,7 @@
 						><mn>74.71</mn><mi mathvariant="normal">%</mi><mo>±</mo><mn>12.44</mn
 						><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>74.71\% \pm 12.44\%</annotation
+						>74.71% pm 12.44%</annotation
 					></semantics
 				></math
 			></span
@@ -2118,7 +2120,7 @@
 						><mn>12.48</mn><mi mathvariant="normal">%</mi><mo>±</mo><mn>9.75</mn
 						><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>12.48\% \pm 9.75\%</annotation
+						>12.48% pm 9.75%</annotation
 					></semantics
 				></math
 			></span
@@ -2132,7 +2134,7 @@
 						><mn>20.56</mn><mi mathvariant="normal">%</mi><mo>±</mo><mn>10.54</mn
 						><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>20.56\% \pm 10.54\%</annotation
+						>20.56% pm 10.54%</annotation
 					></semantics
 				></math
 			></span
@@ -2155,7 +2157,7 @@
 					><mrow
 						><mn>79.02</mn><mo>±</mo><mn>16.18</mn><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>79.02 \pm 16.18 \%</annotation
+						>79.02 pm 16.18 %</annotation
 					></semantics
 				></math
 			></span
@@ -2168,7 +2170,7 @@
 					><mrow
 						><mn>63.20</mn><mo>±</mo><mn>13.90</mn><mi mathvariant="normal">%</mi></mrow
 					><annotation encoding="application/x-tex"
-						>63.20 \pm 13.90 \%</annotation
+						>63.20 pm 13.90 %</annotation
 					></semantics
 				></math
 			></span
@@ -2869,3 +2871,4 @@
 		Lymphocyte.
 	</figcaption>
 </figure>
+`
