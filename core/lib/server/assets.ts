@@ -63,13 +63,13 @@ export const generateMetadataFromS3 = async (
 }
 
 export const getS3Client = () => {
-	const region = env.ASSETS_REGION
-	const key = env.ASSETS_UPLOAD_KEY
-	const secret = env.ASSETS_UPLOAD_SECRET_KEY
+	const region = env.S3_REGION
+	const key = env.S3_ACCESS_KEY
+	const secret = env.S3_SECRET_KEY
 
 	logger.info({
 		msg: "Initializing S3 client",
-		endpoint: env.ASSETS_STORAGE_ENDPOINT,
+		endpoint: env.S3_ENDPOINT,
 		region,
 		key,
 		secret,
@@ -79,13 +79,13 @@ export const getS3Client = () => {
 	}
 
 	s3Client = new S3Client({
-		endpoint: env.ASSETS_STORAGE_ENDPOINT,
+		endpoint: env.S3_ENDPOINT,
 		region: region,
 		credentials: {
 			accessKeyId: key,
 			secretAccessKey: secret,
 		},
-		forcePathStyle: !!env.ASSETS_STORAGE_ENDPOINT, // Required for MinIO
+		forcePathStyle: !!env.S3_ENDPOINT, // Required for MinIO
 	})
 
 	logger.info({
@@ -99,10 +99,10 @@ export const getS3Client = () => {
 // this is bc, when using `minio` locally, the server
 // uses `minio:9000`, but for the client this does not make sense
 export const getPublicS3Client = () => {
-	const region = env.ASSETS_REGION
-	const key = env.ASSETS_UPLOAD_KEY
-	const secret = env.ASSETS_UPLOAD_SECRET_KEY
-	const publicEndpoint = env.ASSETS_PUBLIC_ENDPOINT || env.ASSETS_STORAGE_ENDPOINT
+	const region = env.S3_REGION
+	const key = env.S3_ACCESS_KEY
+	const secret = env.S3_SECRET_KEY
+	const publicEndpoint = env.S3_PUBLIC_ENDPOINT || env.S3_ENDPOINT
 
 	return new S3Client({
 		endpoint: publicEndpoint,
@@ -125,7 +125,7 @@ export const generateSignedAssetUploadUrl = async (
 
 	const client = getPublicS3Client() // use public client for signed URLs
 
-	const bucket = env.ASSETS_BUCKET_NAME
+	const bucket = env.S3_BUCKET_NAME
 	const command = new PutObjectCommand({
 		Bucket: bucket,
 		Key: key,
@@ -140,7 +140,7 @@ export const generateSignedAssetUploadUrl = async (
 
 const generateSignedUploadUrl = async (key: string) => {
 	const client = getPublicS3Client()
-	const bucket = env.ASSETS_BUCKET_NAME
+	const bucket = env.S3_BUCKET_NAME
 	const command = new PutObjectCommand({
 		Bucket: bucket,
 		Key: key,
@@ -175,9 +175,9 @@ export class InvalidFileUrlError extends Error {
  */
 export const deleteFileFromS3 = async (fileUrl: string) => {
 	const client = getPublicS3Client()
-	const bucket = env.ASSETS_BUCKET_NAME
+	const bucket = env.S3_BUCKET_NAME
 
-	const fileKey = fileUrl.split(new RegExp(`^.+${env.ASSETS_BUCKET_NAME}/`))[1]
+	const fileKey = fileUrl.split(new RegExp(`^.+${env.S3_BUCKET_NAME}/`))[1]
 
 	if (!fileKey) {
 		logger.error({ msg: "Unable to parse URL of uploaded file", fileUrl })
@@ -209,7 +209,7 @@ export const makeFileUploadPermanent = async (
 	},
 	trx = db
 ) => {
-	const matches = tempUrl.match(`(^.+${env.ASSETS_BUCKET_NAME}/)(temporary/.+)`)
+	const matches = tempUrl.match(`(^.+${env.S3_BUCKET_NAME}/)(temporary/.+)`)
 	const prefix = matches?.[1]
 	const source = matches?.[2]
 	if (!source || !fileName || !prefix) {
@@ -233,8 +233,8 @@ export const makeFileUploadPermanent = async (
 	})
 
 	const copyCommand = new CopyObjectCommand({
-		CopySource: `${env.ASSETS_BUCKET_NAME}/${source}`,
-		Bucket: env.ASSETS_BUCKET_NAME,
+		CopySource: `${env.S3_BUCKET_NAME}/${source}`,
+		Bucket: env.S3_BUCKET_NAME,
 		Key: newKey,
 	})
 
@@ -256,7 +256,7 @@ export const makeFileUploadPermanent = async (
 			maxWaitTime: 10,
 			minDelay: 1,
 		},
-		{ Bucket: env.ASSETS_BUCKET_NAME, Key: newKey }
+		{ Bucket: env.S3_BUCKET_NAME, Key: newKey }
 	)
 	logger.debug({ msg: "successfully copied temp file to permanent directory", newKey, tempUrl })
 	await trx
@@ -305,7 +305,7 @@ export const uploadFileToS3 = async (
 	}
 ): Promise<string> => {
 	const client = getS3Client()
-	const bucket = env.ASSETS_BUCKET_NAME
+	const bucket = env.S3_BUCKET_NAME
 	const key = `${id}/${fileName}`
 
 	const parallelUploads3 = new Upload({

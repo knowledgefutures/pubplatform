@@ -16,20 +16,16 @@ export const env = createEnv({
 	server: {
 		SELF_HOSTED: z.string().optional(),
 		API_KEY: z.string(),
-		ASSETS_BUCKET_NAME: z.string(),
-		ASSETS_REGION: z.string(),
-		ASSETS_UPLOAD_KEY: z.string(),
-		ASSETS_UPLOAD_SECRET_KEY: z.string(),
-		ASSETS_STORAGE_ENDPOINT: z.string().url().optional(),
-		ASSETS_PUBLIC_ENDPOINT: z
+		S3_BUCKET_NAME: z.string(),
+		S3_REGION: z.string(),
+		S3_ACCESS_KEY: z.string(),
+		S3_SECRET_KEY: z.string(),
+		S3_ENDPOINT: z.string().url().optional(),
+		S3_PUBLIC_ENDPOINT: z
 			.string()
 			.url()
 			.optional()
-			.transform((val) =>
-				!val && process.env.ASSETS_STORAGE_ENDPOINT
-					? process.env.ASSETS_STORAGE_ENDPOINT
-					: val
-			),
+			.transform((val) => (!val && process.env.S3_ENDPOINT ? process.env.S3_ENDPOINT : val)),
 		/**
 		 * Whether or not to verbosely log `memoize` cache hits and misses
 		 */

@@ -24,7 +24,7 @@ example.com {
 
 # if you want to use a different domain for your files, you can do so here
 # for instance, now all your files will be accessible at assets.example.com
-# if you go this route, be sure to update your ASSETS_STORAGE_ENDPOINT in .env and restart your services
+# if you go this route, be sure to update your S3_ENDPOINT in .env and restart your services
 # assets.example.com {
 #     reverse_proxy minio:9000
 # }

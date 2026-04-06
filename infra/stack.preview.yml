@@ -34,7 +34,7 @@ services:
             PUBPUB_URL: https://preview-${PR_NUMBER}.pubstar.org
             PUBPUB_HOSTNAME: preview-${PR_NUMBER}.pubstar.org
             SITE_BUILDER_ENDPOINT: http://site-builder:4000
-            ASSETS_PUBLIC_ENDPOINT: https://preview-${PR_NUMBER}.pubstar.org/assets
+            S3_PUBLIC_ENDPOINT: https://preview-${PR_NUMBER}.pubstar.org/assets
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
         networks: [appnet]
         healthcheck:
@@ -125,10 +125,10 @@ services:
         entrypoint: >
             /bin/sh -c '
             /usr/bin/mc alias set myminio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
-            /usr/bin/mc mb --ignore-existing myminio/"$${ASSETS_BUCKET_NAME}";
-            /usr/bin/mc anonymous set download myminio/"$${ASSETS_BUCKET_NAME}";
-            /usr/bin/mc admin user add myminio "$${ASSETS_UPLOAD_KEY}" "$${ASSETS_UPLOAD_SECRET_KEY}";
-            /usr/bin/mc admin policy attach myminio readwrite --user "$${ASSETS_UPLOAD_KEY}";'
+            /usr/bin/mc mb --ignore-existing myminio/"$${S3_BUCKET_NAME}";
+            /usr/bin/mc anonymous set download myminio/"$${S3_BUCKET_NAME}";
+            /usr/bin/mc admin user add myminio "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}";
+            /usr/bin/mc admin policy attach myminio readwrite --user "$${S3_ACCESS_KEY}";'
         networks: [appnet]
         deploy:
             mode: replicated-job

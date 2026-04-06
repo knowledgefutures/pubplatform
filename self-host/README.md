@@ -92,11 +92,11 @@ The hosted version of Platfrom uses AWS S3 to host files. When self-hosting, you
 If you want to use your own S3-compatible storage service, you will need to set the following environment variables:
 
 ```sh
-ASSETS_BUCKET_NAME="your-bucket-name"
-ASSETS_UPLOAD_KEY="your-access-key"
-ASSETS_UPLOAD_SECRET_KEY="your-secret-key"
-ASSETS_REGION="your-region"
-ASSETS_STORAGE_ENDPOINT="your-storage-endpoint" # only necessary if you are using non-AWS S3-compatible storage service
+S3_BUCKET_NAME="your-bucket-name"
+S3_ACCESS_KEY="your-access-key"
+S3_SECRET_KEY="your-secret-key"
+S3_REGION="your-region"
+S3_ENDPOINT="your-storage-endpoint" # only necessary if you are using non-AWS S3-compatible storage service
 ```
 
 You should also remove the `minio` and `minio-init` services from the `docker-compose.yml` file.
@@ -123,7 +123,7 @@ openssl rand -base64 32
 [System.Web.Security.Membership]::GeneratePassword(32,8)
 ```
 
-Run one of these commands twice, and use one for `MINIO_ROOT_PASSWORD` and one for `ASSETS_UPLOAD_SECRET_KEY`.
+Run one of these commands twice, and use one for `MINIO_ROOT_PASSWORD` and one for `S3_SECRET_KEY`.
 
 ```sh
 # not needed if you're using a remote file server like AWS S3
@@ -131,10 +131,10 @@ MINIO_ROOT_USER= # change this! this is the username for your file server!
 MINIO_ROOT_PASSWORD= # change this! this is the password for your file server!
 
 # these are either the values of an existing S3-compatible storage service, or the values that will be used to create a new MinIO service
-ASSETS_BUCKET_NAME= # example: assets
-ASSETS_UPLOAD_KEY= # example: asset-user
-ASSETS_UPLOAD_SECRET_KEY= # example: a strong secure password
-ASSETS_REGION=us-east-1 # leave this unchanged, unless you are hosting files on a different region on actual AWS
+S3_BUCKET_NAME= # example: assets
+S3_ACCESS_KEY= # example: asset-user
+S3_SECRET_KEY= # example: a strong secure password
+S3_REGION=us-east-1 # leave this unchanged, unless you are hosting files on a different region on actual AWS
 ```
 
 Then, after running `docker compose up -d`, you should be able to visit the MinIO console at `http://localhost:9001`.
