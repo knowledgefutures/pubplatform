@@ -86,7 +86,9 @@ export const run = defineRun<typeof action>(
 					}
 				)
 
-				const mode = page.slug.includes("$.pub") ? ("per-pub" as const) : ("single" as const)
+				const mode = page.slug.includes("$.pub")
+					? ("per-pub" as const)
+					: ("single" as const)
 
 				return {
 					mode,

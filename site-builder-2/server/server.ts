@@ -1,5 +1,7 @@
-import type { ProcessedPub } from "contracts"
 import type { ReadStream } from "node:fs"
+
+import type { ProcessedPub } from "contracts"
+import type { PageGroup } from "contracts/resources/site-builder-2"
 
 import fs from "node:fs/promises"
 import path from "node:path"
@@ -12,10 +14,9 @@ import { fetchRequestHandler, tsr } from "@ts-rest/serverless/fetch"
 import archiver from "archiver"
 import { Hono } from "hono"
 
-import { createPubProxy, siteApi } from "contracts"
-import type { PageGroup } from "contracts/resources/site-builder-2"
-import { siteBuilderApi } from "contracts/resources/site-builder-2"
 import { interpolate } from "@pubpub/json-interpolate"
+import { createPubProxy, siteApi } from "contracts"
+import { siteBuilderApi } from "contracts/resources/site-builder-2"
 import { logger } from "logger"
 import { tryCatch } from "utils/try-catch"
 

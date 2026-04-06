@@ -3,10 +3,10 @@ import { initContract } from "@ts-rest/core"
 import { internalApi } from "./resources/internal"
 import { siteApi } from "./resources/site"
 
+export * from "./pub-proxy"
 export * from "./resources/internal"
 export * from "./resources/site"
 export * from "./resources/types"
-export * from "./pub-proxy"
 
 const contract = initContract()
 
