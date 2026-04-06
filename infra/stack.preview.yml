@@ -90,10 +90,7 @@ services:
 
     db:
         image: postgres:15
-        environment:
-            POSTGRES_USER: preview
-            POSTGRES_PASSWORD: preview
-            POSTGRES_DB: preview
+        env_file: [.env]
         volumes:
             - pgdata:/var/lib/postgresql/data
         networks: [appnet]
@@ -112,9 +109,7 @@ services:
 
     minio:
         image: minio/minio:latest
-        environment:
-            MINIO_ROOT_USER: minioadmin
-            MINIO_ROOT_PASSWORD: minioadmin
+        env_file: [.env]
         command: server --console-address ":9001" /data
         networks: [appnet]
         deploy:
@@ -124,12 +119,7 @@ services:
 
     minio-init:
         image: minio/mc:latest
-        environment:
-            MINIO_ROOT_USER: minioadmin
-            MINIO_ROOT_PASSWORD: minioadmin
-            ASSETS_BUCKET_NAME: assets
-            ASSETS_UPLOAD_KEY: preview-key
-            ASSETS_UPLOAD_SECRET_KEY: preview-secret
+        env_file: [.env]
         entrypoint: >
             /bin/sh -c '
             /usr/bin/mc alias set myminio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
