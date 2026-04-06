@@ -10,101 +10,101 @@ permissions:
     packages: write
 
 jobs:
-    path-filter:
-        runs-on: ubuntu-latest
-        if: github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || github.event.action == 'closed' || github.event.action == 'labeled' || github.event.action == 'unlabeled'
-        outputs:
-            docs: ${{ steps.changes.outputs.docs }}
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-            - uses: dorny/paths-filter@v3
-              id: changes
-              with:
-                  filters: |
-                      docs:
-                          - 'docs/**'
+    # path-filter:
+    #     runs-on: ubuntu-latest
+    #     if: github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || github.event.action == 'closed' || github.event.action == 'labeled' || github.event.action == 'unlabeled'
+    #     outputs:
+    #         docs: ${{ steps.changes.outputs.docs }}
+    #     steps:
+    #         - uses: actions/checkout@v4
+    #           with:
+    #               fetch-depth: 0
+    #         - uses: dorny/paths-filter@v3
+    #           id: changes
+    #           with:
+    #               filters: |
+    #                   docs:
+    #                       - 'docs/**'
 
-    # you can skip the build by adding 'skip-build' to the commit message, useful when testing tests
-    skip_build_sha:
-        outputs:
-            last-successful-build-sha: ${{ steps.last-build.outputs.last-successful-build-sha }}
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-                  ref: ${{ github.event.pull_request.head.sha }}
-            - name: Check if skip-build is in the commit message
-              id: check
-              run: |
-                  echo "commit message: $(git log -1 --pretty=%B)"
-                  if [[ "$(git log -1 --pretty=%B)" == *"skip-build"* ]]; then
-                      echo "skip-build is in the commit message"
-                      echo "skip-build=true" >> $GITHUB_OUTPUT
-                  else
-                      echo "skip-build is not in the commit message"
-                      echo "skip-build=false" >> $GITHUB_OUTPUT
-                      echo "skip-build-sha=" >> $GITHUB_OUTPUT
-                  fi
-            - name: Find last successful build SHA
-              id: last-build
-              if: ${{ steps.check.outputs.skip-build == 'true' }}
-              env:
-                  GH_TOKEN: ${{ github.token }}
-              run: |
-                  pr_number="${{ github.event.pull_request.number }}"
+    # # you can skip the build by adding 'skip-build' to the commit message, useful when testing tests
+    # skip_build_sha:
+    #     outputs:
+    #         last-successful-build-sha: ${{ steps.last-build.outputs.last-successful-build-sha }}
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - name: Checkout
+    #           uses: actions/checkout@v4
+    #           with:
+    #               fetch-depth: 0
+    #               ref: ${{ github.event.pull_request.head.sha }}
+    #         - name: Check if skip-build is in the commit message
+    #           id: check
+    #           run: |
+    #               echo "commit message: $(git log -1 --pretty=%B)"
+    #               if [[ "$(git log -1 --pretty=%B)" == *"skip-build"* ]]; then
+    #                   echo "skip-build is in the commit message"
+    #                   echo "skip-build=true" >> $GITHUB_OUTPUT
+    #               else
+    #                   echo "skip-build is not in the commit message"
+    #                   echo "skip-build=false" >> $GITHUB_OUTPUT
+    #                   echo "skip-build-sha=" >> $GITHUB_OUTPUT
+    #               fi
+    #         - name: Find last successful build SHA
+    #           id: last-build
+    #           if: ${{ steps.check.outputs.skip-build == 'true' }}
+    #           env:
+    #               GH_TOKEN: ${{ github.token }}
+    #           run: |
+    #               pr_number="${{ github.event.pull_request.number }}"
                   
-                  gh api "/repos/${{ github.repository }}/actions/workflows/on_pr.yml/runs?event=pull_request&per_page=100" \
-                      --jq ".workflow_runs[] | select(.pull_requests[]?.number == ${pr_number}) | select(.id < ${{ github.run_id }}) | {id: .id, sha: .head_sha, created: .created_at}" \
-                      | jq -s 'sort_by(.created) | reverse | .[].id' -r \
-                      | while read run_id; do
-                          echo "Checking run: $run_id"
-                          run=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs")
-                          echo "Run: $run"
-                          all_success=$(echo "$run" | jq '[.jobs[] | select(.name | contains("build-all")) | .conclusion] | all(. == "success")')
-                          echo "All success for $run_id: $all_success"
+    #               gh api "/repos/${{ github.repository }}/actions/workflows/on_pr.yml/runs?event=pull_request&per_page=100" \
+    #                   --jq ".workflow_runs[] | select(.pull_requests[]?.number == ${pr_number}) | select(.id < ${{ github.run_id }}) | {id: .id, sha: .head_sha, created: .created_at}" \
+    #                   | jq -s 'sort_by(.created) | reverse | .[].id' -r \
+    #                   | while read run_id; do
+    #                       echo "Checking run: $run_id"
+    #                       run=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs")
+    #                       echo "Run: $run"
+    #                       all_success=$(echo "$run" | jq '[.jobs[] | select(.name | contains("build-all")) | .conclusion] | all(. == "success")')
+    #                       echo "All success for $run_id: $all_success"
 
-                          if [ "$all_success" == "true" ]; then
-                              successful_sha=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}" --jq '.head_sha')
-                              echo "last-successful-build-sha=${successful_sha}" >> $GITHUB_OUTPUT
-                              echo "Found last successful build at SHA: $successful_sha (run: $run_id)"
-                              exit 0
-                          fi
-                      done
+    #                       if [ "$all_success" == "true" ]; then
+    #                           successful_sha=$(gh api "/repos/${{ github.repository }}/actions/runs/${run_id}" --jq '.head_sha')
+    #                           echo "last-successful-build-sha=${successful_sha}" >> $GITHUB_OUTPUT
+    #                           echo "Found last successful build at SHA: $successful_sha (run: $run_id)"
+    #                           exit 0
+    #                       fi
+    #                   done
                   
-                  if [ "$all_success" == "false" ]; then
-                      echo "last-successful-build-sha=" >> $GITHUB_OUTPUT
-                      echo "No previous successful build found in this PR"
-                  fi
+    #               if [ "$all_success" == "false" ]; then
+    #                   echo "last-successful-build-sha=" >> $GITHUB_OUTPUT
+    #                   echo "No previous successful build found in this PR"
+    #               fi
 
-    ci:
-        if: github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview')
-        uses: ./.github/workflows/ci.yml
+    # ci:
+    #     if: github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview')
+    #     uses: ./.github/workflows/ci.yml
 
-    build-all:
-        if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview')) && (needs.skip_build_sha.outputs.last-successful-build-sha == '')
-        needs:
-            - path-filter
-            - skip_build_sha
-        permissions:
-            contents: read
-            packages: write
-        uses: ./.github/workflows/ghcr-build-all.yml
-        secrets:
-            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    # build-all:
+    #     if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || (github.event.action == 'labeled' && github.event.label.name == 'preview')) && (needs.skip_build_sha.outputs.last-successful-build-sha == '')
+    #     needs:
+    #         - path-filter
+    #         - skip_build_sha
+    #     permissions:
+    #         contents: read
+    #         packages: write
+    #     uses: ./.github/workflows/ghcr-build-all.yml
+    #     secrets:
+    #         SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
-    e2e:
-        if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') && always() && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
-        needs:
-            - path-filter
-            - build-all
-            - skip_build_sha
-        uses: ./.github/workflows/e2e.yml
-        with:
-            image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
+    # e2e:
+    #     if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') && always() && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
+    #     needs:
+    #         - path-filter
+    #         - build-all
+    #         - skip_build_sha
+    #     uses: ./.github/workflows/e2e.yml
+    #     with:
+    #         image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
 
     deploy-preview:
         # if: needs.build-all.result == 'success' && contains(github.event.pull_request.labels.*.name, 'preview')
@@ -116,8 +116,8 @@ jobs:
             pull-requests: write
         with:
             action: deploy
-            image_tag:  ${{ github.event.pull_request.head.sha }}
-            # image_tag: 307af6bfa9b083598febb0d4af841a9c66b892f7
+            # image_tag:  ${{ github.event.pull_request.head.sha }}
+            image_tag: cbc8e65b326aacaf3e4ac8d15a35358b1fc71930
         secrets:
             SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
             SSH_USER: ${{ secrets.SSH_USER }}
@@ -170,12 +170,12 @@ jobs:
     #               source-dir: docs/out
     #               action: remove
 
-    status-check:
-        needs:
-            - ci
-            - e2e
-        runs-on: ubuntu-latest
-        steps:
-            - name: ok
-              run: |
-                  echo ok
+    # status-check:
+    #     needs:
+    #         - ci
+    #         - e2e
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - name: ok
+    #           run: |
+    #               echo ok
