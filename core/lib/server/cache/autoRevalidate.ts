@@ -34,8 +34,8 @@ const executeWithRevalidate = <
 		}
 
 		const [error, communitySlug] = options?.communitySlug
-			? await tryCatch(getCommunitySlug())
-			: [null, options?.communitySlug!]
+			? [null, options.communitySlug]
+			: await tryCatch(getCommunitySlug())
 
 		if (error) {
 			logger.error(`Error getting community slug: ${error.message}`)
