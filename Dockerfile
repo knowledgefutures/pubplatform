@@ -136,5 +136,7 @@ COPY --from=withpackage --chown=node:node /usr/src/app/core/.next/static ./core/
 COPY --from=withpackage --chown=node:node /usr/src/app/core/public ./core/public
 # needed to set the database url correctly based on PGHOST variables
 COPY --from=withpackage --chown=node:node /usr/src/app/core/.env.docker ./core/.env
+# migration sql files, applied automatically during startup instrumentation
+COPY --from=withpackage --chown=node:node /usr/src/app/core/prisma/migrations ./core/prisma/migrations
 
 CMD ["node", "core/server.js"]

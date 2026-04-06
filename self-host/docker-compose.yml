@@ -10,8 +10,6 @@ services:
                 condition: service_started
             platform-jobs:
                 condition: service_started
-            platform-migrations:
-                condition: service_completed_successfully
             minio-init:
                 condition: service_completed_successfully
         platform: linux/amd64
@@ -24,12 +22,12 @@ services:
         networks:
             - app-network
 
-    # platfrom jobs service
+    # platform jobs service
     # takes care of longer running tasks like scheduling actions
     platform-jobs:
         depends_on:
-            platform-migrations:
-                condition: service_completed_successfully
+            db:
+                condition: service_started
         platform: linux/amd64
         image: ghcr.io/pubpub/platform-jobs:latest
         env_file: .env
@@ -37,19 +35,6 @@ services:
             DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
             # change this if you change the platform port
             PUBPUB_URL: http://platform:3000
-        networks:
-            - app-network
-
-    platform-migrations:
-        platform: linux/amd64
-        depends_on:
-            db:
-                condition: service_started
-        image: ghcr.io/pubpub/platform-migrations:latest
-        env_file: .env
-        environment:
-            DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-        command: ["pnpm", "--filter", "core", "migrate-docker"]
         networks:
             - app-network
 

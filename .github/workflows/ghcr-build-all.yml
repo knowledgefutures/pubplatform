@@ -10,9 +10,6 @@ on:
       core-image:
         description: 'Core image ref'
         value: ${{ jobs.build-core.outputs.image-sha }}
-      base-image:
-        description: 'Base/migrations image ref'
-        value: ${{ jobs.build-base.outputs.image-sha }}
       jobs-image:
         description: 'Jobs image ref'
         value: ${{ jobs.build-jobs.outputs.image-sha }}
@@ -24,14 +21,6 @@ on:
         required: true
 
 jobs:
-  build-base:
-    uses: ./.github/workflows/ghcr-build-template.yml
-    with:
-      ghcr_image_name: platform-migrations
-      publish_latest: ${{ inputs.publish_latest }}
-    secrets:
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-
   build-core:
     uses: ./.github/workflows/ghcr-build-template.yml
     with:

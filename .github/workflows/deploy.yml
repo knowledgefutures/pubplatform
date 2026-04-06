@@ -99,25 +99,6 @@ jobs:
             ${{ steps.vars.outputs.publish_latest == 'true' && 'ghcr.io/knowledgefutures/platform:latest' || '' }}
           platforms: linux/amd64
 
-      - name: Build and push platform-migrations
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=platform-migrations
-          cache-to: type=gha,mode=max,scope=platform-migrations
-          build-args: |
-            CI=true
-          secrets: |
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-          target: monorepo
-          tags: |
-            ghcr.io/knowledgefutures/platform-migrations:${{ steps.vars.outputs.image_tag }}
-            ${{ steps.vars.outputs.publish_latest == 'true' && 'ghcr.io/knowledgefutures/platform-migrations:latest' || '' }}
-          platforms: linux/amd64
-
       - name: Build and push platform-jobs
         uses: docker/build-push-action@v6
         with:

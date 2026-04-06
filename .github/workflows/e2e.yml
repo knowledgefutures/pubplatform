@@ -87,7 +87,6 @@ jobs:
               run: |
                   echo "core_label=ghcr.io/knowledgefutures/platform:$IMAGE_TAG" >> $GITHUB_OUTPUT
                   echo "jobs_label=ghcr.io/knowledgefutures/platform-jobs:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "base_label=ghcr.io/knowledgefutures/platform-migrations:$IMAGE_TAG" >> $GITHUB_OUTPUT
                   echo "site_builder_label=ghcr.io/knowledgefutures/platform-site-builder:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
             - name: Install dependencies

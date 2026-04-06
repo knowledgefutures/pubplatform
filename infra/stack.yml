@@ -72,18 +72,6 @@ services:
       restart_policy:
         condition: on-failure
 
-  platform-migrations:
-    image: ghcr.io/knowledgefutures/platform-migrations:${IMAGE_TAG}
-    env_file: [.env]
-    command: ['pnpm', '--filter', 'core', 'migrate-docker']
-    networks: [appnet]
-    deploy:
-      mode: replicated-job
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-
   site-builder:
     image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
     env_file: [.env]

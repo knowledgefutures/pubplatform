@@ -16,6 +16,7 @@ export async function register() {
 	}
 
 	logger.info(`Registering instrumentation hook for ${process.env.NEXT_RUNTIME}`)
+
 	if (process.env.NEXT_RUNTIME === "nodejs") {
 		if (process.env.NODE_ENV === "development") {
 			logger.info(
@@ -23,6 +24,12 @@ export async function register() {
 			)
 			return
 		}
+
+		if (!process.env.SKIP_MIGRATIONS) {
+			const { runMigrations } = await import("./lib/server/migrate")
+			await runMigrations()
+		}
+
 		await import("./instrumentation.node.mts")
 	} else {
 		logger.info("NEXT_RUNTIME is not `nodejs`; skipping OTEL registration.")
