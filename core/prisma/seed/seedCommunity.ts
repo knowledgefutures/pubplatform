@@ -1196,10 +1196,12 @@ export async function seedCommunity<
 	logger.info(
 		`${createdCommunity.name}: ${options?.parallelPubs ? "Parallelly" : "Sequentially"} - Creating ${createPubRecursiveInput.length} pubs`
 	)
+
 	if (options?.parallelPubs) {
 		const input = createPubRecursiveInput.map((input) => createPubRecursiveNew({ ...input }))
 
-		setInterval(() => {
+		// using will auto clear the interval when the block is exited
+		using _interval = setInterval(() => {
 			logger.info(`${createdCommunity.name}: Creating Pubs...`)
 		}, 1000)
 

@@ -172,7 +172,10 @@ export async function runMigrations() {
 		if (shouldSeed) {
 			logger.info("running database seed (DB_SEED is set)")
 			const { seed } = await import("~/prisma/seed")
-			await seed()
+
+			// prevents autocache from running, breaking seed
+			const { withUncached } = await import("~/lib/server/cache/skipCacheStore")
+			await withUncached(seed, "both")
 		}
 
 		await sql`SELECT pg_advisory_unlock(${sql.lit(ADVISORY_LOCK_ID)})`.execute(db)
