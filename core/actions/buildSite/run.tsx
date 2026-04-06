@@ -22,7 +22,7 @@ import { getCommunity } from "~/lib/server/community"
 import { applyJsonataFilter, compileJsonataQuery } from "~/lib/server/jsonata-query"
 import { updatePub } from "~/lib/server/pub"
 import { buildInterpolationContext } from "../_lib/interpolationContext"
-import { createPubProxy, type IncomingRelations } from "../_lib/pubProxy"
+import { createPubProxy } from "../_lib/pubProxy"
 import { defineRun } from "../types"
 
 /**
@@ -42,26 +42,6 @@ const extractValue = async (data: unknown, expression: string): Promise<unknown>
 	return interpolate(expression, data)
 }
 
-/**
- * Compute incoming relations from loaded pubs across all page groups.
- * For each pub that has relational values, records the reverse mapping:
- * targetPubId -> { fieldSlug -> [sourcePubs] }
- */
-const computeIncomingRelations = (allPubs: ProcessedPub[]): Map<string, IncomingRelations> => {
-	const map = new Map<string, IncomingRelations>()
-	for (const pub of allPubs) {
-		for (const v of pub.values) {
-			if (v.relatedPubId) {
-				const existing = map.get(v.relatedPubId) ?? {}
-				const fieldPubs = existing[v.fieldSlug] ?? []
-				fieldPubs.push(pub)
-				existing[v.fieldSlug] = fieldPubs
-				map.set(v.relatedPubId, existing)
-			}
-		}
-	}
-	return map
-}
 
 export const run = defineRun<typeof action>(
 	async ({ communityId, pub, config, automationRunId, lastModifiedBy }) => {
@@ -100,15 +80,12 @@ export const run = defineRun<typeof action>(
 						withValues: true,
 						withRelatedPubs: true,
 						withPubType: true,
+						withIncomingRelations: true,
 					}
 				)
 				return { page, pubs }
 			})
 		)
-
-		// Compute incoming relations across all fetched pubs
-		const allPubs = groupsWithPubs.flatMap((g) => g.pubs)
-		const incomingRelationsMap = computeIncomingRelations(allPubs)
 
 		const stringifyContent = (content: unknown): string =>
 			typeof content === "object" && content !== null
@@ -149,7 +126,7 @@ export const run = defineRun<typeof action>(
 				const isPerPub = page.slug.includes("$.pub")
 				if (!isPerPub) {
 					const pubProxies = pubs.map((p) =>
-						createPubProxy(p, communitySlug, incomingRelationsMap.get(p.id))
+						createPubProxy(p, communitySlug)
 					)
 					const context: Record<string, unknown> = {
 						pubs: pubProxies,
@@ -185,7 +162,6 @@ export const run = defineRun<typeof action>(
 							pub,
 							env: { PUBPUB_URL: env.PUBPUB_URL },
 							useDummyValues: true,
-							incomingRelations: incomingRelationsMap.get(pub.id),
 						})
 						const [slugErr, slug] = await tryCatch(interpolate(page.slug, pubContext))
 						if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })

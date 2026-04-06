@@ -225,6 +225,7 @@ export async function resolveAutomationInput(
 						withRelatedPubs: true,
 						withStage: false,
 						withValues: true,
+						withIncomingRelations: true,
 						depth: 3,
 						limit: 1,
 						customFilter: (eb) => applyJsonataFilter(eb, compiled, { communitySlug }),

@@ -12,7 +12,7 @@ import type {
 import type { FullAutomation, Json } from "db/types"
 import type { CommunityStage } from "~/lib/server/stages"
 
-import { createPubProxy, type IncomingRelations } from "./pubProxy"
+import { createPubProxy } from "./pubProxy"
 
 export type InterpolationContextBase = {
 	community: InterpolationCommunity
@@ -52,7 +52,6 @@ type BuildInterpolationContextArgsBase = {
 	automation: FullAutomation
 	automationRun: InterpolationAutomationRun
 	user: InterpolationUser | null
-	incomingRelations?: IncomingRelations
 }
 
 type BuildInterpolationContextArgs =
@@ -145,7 +144,7 @@ export function buildInterpolationContext(
 		// Both pub and json provided
 		return {
 			...baseContext,
-			pub: createPubProxy(args.pub, args.community.slug, args.incomingRelations),
+			pub: createPubProxy(args.pub, args.community.slug),
 			json: args.json,
 		}
 	}
@@ -153,7 +152,7 @@ export function buildInterpolationContext(
 	if (args.pub) {
 		return {
 			...baseContext,
-			pub: createPubProxy(args.pub, args.community.slug, args.incomingRelations),
+			pub: createPubProxy(args.pub, args.community.slug),
 		}
 	}
 

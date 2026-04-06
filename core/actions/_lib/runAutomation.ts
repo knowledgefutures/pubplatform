@@ -36,7 +36,7 @@ import { db } from "~/kysely/database"
 import { getAutomation } from "~/lib/db/queries"
 import { env } from "~/lib/env/env"
 import { createLastModifiedBy } from "~/lib/lastModifiedBy"
-import { ApiError, getIncomingRelations, getPubsWithRelatedValues } from "~/lib/server"
+import { ApiError, getPubsWithRelatedValues } from "~/lib/server"
 import { getActionConfigDefaults, getAutomationRunById } from "~/lib/server/actions"
 import { MAX_STACK_DEPTH } from "~/lib/server/automations"
 import { autoRevalidate } from "~/lib/server/cache/autoRevalidate"
@@ -131,6 +131,7 @@ async function loadAutomationContext(args: {
 						withRelatedPubs: true,
 						withStage: false,
 						withValues: true,
+						withIncomingRelations: true,
 						depth: 3,
 					}
 				)
@@ -408,10 +409,6 @@ const runActionInstance = async (args: RunActionInstanceArgs): Promise<ActionIns
 		.validate()
 	const mergedConfig = actionConfigBuilder.getMergedConfig()
 
-	const incomingRelations = pub
-		? await getIncomingRelations(pub.id, args.community.id)
-		: undefined
-
 	const interpolationData = buildInterpolationContext({
 		env: {
 			PUBPUB_URL: env.PUBPUB_URL,
@@ -426,7 +423,6 @@ const runActionInstance = async (args: RunActionInstanceArgs): Promise<ActionIns
 		},
 		automationRun: args.automationRun,
 		user: args.user ?? null,
-		incomingRelations,
 		...(pub ? { pub, json: args.json } : { json: args.json ?? ({} as Json) }),
 	})
 

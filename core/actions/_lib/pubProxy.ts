@@ -60,8 +60,7 @@ export type IncomingRelations = Record<string, ProcessedPub[]>
 
 export const createPubProxy = (
 	pub: ProcessedPub,
-	communitySlug: string,
-	incomingRelations?: IncomingRelations
+	communitySlug: string
 ): Record<string, unknown> => {
 	// build plain objects for all lookups
 	const fields: Record<string, true> = {}
@@ -81,6 +80,7 @@ export const createPubProxy = (
 
 	// build incoming relations lookup: field slug -> array of pub proxies
 	const inObj: Record<string, Record<string, unknown>[]> = {}
+	const incomingRelations = (pub as any).incomingRelations as IncomingRelations | undefined
 	if (incomingRelations) {
 		for (const [slug, pubs] of Object.entries(incomingRelations)) {
 			const shortSlug = slug.replace(`${communitySlug}:`, "")
