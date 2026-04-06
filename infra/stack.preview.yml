@@ -3,7 +3,7 @@
 services:
 
     proxy:
-        image: ghcr.io/pubpub/caddy-sites:latest
+        image: caddy:latest
         env_file: [.env]
         volumes:
             - ./Caddyfile.preview:/etc/caddy/Caddyfile:ro
@@ -25,7 +25,7 @@ services:
                 condition: any
 
     platform:
-        image: ghcr.io/pubpub/platform:${IMAGE_TAG}
+        image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
         env_file: [.env]
         environment:
             HOSTNAME: "0.0.0.0"
@@ -52,7 +52,7 @@ services:
                 condition: on-failure
 
     platform-jobs:
-        image: ghcr.io/pubpub/platform-jobs:${IMAGE_TAG}
+        image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
         env_file: [.env]
         environment:
             NODE_ENV: production
@@ -64,7 +64,7 @@ services:
                 condition: on-failure
 
     platform-migrations:
-        image: ghcr.io/pubpub/platform-migrations:${IMAGE_TAG}
+        image: ghcr.io/knowledgefutures/platform-migrations:${IMAGE_TAG}
         env_file: [.env]
         command: ["pnpm", "--filter", "core", "reset"]
         networks: [appnet]
@@ -76,7 +76,7 @@ services:
                 max_attempts: 3
 
     site-builder:
-        image: ghcr.io/pubpub/platform-site-builder:${IMAGE_TAG}
+        image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
         env_file: [.env]
         environment:
             NODE_ENV: production
