@@ -1,11 +1,17 @@
 import type { Database } from "db/Database"
 import type { PrismaMigrationsId } from "db/public"
 
+import { exec } from "node:child_process"
 import { createHash, randomUUID } from "node:crypto"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { promisify } from "node:util"
 import { Kysely, PostgresDialect, sql } from "kysely"
 import pg from "pg"
+
+import { tryCatch } from "utils/try-catch"
+
+const execAsync = promisify(exec)
 
 import { logger } from "logger"
 
@@ -176,6 +182,18 @@ export async function runMigrations() {
 			// prevents autocache from running, breaking seed
 			const { withUncached } = await import("~/lib/server/cache/skipCacheStore")
 			await withUncached(seed, "both")
+
+			// try and reset cache
+			logger.info(`Clearing cache...`)
+			const [error, output] = await tryCatch(
+				execAsync("echo 'FLUSHALL' | nc $VALKEY_HOST 6379")
+			)
+
+			if (error || output.stderr) {
+				logger.error(`Error clearing cache: ${error?.message || output?.stderr}`)
+			} else {
+				logger.info(`Cache cleared: ${output.stdout}`)
+			}
 		}
 
 		await sql`SELECT pg_advisory_unlock(${sql.lit(ADVISORY_LOCK_ID)})`.execute(db)
