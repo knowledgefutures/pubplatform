@@ -112,17 +112,19 @@ jobs:
                     sudo docker pull ghcr.io/knowledgefutures/platform:"$IMAGE_TAG"
 
                     # deploy/update stack
-                    sudo env IMAGE_TAG="$IMAGE_TAG" PREVIEW_HOST="$PREVIEW_HOST" \
+                    sudo env IMAGE_TAG="$IMAGE_TAG" PREVIEW_HOST="$PREVIEW_HOST" PR_NUMBER="$PR_NUMBER" \
                       docker stack deploy -c stack.preview.yml \
                       --with-registry-auth --resolve-image always --prune "$STACK_NAME"
+
+                    # caddy's config is a bind mount, so swarm won't restart
+                    # the proxy when only the Caddyfile changes on disk
+                    sudo docker service update --force "${STACK_NAME}_proxy"
 
                     sudo docker stack services "$STACK_NAME"
                     sudo docker image prune -f
 
-
-                    # wait until rollout is complete and then clear cache
                     wait_rollout() {
-                      echo "Beginning wait for rollout..."
+                      echo "Beginning wait for rollout of $1..."
                       svc="$1"
                       timeout="${2:-600}"
                       end=$((SECONDS+timeout))
@@ -132,20 +134,20 @@ jobs:
                         running="$(sudo docker service ps "$svc" --filter desired-state=running --format '{{.CurrentState}}' 2>/dev/null | grep -c '^Running' || true)"
                         state="$(sudo docker service inspect "$svc" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || echo "")"
                         echo "  $svc: desired=$desired running=$running state=$state"
-                      
+
                         if [[ -n "$desired" && "$running" == "$desired" ]] && { [[ -z "$state" ]] || [[ "$state" == "completed" ]]; }; then
                           echo "  $svc rollout complete"
                           return 0
                         fi
-                      
+
                         sleep 5
                       done
-                      
+
                       echo "Rollout timeout for $svc"
                       return 1
                     }
 
-                    wait_rollout $STACK_NAME 600
+                    wait_rollout "${STACK_NAME}_platform" 600
 
                     EOS
 
