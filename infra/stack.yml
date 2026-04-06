@@ -78,6 +78,7 @@ services:
     command: ['pnpm', '--filter', 'core', 'migrate-docker']
     networks: [appnet]
     deploy:
+      mode: replicated-job
       replicas: 1
       restart_policy:
         condition: on-failure

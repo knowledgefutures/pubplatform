@@ -1,4 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/swarmlibs/dockerstack-schema/main/schema/dockerstack-spec.json
+
 services:
+
     proxy:
         image: ghcr.io/pubpub/caddy-sites:latest
         env_file: [.env]
@@ -66,6 +69,7 @@ services:
         command: ["pnpm", "--filter", "core", "reset"]
         networks: [appnet]
         deploy:
+            mode: replicated-job
             replicas: 1
             restart_policy:
                 condition: on-failure
@@ -135,6 +139,7 @@ services:
             /usr/bin/mc admin policy attach myminio readwrite --user "$${ASSETS_UPLOAD_KEY}";'
         networks: [appnet]
         deploy:
+            mode: replicated-job
             replicas: 1
             restart_policy:
                 condition: on-failure
