@@ -1,8 +1,21 @@
 {
     admin :2019
     debug
-
+    on_demand_tls {  
+        ask http://localhost:8888/allow-domain  
+    }  
 }
+
+# this only allows preview-*.pubstar.org domains to be used for TLS certificates
+# prevents abuse
+:8080 {  
+    @allow expression {path} == "/allow-domain" && {query.domain}.matches(`^preview-[0-9]+\.pubstar\.org$`)  
+    handle @allow {  
+        respond "OK" 200  
+    }  
+
+    respond "Not allowed" 403  
+} 
 
 
 (s3site) {
