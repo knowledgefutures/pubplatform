@@ -31,8 +31,10 @@ services:
             HOSTNAME: "0.0.0.0"
             NODE_ENV: production
             PORT: "3000"
-            PUBPUB_URL: https://${PREVIEW_HOST}
+            PUBPUB_URL: https://preview-${PR_NUMBER}.pubstar.org
+            PUBPUB_HOSTNAME: preview-${PR_NUMBER}.pubstar.org
             SITE_BUILDER_ENDPOINT: http://site-builder:4000
+            ASSETS_PUBLIC_ENDPOINT: https://preview-${PR_NUMBER}.pubstar.org/assets
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
         networks: [appnet]
         healthcheck:
