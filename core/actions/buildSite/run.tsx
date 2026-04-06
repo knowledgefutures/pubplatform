@@ -1,6 +1,7 @@
 "use server"
 
-import type { JsonValue, ProcessedPub } from "contracts"
+import type { JsonValue } from "contracts"
+import type { PageGroup } from "contracts/resources/site-builder-2"
 import type { PubsId } from "db/public"
 import type { PubValues } from "~/lib/server"
 import type { action } from "./action"
@@ -14,15 +15,12 @@ import { logger } from "logger"
 import { tryCatch } from "utils/try-catch"
 
 import { env } from "~/lib/env/env"
-import { getPubTitle } from "~/lib/pubs"
 import { getPubsWithRelatedValues } from "~/lib/server"
 import { getSiteBuilderToken } from "~/lib/server/apiAccessTokens"
 import { getCommunitySlug } from "~/lib/server/cache/getCommunitySlug"
 import { getCommunity } from "~/lib/server/community"
 import { applyJsonataFilter, compileJsonataQuery } from "~/lib/server/jsonata-query"
 import { updatePub } from "~/lib/server/pub"
-import { buildInterpolationContext } from "../_lib/interpolationContext"
-import { createPubProxy } from "../_lib/pubProxy"
 import { defineRun } from "../types"
 
 /**
@@ -64,135 +62,41 @@ export const run = defineRun<typeof action>(
 			},
 		})
 
-		const NIL_UUID = "00000000-0000-0000-0000-000000000000"
-
-		// Fetch pubs for all groups that have a filter
-		const groupsWithPubs = await Promise.all(
+		// Resolve filters to pub IDs and determine mode for each page group
+		const pageGroups: PageGroup[] = await Promise.all(
 			config.pages.map(async (page) => {
-				if (!page.filter) return { page, pubs: [] as ProcessedPub[] }
+				if (!page.filter) {
+					return {
+						mode: "static" as const,
+						transform: page.transform,
+						slugTemplate: page.slug,
+						extension: page.extension ?? "html",
+						pubIds: [],
+					}
+				}
+
 				const query = compileJsonataQuery(page.filter)
 				const pubs = await getPubsWithRelatedValues(
 					{ communityId },
 					{
 						customFilter: (eb) => applyJsonataFilter(eb, query, { communitySlug }),
 						depth: 1,
-						withValues: true,
-						withRelatedPubs: true,
-						withPubType: true,
-						withIncomingRelations: true,
+						withValues: false,
+						withRelatedPubs: false,
 					}
 				)
-				return { page, pubs }
+
+				const mode = page.slug.includes("$.pub") ? ("per-pub" as const) : ("single" as const)
+
+				return {
+					mode,
+					transform: page.transform,
+					slugTemplate: page.slug,
+					extension: page.extension ?? "html",
+					pubIds: pubs.map((p) => p.id),
+				}
 			})
 		)
-
-		const stringifyContent = (content: unknown): string =>
-			typeof content === "object" && content !== null
-				? JSON.stringify(content, null, 2)
-				: String(content ?? "")
-
-		const computeSiteBase = (slug: string) => {
-			const depth = slug.split("/").filter(Boolean).length
-			return depth === 0 ? "." : Array(depth).fill("..").join("/")
-		}
-
-		// Process each page group according to its mode
-		const pageGroupData = await Promise.all(
-			groupsWithPubs.map(async ({ page, pubs }) => {
-				const extension = page.extension ?? "html"
-
-				// Static: no filter, no pubs — evaluate transform once with empty context
-				if (!page.filter) {
-					const [slugErr, slug] = await tryCatch(interpolate(page.slug, {}))
-					const interpolatedSlug = (slugErr ? "static" : slug) as string
-					const [contentErr, content] = await tryCatch(interpolate(page.transform, {}))
-					if (contentErr)
-						logger.error({ msg: "Error interpolating static page", err: contentErr })
-					return {
-						extension,
-						pubs: [
-							{
-								id: NIL_UUID,
-								title: interpolatedSlug,
-								content: stringifyContent(content),
-								slug: interpolatedSlug,
-							},
-						],
-					}
-				}
-
-				// Single: slug doesn't reference $.pub — one page with all matched pubs as $.pubs
-				const isPerPub = page.slug.includes("$.pub")
-				if (!isPerPub) {
-					const pubProxies = pubs.map((p) => createPubProxy(p, communitySlug))
-					const context: Record<string, unknown> = {
-						pubs: pubProxies,
-						community: { id: community.id, name: community.name, slug: community.slug },
-						env: { PUBPUB_URL: env.PUBPUB_URL },
-					}
-					const [slugErr, slug] = await tryCatch(interpolate(page.slug, context))
-					const interpolatedSlug = (slugErr ? "index" : slug) as string
-					context.site = { base: computeSiteBase(interpolatedSlug) }
-					const [contentErr, content] = await tryCatch(
-						interpolate(page.transform, context)
-					)
-					if (contentErr)
-						logger.error({ msg: "Error interpolating single page", err: contentErr })
-					return {
-						extension,
-						pubs: [
-							{
-								id: NIL_UUID,
-								title: interpolatedSlug,
-								content: stringifyContent(content),
-								slug: interpolatedSlug,
-							},
-						],
-					}
-				}
-
-				// Per-pub: one page per matched pub with $.pub in context
-				const interpolatedPubs = await Promise.all(
-					pubs.map(async (pub) => {
-						const pubContext = buildInterpolationContext({
-							community,
-							pub,
-							env: { PUBPUB_URL: env.PUBPUB_URL },
-							useDummyValues: true,
-						})
-						const [slugErr, slug] = await tryCatch(interpolate(page.slug, pubContext))
-						if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })
-						const interpolatedSlug = (slugErr ? pub.id : slug) as string
-						pubContext.site = { base: computeSiteBase(interpolatedSlug) }
-						const [contentErr, content] = await tryCatch(
-							interpolate(page.transform, pubContext)
-						)
-						if (contentErr)
-							logger.error({ msg: "Error interpolating content", err: contentErr })
-						return {
-							id: pub.id,
-							title: getPubTitle(pub as unknown as Parameters<typeof getPubTitle>[0]),
-							content: stringifyContent(content),
-							slug: interpolatedSlug,
-						}
-					})
-				)
-
-				return { extension, pubs: interpolatedPubs }
-			})
-		)
-		const pages: {
-			pages: { id: string; title: string; content: string; slug: string }[]
-			extension: string
-		}[] = pageGroupData.map((group) => ({
-			pages: group.pubs.map((pub) => ({
-				id: pub.id,
-				title: pub.title,
-				content: pub.content,
-				slug: pub.slug,
-			})),
-			extension: group.extension,
-		}))
 
 		const [healthError, health] = await tryCatch(siteBuilderClient.health())
 		if (healthError) {
@@ -208,19 +112,18 @@ export const run = defineRun<typeof action>(
 			msg: `Initializing site build`,
 			communitySlug,
 			mapping: config,
-			headers: {
-				authorization: `Bearer ${siteBuilderToken}`,
-			},
 		})
 
 		const [buildError, result] = await tryCatch(
 			siteBuilderClient.build({
 				body: {
-					automationRunId: automationRunId,
+					automationRunId,
 					communitySlug,
+					communityId,
+					communityName: community.name,
 					subpath: config.subpath,
-					pages,
 					siteUrl: env.PUBPUB_URL,
+					pageGroups,
 				},
 				headers: {
 					authorization: `Bearer ${siteBuilderToken}`,

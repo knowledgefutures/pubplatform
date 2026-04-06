@@ -6,6 +6,7 @@ import { siteApi } from "./resources/site"
 export * from "./resources/internal"
 export * from "./resources/site"
 export * from "./resources/types"
+export * from "./pub-proxy"
 
 const contract = initContract()
 

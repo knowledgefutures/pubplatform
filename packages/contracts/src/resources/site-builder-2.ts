@@ -3,6 +3,21 @@ import { z } from "zod"
 
 const contract = initContract()
 
+const pageGroupSchema = z.object({
+	/** How this group should be rendered */
+	mode: z.enum(["static", "single", "per-pub"]),
+	/** Raw JSONata template for page content */
+	transform: z.string(),
+	/** Raw JSONata expression for the page URL slug */
+	slugTemplate: z.string(),
+	/** File extension for generated output */
+	extension: z.string().default("html"),
+	/** Pub IDs matched by the filter (empty for static mode) */
+	pubIds: z.array(z.string().uuid()).default([]),
+})
+
+export type PageGroup = z.infer<typeof pageGroupSchema>
+
 export const siteBuilderApi = contract.router(
 	{
 		build: {
@@ -16,21 +31,11 @@ export const siteBuilderApi = contract.router(
 			body: z.object({
 				automationRunId: z.string().uuid(),
 				communitySlug: z.string(),
+				communityId: z.string().uuid(),
+				communityName: z.string(),
 				subpath: z.string().optional(),
-				pages: z.array(
-					z.object({
-						pages: z.array(
-							z.object({
-								id: z.string().uuid(),
-								title: z.string(),
-								slug: z.string(),
-								content: z.string(),
-							})
-						),
-						extension: z.string().default("html"),
-					})
-				),
 				siteUrl: z.string(),
+				pageGroups: z.array(pageGroupSchema),
 			}),
 			description: "Build a journal site",
 			responses: {
