@@ -3,6 +3,33 @@
 
 }
 
+
+(s3site) {
+    # strip trailing slash from paths (except root)
+    @pathWithSlash path_regexp dir (.+)/$
+    handle @pathWithSlash {
+        redir {re.dir.1} permanent
+    }
+
+    # rewrite to include bucket path
+    rewrite * /{args[0]}{uri}
+    
+    # reverse proxy to garage S3 API
+    reverse_proxy {args[1]} {
+        # handle 403/404 by trying index.html
+        @error status 403 404
+        handle_response @error {
+            rewrite * {uri}/index.html
+            reverse_proxy {args[1]} {
+                @nestedError status 404
+                handle_response @nestedError {
+                    respond "Not found" 404
+                }
+            }
+        }
+    }
+}
+
 :443 {
     encode gzip
 
@@ -19,16 +46,7 @@
     }
 
     handle_path /sites/* {
-        root * /sites
-        file_server {
-            fs s3 {
-                bucket {$S3_BUCKET_NAME:assets}
-                region {$S3_REGION:us-east-1}
-                endpoint {$S3_ENDPOINT:http://minio:9000}
-                access_key {$S3_ACCESS_KEY}
-                secret_key {$S3_SECRET_KEY}
-            }
-        }
+        import s3site {$S3_BUCKET_NAME:assets} {$S3_ENDPOINT:http://minio:9000}
     }
 
     handle_path /emails/* {
