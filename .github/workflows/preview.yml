@@ -149,7 +149,7 @@ jobs:
 
                     wait_rollout "${STACK_NAME}_platform" 600
 
-                    EOS
+                  EOS
 
             - name: Teardown preview stack
               if: inputs.action == 'teardown'
