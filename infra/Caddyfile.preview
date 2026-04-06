@@ -8,7 +8,7 @@
 
 # this only allows preview-*.pubstar.org domains to be used for TLS certificates
 # prevents abuse
-:8080 {  
+:8888 {  
     @allow expression {path} == "/allow-domain" && {query.domain}.matches(`^preview-[0-9]+\.pubstar\.org$`)  
     handle @allow {  
         respond "OK" 200  
