@@ -80,7 +80,7 @@ export const createPubProxy = (
 
 	// build incoming relations lookup: field slug -> array of pub proxies
 	const inObj: Record<string, Record<string, unknown>[]> = {}
-	const incomingRelations = (pub as any).incomingRelations as IncomingRelations | undefined
+	const incomingRelations = pub.incomingRelations
 	if (incomingRelations) {
 		for (const [slug, pubs] of Object.entries(incomingRelations)) {
 			const shortSlug = slug.replace(`${communitySlug}:`, "")

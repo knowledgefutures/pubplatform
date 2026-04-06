@@ -2015,11 +2015,18 @@ export async function getPubsWithRelatedValues<Options extends GetPubsWithRelate
  * For each pub, finds other pubs that reference it via relational fields,
  * grouped by field slug.
  */
+/** Minimal pub shape for traversal and incoming-relation attachment. */
+type PubWithIncomingRelations = {
+	id: PubsId
+	values?: { relatedPub?: PubWithIncomingRelations | null }[]
+	incomingRelations?: Record<string, ProcessedPub[]>
+}
+
 /**
  * Walk a pub tree iteratively, collecting all pubs (including nested related pubs).
  */
-function collectAllPubs(roots: ProcessedPub<any>[]): ProcessedPub<any>[] {
-	const all: ProcessedPub<any>[] = []
+function collectAllPubs(roots: PubWithIncomingRelations[]): PubWithIncomingRelations[] {
+	const all: PubWithIncomingRelations[] = []
 	const seen = new Set<PubsId>()
 	const stack = [...roots]
 	while (stack.length > 0) {
@@ -2040,7 +2047,7 @@ function collectAllPubs(roots: ProcessedPub<any>[]): ProcessedPub<any>[] {
  * grouped by field slug.
  */
 async function attachIncomingRelations(
-	roots: ProcessedPub<any>[],
+	roots: PubWithIncomingRelations[],
 	communityId: CommunitiesId,
 	trx: typeof db
 ): Promise<void> {
@@ -2060,7 +2067,7 @@ async function attachIncomingRelations(
 
 	if (refs.length === 0) {
 		for (const pub of allPubs) {
-			;(pub as any).incomingRelations = {}
+			pub.incomingRelations = {}
 		}
 		return
 	}
@@ -2106,9 +2113,9 @@ async function attachIncomingRelations(
 					.map((id) => sourcePubsById.get(id as PubsId))
 					.filter((p) => p !== undefined)
 			}
-			;(pub as any).incomingRelations = incomingRelations
+			pub.incomingRelations = incomingRelations
 		} else {
-			;(pub as any).incomingRelations = {}
+			pub.incomingRelations = {}
 		}
 	}
 }
