@@ -2015,24 +2015,39 @@ export async function getPubsWithRelatedValues<Options extends GetPubsWithRelate
  * For each pub, finds other pubs that reference it via relational fields,
  * grouped by field slug.
  */
+/**
+ * Walk a pub tree iteratively, collecting all pubs (including nested related pubs).
+ */
+function collectAllPubs(roots: ProcessedPub<any>[]): ProcessedPub<any>[] {
+	const all: ProcessedPub<any>[] = []
+	const seen = new Set<PubsId>()
+	const stack = [...roots]
+	while (stack.length > 0) {
+		const pub = stack.pop()!
+		if (seen.has(pub.id)) continue
+		seen.add(pub.id)
+		all.push(pub)
+		for (const v of pub.values ?? []) {
+			if (v.relatedPub) stack.push(v.relatedPub)
+		}
+	}
+	return all
+}
+
+/**
+ * Batch-load incoming relations for a set of pubs and attach them directly.
+ * For each pub, finds other pubs that reference it via relational fields,
+ * grouped by field slug.
+ */
 async function attachIncomingRelations(
-	pubs: ProcessedPub<any>[],
+	roots: ProcessedPub<any>[],
 	communityId: CommunitiesId,
 	trx: typeof db
 ): Promise<void> {
-	// Collect all pub IDs (including nested related pubs)
-	const allPubIds = new Set<PubsId>()
-	function collectIds(pub: ProcessedPub<any>) {
-		allPubIds.add(pub.id)
-		for (const v of pub.values ?? []) {
-			if (v.relatedPub) collectIds(v.relatedPub)
-		}
-	}
-	for (const pub of pubs) collectIds(pub)
+	const allPubs = collectAllPubs(roots)
+	if (allPubs.length === 0) return
 
-	if (allPubIds.size === 0) return
-
-	const pubIdArray = [...allPubIds] as PubsId[]
+	const pubIdArray = allPubs.map((p) => p.id)
 
 	// Find all (sourcePubId, fieldSlug, targetPubId) tuples referencing our pubs
 	const refs = await trx
@@ -2044,14 +2059,9 @@ async function attachIncomingRelations(
 		.execute()
 
 	if (refs.length === 0) {
-		// Attach empty incomingRelations to all pubs
-		function attachEmpty(pub: ProcessedPub<any>) {
+		for (const pub of allPubs) {
 			;(pub as any).incomingRelations = {}
-			for (const v of pub.values ?? []) {
-				if (v.relatedPub) attachEmpty(v.relatedPub)
-			}
 		}
-		for (const pub of pubs) attachEmpty(pub)
 		return
 	}
 
@@ -2087,7 +2097,7 @@ async function attachIncomingRelations(
 	const sourcePubsById = new Map(sourcePubs.map((p) => [p.id, p]))
 
 	// Attach incomingRelations to each pub
-	function attach(pub: ProcessedPub<any>) {
+	for (const pub of allPubs) {
 		const fieldMap = refMap.get(pub.id)
 		if (fieldMap) {
 			const incomingRelations: Record<string, ProcessedPub[]> = {}
@@ -2100,11 +2110,7 @@ async function attachIncomingRelations(
 		} else {
 			;(pub as any).incomingRelations = {}
 		}
-		for (const v of pub.values ?? []) {
-			if (v.relatedPub) attach(v.relatedPub)
-		}
 	}
-	for (const pub of pubs) attach(pub)
 }
 
 function nestRelatedPubs<Options extends GetPubsWithRelatedValuesOptions>(
