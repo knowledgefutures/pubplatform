@@ -1,6 +1,5 @@
 // shared actions between server and client
 
-import * as buildJournalSite from "../buildJournalSite/action"
 import * as buildSite from "../buildSite/action"
 import * as createPub from "../createPub/action"
 import * as datacite from "../datacite/action"
@@ -17,7 +16,6 @@ export const actions = {
 	[move.action.name]: move.action,
 	[googleDriveImport.action.name]: googleDriveImport.action,
 	[datacite.action.name]: datacite.action,
-	[buildJournalSite.action.name]: buildJournalSite.action,
 	[createPub.action.name]: createPub.action,
 	[buildSite.action.name]: buildSite.action,
 } as const

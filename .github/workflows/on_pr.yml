@@ -129,11 +129,9 @@ jobs:
             # PLATFORM_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7-core:2b9a81a279c4e405bbedcdbb697c897ded52fbc0
             # JOBS_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7-jobs:c786662f4899de16a621e366a485eca5adda4d6a
             # MIGRATIONS_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7:c786662f4899de16a621e366a485eca5adda4d6a
-            # SITE_BUILDER_IMAGE: 246372085946.dkr.ecr.us-east-1.amazonaws.com/pubpub-v7-site-builder:c786662f4899de16a621e366a485eca5adda4d6a
             PLATFORM_IMAGE: ${{ needs.build-all.outputs.core-image }}
             JOBS_IMAGE: ${{ needs.build-all.outputs.jobs-image }}
             MIGRATIONS_IMAGE: ${{ needs.build-all.outputs.base-image }}
-            SITE_BUILDER_IMAGE: ${{ needs.build-all.outputs.site-builder-image }}
             AWS_REGION: "us-east-1"
             COMPOSE_FILES: docker-compose.preview.pr.yml
         secrets:
@@ -155,7 +153,6 @@ jobs:
             PLATFORM_IMAGE: "x" # not used
             JOBS_IMAGE: "x" # not used
             MIGRATIONS_IMAGE: "x" # not used
-            SITE_BUILDER_IMAGE: "x" # not used
             AWS_REGION: "us-east-1"
         secrets:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

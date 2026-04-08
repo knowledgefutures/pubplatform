@@ -115,28 +115,6 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
 
-    site-builder:
-        image: ${SITE_BUILDER_IMAGE}
-        depends_on:
-            - integration-tests
-            - jobs
-            - minio
-        ports:
-            - "4000:4000"
-        restart: on-failure
-        networks:
-            - app-network
-        profiles:
-            - integration
-        environment:
-            - PUBPUB_URL=http://integration-tests:3000
-            - S3_ENDPOINT=${ASSETS_STORAGE_ENDPOINT:-http://minio:9000}
-            - S3_REGION=${ASSETS_REGION:-us-east-1}
-            - S3_ACCESS_KEY=${ASSETS_UPLOAD_KEY:-preview-different}
-            - S3_SECRET_KEY=${ASSETS_UPLOAD_SECRET_KEY:-preview-different123}
-            - S3_BUCKET_NAME=${ASSETS_BUCKET_NAME:-byron}
-            - PORT=4000
-
 volumes:
     minio_data:
     postgres_test_data:

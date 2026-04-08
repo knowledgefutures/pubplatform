@@ -67,14 +67,3 @@ jobs:
         secrets:
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-
-    deploy-site-builder:
-        uses: ./.github/workflows/deploy-template.yml
-        with:
-            service: site-builder
-            environment: ${{ inputs.environment }}
-            proper-name: ${{ inputs.proper-name }}
-            image-tag-override: ${{ inputs.image-tag-override }}
-        secrets:
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

@@ -37,27 +37,6 @@ services:
         image: MIGRATIONS_IMAGE
         restart: on-failure
         command: pnpm --filter core reset
-    site-builder:
-        image: SITE_BUILDER_IMAGE
-        depends_on:
-            - platform
-            - platform-jobs
-            - minio
-        ports:
-            - "4000:4000"
-        restart: on-failure
-        networks:
-            - app-network
-        environment:
-            - PUBPUB_URL=http://platform:3000
-            - S3_ENDPOINT=http://minio:9000
-            - S3_REGION=us-east-1
-            - S3_ACCESS_KEY=preview-different
-            - S3_SECRET_KEY=preview-different123
-            - S3_BUCKET_NAME=assets
-            - PORT=4000
-            - SITES_BASE_URL=https://${PULLPREVIEW_PUBLIC_DNS}/sites
-
     caddy:
         image: CADDY_SITES_IMAGE
         restart: on-failure

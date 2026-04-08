@@ -63,7 +63,6 @@ jobs:
             PLATFORM_IMAGE: ${{ needs.build-all.outputs.core-image }}
             JOBS_IMAGE: ${{ needs.build-all.outputs.jobs-image }}
             MIGRATIONS_IMAGE: ${{ needs.build-all.outputs.base-image }}
-            SITE_BUILDER_IMAGE: ${{ needs.build-all.outputs.site-builder-image }}
             AWS_REGION: "us-east-1"
             ALWAYS_ON: "main"
             COMPOSE_FILES: docker-compose.preview.sandbox.yml

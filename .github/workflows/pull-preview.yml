@@ -10,9 +10,6 @@ on:
             MIGRATIONS_IMAGE:
                 required: true
                 type: string
-            SITE_BUILDER_IMAGE:
-                required: true
-                type: string
             AWS_REGION:
                 required: true
                 type: string
@@ -55,12 +52,10 @@ jobs:
                   PLATFORM_IMAGE: ${{ inputs.PLATFORM_IMAGE }}
                   JOBS_IMAGE: ${{ inputs.JOBS_IMAGE }}
                   MIGRATIONS_IMAGE: ${{ inputs.MIGRATIONS_IMAGE }}
-                  SITE_BUILDER_IMAGE: ${{ inputs.SITE_BUILDER_IMAGE }}
               run: |
                   sed -i "s|image: PLATFORM_IMAGE|image: $PLATFORM_IMAGE|" docker-compose.preview.yml
                   sed -i "s|image: JOBS_IMAGE|image: $JOBS_IMAGE|" docker-compose.preview.yml
                   sed -i "s|image: MIGRATIONS_IMAGE|image: $MIGRATIONS_IMAGE|" docker-compose.preview.yml
-                  sed -i "s|image: SITE_BUILDER_IMAGE|image: $SITE_BUILDER_IMAGE|" docker-compose.preview.yml
                   sed -i "s|DATACITE_REPOSITORY_ID: DATACITE_REPOSITORY_ID|DATACITE_REPOSITORY_ID: ${{ secrets.PREVIEW_DATACITE_REPOSITORY_ID }}|" docker-compose.preview.yml
                   sed -i "s|DATACITE_PASSWORD: DATACITE_PASSWORD|DATACITE_PASSWORD: ${{ secrets.PREVIEW_DATACITE_PASSWORD }}|" docker-compose.preview.yml
                   sed -i "s|email someone@example.com|email dev@pubpub.org|" self-host/caddy/Caddyfile

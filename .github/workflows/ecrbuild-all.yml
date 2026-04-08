@@ -23,9 +23,6 @@ on:
             jobs-image:
                 description: "Jobs image SHA"
                 value: ${{ jobs.build-jobs.outputs.image-sha }}
-            site-builder-image:
-                description: "Site builder image SHA"
-                value: ${{ jobs.build-site-builder.outputs.image-sha }}
 
 jobs:
     emit-sha-tag:
@@ -77,13 +74,3 @@ jobs:
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
-    build-site-builder:
-        uses: ./.github/workflows/ecrbuild-template.yml
-        with:
-            package: site-builder
-            target: jobs
-            publish_to_ghcr: ${{ inputs.publish_to_ghcr }}
-            ghcr_image_name: platform-site-builder
-        secrets:
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
