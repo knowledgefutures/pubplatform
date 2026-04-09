@@ -4,7 +4,9 @@
 }
 
 *.pubstar.org {
-    tls internal
+    tls internal {
+        on_demand
+    }
 
     encode gzip
 
