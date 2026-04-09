@@ -131,7 +131,7 @@ jobs:
             action: deploy
             image_tag: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || github.event.pull_request.head.sha }}
             stack_name: preview-pr-${{ github.event.pull_request.number }}
-            hostname: pr-${{ github.event.pull_request.number }}.preview.pubstar.org
+            hostname: pr-${{ github.event.pull_request.number }}.pubstar.org
             env_file: .env.preview.enc
             stack_file: stack.preview.yml
             uses_gateway: true
@@ -152,7 +152,7 @@ jobs:
         with:
             action: teardown
             stack_name: preview-pr-${{ github.event.pull_request.number }}
-            hostname: pr-${{ github.event.pull_request.number }}.preview.pubstar.org
+            hostname: pr-${{ github.event.pull_request.number }}.pubstar.org
             env_file: .env.preview.enc
             stack_file: stack.preview.yml
             uses_gateway: true

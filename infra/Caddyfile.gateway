@@ -10,7 +10,7 @@
 }
 
 :8888 {
-    @allow expression {path} == "/allow-domain" && ({query.domain}.matches("pr-[0-9]+\\.preview\\.pubstar\\.org") || {query.domain} == "sandbox.pubstar.org")
+    @allow expression {path} == "/allow-domain" && ({query.domain}.matches("pr-[0-9]+\\.pubstar\\.org") || {query.domain} == "sandbox.pubstar.org")
     handle @allow {
         respond "OK" 200
     }
