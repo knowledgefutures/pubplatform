@@ -21,7 +21,7 @@ jobs:
         outputs:
             docs: ${{ steps.changes.outputs.docs }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
               with:
                   fetch-depth: 0
             - uses: dorny/paths-filter@v3
@@ -38,7 +38,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
                   ref: ${{ github.event.pull_request.head.sha }}
@@ -186,7 +186,7 @@ jobs:
     #     if: github.event.action == 'closed' && needs.path-filter.outputs.docs == 'true'
     #     runs-on: ubuntu-latest
     #     steps:
-    #         - uses: actions/checkout@v4
+    #         - uses: actions/checkout@v6
 
     #         - name: Close docs preview
     #           uses: rossjrw/pr-preview-action@v1
