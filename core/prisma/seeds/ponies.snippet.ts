@@ -1,6 +1,5 @@
 // prettier-ignore
-export const poniesText = `
-<figure id="n2yd51k0l6v">
+export const poniesText = `<figure id="n2yd51k0l6v">
 	<img
 		id="n2yd51k0l6v"
 		alt=""
@@ -105,7 +104,7 @@ export const poniesText = `
 			><math xmlns="http://www.w3.org/1998/Math/MathML"
 				><semantics
 					><mrow><mi>β</mi></mrow
-					><annotation encoding="application/x-tex">\beta</annotation></semantics
+					><annotation encoding="application/x-tex">\\beta</annotation></semantics
 				></math
 			></span
 		></math-inline
@@ -259,7 +258,7 @@ export const poniesText = `
 						><mn>22</mn><mo>−</mo><mn>24</mn><mi mathvariant="normal">°</mi
 						><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>22 - 24 degree \text{C}</annotation
+						>22 - 24 degree \\text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -411,7 +410,7 @@ export const poniesText = `
 				><semantics
 					><mrow><mn>4</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>4degree \text{C}</annotation
+						>4degree \\text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -512,7 +511,7 @@ export const poniesText = `
 				><semantics
 					><mrow><mn>37</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>37degree \text{C}</annotation
+						>37degree \\text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -1226,7 +1225,7 @@ export const poniesText = `
 				><semantics
 					><mrow><mn>60</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>60degree \text{C}</annotation
+						>60degree \\text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -1268,7 +1267,7 @@ export const poniesText = `
 					><mrow
 						><mo>−</mo><mn>80</mn><mi mathvariant="normal">°</mi><mtext>C</mtext></mrow
 					><annotation encoding="application/x-tex"
-						>-80degree \text{C}</annotation
+						>-80degree \\text{C}</annotation
 					></semantics
 				></math
 			></span
@@ -2871,4 +2870,4 @@ export const poniesText = `
 		Lymphocyte.
 	</figcaption>
 </figure>
-`
+` as string
