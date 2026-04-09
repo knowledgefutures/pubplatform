@@ -2,28 +2,6 @@
 
 services:
 
-    proxy:
-        image: caddy:latest
-        env_file: [.env]
-        volumes:
-            - ./Caddyfile.preview:/etc/caddy/Caddyfile:ro
-            - caddy_data:/data
-            - caddy_config:/config
-        networks: [appnet]
-        ports:
-            - target: 80
-              published: 80
-              protocol: tcp
-              mode: host
-            - target: 443
-              published: 443
-              protocol: tcp
-              mode: host
-        deploy:
-            replicas: 1
-            restart_policy:
-                condition: any
-
     platform:
         image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
         env_file: [.env]
@@ -31,14 +9,14 @@ services:
             HOSTNAME: "0.0.0.0"
             NODE_ENV: production
             PORT: "3000"
-            PUBPUB_URL: https://pr-${PR_NUMBER}.pubstar.org
-            PUBPUB_HOSTNAME: pr-${PR_NUMBER}.pubstar.org
+            PUBPUB_URL: https://${DEPLOY_HOST}
+            PUBPUB_HOSTNAME: ${DEPLOY_HOST}
             SITE_BUILDER_ENDPOINT: http://site-builder:4000
-            S3_PUBLIC_ENDPOINT: https://pr-${PR_NUMBER}.pubstar.org/assets
+            S3_PUBLIC_ENDPOINT: https://${DEPLOY_HOST}/assets
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
             DB_RESET: "true"
             DB_SEED: "true"
-        networks: [appnet]
+        networks: [appnet, gateway_net]
         healthcheck:
             test:
                 - CMD-SHELL
@@ -74,7 +52,7 @@ services:
             NODE_ENV: production
             PUBPUB_URL: http://platform:3000
             PORT: "4000"
-        networks: [appnet]
+        networks: [appnet, gateway_net]
         deploy:
             replicas: 1
             restart_policy:
@@ -104,8 +82,8 @@ services:
         env_file: [.env]
         command: server --console-address ":9001" /data
         environment:
-            MINIO_BROWSER_REDIRECT_URL: https://pr-${PR_NUMBER}.pubstar.org/assets-ui
-        networks: [appnet]
+            MINIO_BROWSER_REDIRECT_URL: https://${DEPLOY_HOST}/assets-ui
+        networks: [appnet, gateway_net]
         deploy:
             replicas: 1
             restart_policy:
@@ -131,7 +109,7 @@ services:
 
     inbucket:
         image: inbucket/inbucket:latest
-        networks: [appnet]
+        networks: [appnet, gateway_net]
         deploy:
             replicas: 1
             restart_policy:
@@ -140,8 +118,9 @@ services:
 networks:
     appnet:
         driver: overlay
+    gateway_net:
+        external: true
+        name: gateway_gateway_net
 
 volumes:
     pgdata:
-    caddy_data:
-    caddy_config:

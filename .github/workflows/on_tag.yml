@@ -1,0 +1,94 @@
+name: Release & deploy
+
+on:
+    push:
+        tags:
+            - "v[0-9]*.[0-9]*.[0-9]*"
+
+permissions:
+    id-token: write
+    contents: write
+    packages: write
+    pull-requests: write
+
+concurrency:
+    group: deploy-prod-${{ github.ref_name }}
+    cancel-in-progress: true
+
+jobs:
+    validate-tag:
+        runs-on: ubuntu-latest
+        outputs:
+            prerelease: ${{ steps.meta.outputs.prerelease }}
+        steps:
+            - name: Validate semver and detect pre-release
+              id: meta
+              run: |
+                  tag="${{ github.ref_name }}"
+
+                  if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc|experimental)\.[0-9]+)?$ ]]; then
+                    echo "::error::Tag '$tag' does not match semver format (vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-{alpha,beta,rc,experimental}.N)"
+                    exit 1
+                  fi
+
+                  if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                    echo "prerelease=false" >> $GITHUB_OUTPUT
+                  else
+                    echo "prerelease=true" >> $GITHUB_OUTPUT
+                  fi
+
+    build-all:
+        needs: validate-tag
+        permissions:
+            contents: read
+            packages: write
+        uses: ./.github/workflows/ghcr-build-all.yml
+        with:
+            image_tag: ${{ github.ref_name }}
+            publish_latest: ${{ needs.validate-tag.outputs.prerelease == 'false' }}
+        secrets:
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+    create-release:
+        needs: validate-tag
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Create GitHub release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  flags="--generate-notes"
+
+                  if [[ "${{ needs.validate-tag.outputs.prerelease }}" == "true" ]]; then
+                    flags="$flags --prerelease"
+                  fi
+
+                  gh release create "${{ github.ref_name }}" $flags
+
+    deploy-prod:
+        needs:
+            - validate-tag
+            - build-all
+        if: needs.validate-tag.outputs.prerelease == 'false'
+        permissions:
+            contents: read
+        uses: ./.github/workflows/deploy-stack.yml
+        with:
+            action: deploy
+            image_tag: ${{ github.ref_name }}
+            stack_name: pubstar
+            hostname: ${{ vars.PROD_HOSTNAME }}
+            env_file: .env.enc
+            stack_file: stack.yml
+            uses_gateway: false
+            ssh_host_secret: SSH_HOST_PROD
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_PROD }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}

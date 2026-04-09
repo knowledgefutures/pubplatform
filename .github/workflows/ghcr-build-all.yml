@@ -6,6 +6,9 @@ on:
       publish_latest:
         type: boolean
         default: false
+      image_tag:
+        type: string
+        description: "Override the image tag (e.g. v1.2.3). Falls back to git describe."
     outputs:
       core-image:
         description: 'Core image ref'
@@ -27,6 +30,7 @@ jobs:
       package: core
       ghcr_image_name: platform
       publish_latest: ${{ inputs.publish_latest }}
+      image_tag: ${{ inputs.image_tag }}
     secrets:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
@@ -37,6 +41,7 @@ jobs:
       target: jobs
       ghcr_image_name: platform-jobs
       publish_latest: ${{ inputs.publish_latest }}
+      image_tag: ${{ inputs.image_tag }}
     secrets:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
@@ -47,5 +52,6 @@ jobs:
       target: jobs
       ghcr_image_name: platform-site-builder
       publish_latest: ${{ inputs.publish_latest }}
+      image_tag: ${{ inputs.image_tag }}
     secrets:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

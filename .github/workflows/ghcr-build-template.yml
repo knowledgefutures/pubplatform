@@ -16,6 +16,9 @@ on:
       publish_latest:
         type: boolean
         default: false
+      image_tag:
+        type: string
+        description: "Override the image tag (e.g. v1.2.3). Falls back to git describe."
     outputs:
       image-sha:
         description: 'Full GHCR image ref with SHA tag'
@@ -54,7 +57,10 @@ jobs:
       - name: Compute image tags
         id: label
         run: |
-          sha_short=$(git describe --always --abbrev=40 --dirty)
+          sha_short="${{ inputs.image_tag || '' }}"
+          if [[ -z "$sha_short" ]]; then
+            sha_short=$(git describe --always --abbrev=40 --dirty)
+          fi
 
           if [[ -z "${{ inputs.package }}" ]]; then
               echo "target=monorepo" >> $GITHUB_OUTPUT

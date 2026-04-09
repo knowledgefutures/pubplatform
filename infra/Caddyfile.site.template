@@ -1,0 +1,31 @@
+${DEPLOY_HOST} {
+    tls {
+        on_demand
+    }
+
+    encode gzip
+
+    handle_path /assets* {
+        reverse_proxy ${STACK_NAME}_minio:9000
+    }
+
+    handle_path /assets-ui* {
+        reverse_proxy ${STACK_NAME}_minio:9001
+    }
+
+    handle_path /site-builder* {
+        reverse_proxy ${STACK_NAME}_site-builder:4000
+    }
+
+    handle_path /sites/* {
+        import s3site {$S3_BUCKET_NAME:assets} http://${STACK_NAME}_minio:9000
+    }
+
+    handle_path /emails/* {
+        reverse_proxy ${STACK_NAME}_inbucket:9000
+    }
+
+    handle {
+        reverse_proxy ${STACK_NAME}_platform:3000
+    }
+}

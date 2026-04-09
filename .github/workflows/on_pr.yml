@@ -8,6 +8,7 @@ permissions:
     id-token: write
     contents: read
     packages: write
+    pull-requests: write
 
 jobs:
     path-filter:
@@ -108,7 +109,7 @@ jobs:
 
     deploy-preview:
         if: needs.build-all.result == 'success' && contains(github.event.pull_request.labels.*.name, 'preview')
-        uses: ./.github/workflows/preview.yml
+        uses: ./.github/workflows/deploy-stack.yml
         needs:
             - build-all
         permissions:
@@ -116,27 +117,38 @@ jobs:
             pull-requests: write
         with:
             action: deploy
-            image_tag:  ${{ github.event.pull_request.head.sha }}
-            # image_tag: 1792116d0d1279eba2ad574741171449d50feb20
+            image_tag: ${{ github.event.pull_request.head.sha }}
+            stack_name: preview-pr-${{ github.event.pull_request.number }}
+            hostname: pr-${{ github.event.pull_request.number }}.preview.pubstar.org
+            env_file: .env.preview.enc
+            stack_file: stack.preview.yml
+            uses_gateway: true
+            ssh_host_secret: SSH_HOST_PREVIEW
         secrets:
             SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
             SSH_USER: ${{ secrets.SSH_USER }}
-            SSH_HOST_PREVIEW: ${{ secrets.SSH_HOST_PREVIEW }}
+            SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
             GHCR_USER: ${{ secrets.GHCR_USER }}
             GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
     close-preview:
         if: (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
-        uses: ./.github/workflows/preview.yml
+        uses: ./.github/workflows/deploy-stack.yml
         permissions:
             contents: read
             pull-requests: write
         with:
             action: teardown
+            stack_name: preview-pr-${{ github.event.pull_request.number }}
+            hostname: pr-${{ github.event.pull_request.number }}.preview.pubstar.org
+            env_file: .env.preview.enc
+            stack_file: stack.preview.yml
+            uses_gateway: true
+            ssh_host_secret: SSH_HOST_PREVIEW
         secrets:
             SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
             SSH_USER: ${{ secrets.SSH_USER }}
-            SSH_HOST_PREVIEW: ${{ secrets.SSH_HOST_PREVIEW }}
+            SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
             GHCR_USER: ${{ secrets.GHCR_USER }}
             GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
