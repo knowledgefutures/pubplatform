@@ -80,8 +80,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          cache-from: type=gha,scope=${{ inputs.ghcr_image_name }}
-          cache-to: type=gha,mode=max,scope=${{ inputs.ghcr_image_name }}
+          cache-from: type=registry,ref=ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:buildcache,mode=max
           build-args: |
             PACKAGE=${{ inputs.package }}
             CI=true

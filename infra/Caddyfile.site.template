@@ -1,7 +1,5 @@
 ${DEPLOY_HOST} {
-    tls {
-        on_demand
-    }
+    tls internal
 
     encode gzip
 

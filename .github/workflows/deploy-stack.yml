@@ -119,7 +119,9 @@ jobs:
                     cd infra
                     umask 077
 
-                    sops -d --input-type dotenv --output-type dotenv "$ENV_FILE" > .env
+                    # write to a per-stack env file to avoid races between concurrent deploys
+                    sops -d --input-type dotenv --output-type dotenv "$ENV_FILE" > ".env.${STACK_NAME}"
+                    ln -sf ".env.${STACK_NAME}" .env
 
                     if ! sudo docker info --format '{{.Swarm.LocalNodeState}}' | grep -qx active; then
                       sudo docker swarm init --advertise-addr "$(hostname -I | awk '{print $1}')"
