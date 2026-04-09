@@ -12,19 +12,19 @@
 
     handle_path /assets* {
         reverse_proxy {
-            dynamic a preview-{labels.2}_minio 9000
+            dynamic a tasks.preview-{labels.2}_minio 9000
         }
     }
 
     handle_path /assets-ui* {
         reverse_proxy {
-            dynamic a preview-{labels.2}_minio 9001
+            dynamic a tasks.preview-{labels.2}_minio 9001
         }
     }
 
     handle_path /site-builder* {
         reverse_proxy {
-            dynamic a preview-{labels.2}_site-builder 4000
+            dynamic a tasks.preview-{labels.2}_site-builder 4000
         }
     }
 
@@ -37,13 +37,13 @@
         rewrite * /assets{uri}
 
         reverse_proxy {
-            dynamic a preview-{labels.2}_minio 9000
+            dynamic a tasks.preview-{labels.2}_minio 9000
 
             @error status 403 404
             handle_response @error {
                 rewrite * {uri}/index.html
                 reverse_proxy {
-                    dynamic a preview-{labels.2}_minio 9000
+                    dynamic a tasks.preview-{labels.2}_minio 9000
 
                     @nestedError status 404
                     handle_response @nestedError {
@@ -56,13 +56,13 @@
 
     handle_path /emails/* {
         reverse_proxy {
-            dynamic a preview-{labels.2}_inbucket 9000
+            dynamic a tasks.preview-{labels.2}_inbucket 9000
         }
     }
 
     handle {
         reverse_proxy {
-            dynamic a preview-{labels.2}_platform 3000
+            dynamic a tasks.preview-{labels.2}_platform 3000
         }
     }
 }
