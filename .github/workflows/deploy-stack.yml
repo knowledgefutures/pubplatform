@@ -132,9 +132,12 @@ jobs:
                     sudo docker pull ghcr.io/knowledgefutures/platform:"$IMAGE_TAG"
 
                     if [[ "$USES_GATEWAY" == "true" ]]; then
-                      # deploy/update the gateway stack (idempotent, picks up config changes)
+                      # deploy/update the gateway stack
                       echo "deploying gateway stack..."
                       sudo docker stack deploy -c stack.gateway.yml --prune gateway
+
+                      # force-update the proxy so bind-mounted caddyfile changes get picked up
+                      sudo docker service update --force gateway_proxy 2>/dev/null || true
                       sleep 5
 
                       # write per-site caddy config from template
