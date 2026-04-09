@@ -108,7 +108,7 @@ jobs:
             image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
 
     deploy-preview:
-        if: (needs.build-all.result == 'success' || needs.skip_build_sha.outputs.last-successful-build-sha != '') && contains(github.event.pull_request.labels.*.name, 'preview')
+        if: (needs.build-all.result == 'success' || needs.build-all.result == 'skipped') && contains(github.event.pull_request.labels.*.name, 'preview')
         uses: ./.github/workflows/deploy-stack.yml
         needs:
             - skip_build_sha
