@@ -6,7 +6,7 @@
 
 **/.classpath
 **/.dockerignore
-**/.env
+**/.env*
 **/.git
 **/.project
 **/.settings
@@ -29,5 +29,9 @@
 **/values.dev.yaml
 **/build
 **/dist
+**/.github
+**/.turbo
+**/.infra
+
 LICENSE
 README.md
