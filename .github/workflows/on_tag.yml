@@ -12,8 +12,8 @@ permissions:
     pull-requests: write
 
 concurrency:
-    group: deploy-prod-${{ github.ref_name }}
-    cancel-in-progress: true
+    group: deploy-prod
+    cancel-in-progress: false
 
 jobs:
     validate-tag:

@@ -12,6 +12,10 @@ permissions:
     packages: write
     pull-requests: write
 
+concurrency:
+    group: deploy-main
+    cancel-in-progress: false
+
 jobs:
     ci:
         uses: ./.github/workflows/ci.yml

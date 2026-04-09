@@ -10,6 +10,10 @@ permissions:
     packages: write
     pull-requests: write
 
+concurrency:
+    group: pr-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
 jobs:
     path-filter:
         runs-on: ubuntu-latest
@@ -108,7 +112,14 @@ jobs:
             image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
 
     deploy-preview:
-        if: (needs.build-all.result == 'success' || needs.build-all.result == 'skipped') && contains(github.event.pull_request.labels.*.name, 'preview')
+        if: >-
+            always() &&
+            contains(github.event.pull_request.labels.*.name, 'preview') &&
+            github.event.action != 'closed' &&
+            github.event.action != 'unlabeled' &&
+            needs.skip_build_sha.result == 'success' &&
+            (needs.build-all.result == 'success' ||
+              (needs.build-all.result == 'skipped' && needs.skip_build_sha.outputs.last-successful-build-sha != ''))
         uses: ./.github/workflows/deploy-stack.yml
         needs:
             - skip_build_sha
@@ -118,7 +129,7 @@ jobs:
             pull-requests: write
         with:
             action: deploy
-            image_tag: ${{ github.event.pull_request.head.sha }}
+            image_tag: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || github.event.pull_request.head.sha }}
             stack_name: preview-pr-${{ github.event.pull_request.number }}
             hostname: pr-${{ github.event.pull_request.number }}.preview.pubstar.org
             env_file: .env.preview.enc
