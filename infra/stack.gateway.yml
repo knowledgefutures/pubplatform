@@ -8,7 +8,8 @@ services:
             - ./Caddyfile.gateway:/etc/caddy/Caddyfile:ro
             - caddy_data:/data
             - caddy_config:/config
-        networks: [gateway_net]
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         ports:
             - target: 80
               published: 80
@@ -22,11 +23,6 @@ services:
             replicas: 1
             restart_policy:
                 condition: any
-
-networks:
-    gateway_net:
-        driver: overlay
-        attachable: true
 
 volumes:
     caddy_data:

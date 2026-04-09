@@ -136,7 +136,18 @@ jobs:
                       echo "deploying gateway stack..."
                       sudo docker stack deploy -c stack.gateway.yml --prune gateway
 
+                      # derive host ports from PR number (prefix digit + pr number)
+                      PR_NUM="${STACK_NAME##*-}"
+                      PLATFORM_PORT="1${PR_NUM}"
+                      BUILDER_PORT="2${PR_NUM}"
+                      MINIO_PORT="3${PR_NUM}"
+                      MINIO_CONSOLE_PORT="4${PR_NUM}"
+                      INBUCKET_PORT="5${PR_NUM}"
+
                       sudo env IMAGE_TAG="$IMAGE_TAG" DEPLOY_HOST="$DEPLOY_HOST" \
+                        PLATFORM_PORT="$PLATFORM_PORT" BUILDER_PORT="$BUILDER_PORT" \
+                        MINIO_PORT="$MINIO_PORT" MINIO_CONSOLE_PORT="$MINIO_CONSOLE_PORT" \
+                        INBUCKET_PORT="$INBUCKET_PORT" \
                         docker stack deploy -c "$STACK_FILE" \
                         --with-registry-auth --resolve-image always --prune "$STACK_NAME"
 
@@ -248,7 +259,7 @@ jobs:
                     fi
 
                     if [[ "$USES_GATEWAY" == "true" ]]; then
-                      echo "gateway routes are dynamic, no per-site cleanup needed"
+                      echo "gateway uses dynamic map routing, no per-site cleanup needed"
                     fi
 
                     sudo docker image prune -f

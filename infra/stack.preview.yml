@@ -16,7 +16,12 @@ services:
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
             DB_RESET: "true"
             DB_SEED: "true"
-        networks: [appnet, gateway_net]
+        networks: [appnet]
+        ports:
+            - target: 3000
+              published: ${PLATFORM_PORT}
+              protocol: tcp
+              mode: host
         healthcheck:
             test:
                 - CMD-SHELL
@@ -52,7 +57,12 @@ services:
             NODE_ENV: production
             PUBPUB_URL: http://platform:3000
             PORT: "4000"
-        networks: [appnet, gateway_net]
+        networks: [appnet]
+        ports:
+            - target: 4000
+              published: ${BUILDER_PORT}
+              protocol: tcp
+              mode: host
         deploy:
             replicas: 1
             restart_policy:
@@ -83,7 +93,16 @@ services:
         command: server --console-address ":9001" /data
         environment:
             MINIO_BROWSER_REDIRECT_URL: https://${DEPLOY_HOST}/assets-ui
-        networks: [appnet, gateway_net]
+        networks: [appnet]
+        ports:
+            - target: 9000
+              published: ${MINIO_PORT}
+              protocol: tcp
+              mode: host
+            - target: 9001
+              published: ${MINIO_CONSOLE_PORT}
+              protocol: tcp
+              mode: host
         deploy:
             replicas: 1
             restart_policy:
@@ -109,7 +128,12 @@ services:
 
     inbucket:
         image: inbucket/inbucket:latest
-        networks: [appnet, gateway_net]
+        networks: [appnet]
+        ports:
+            - target: 9000
+              published: ${INBUCKET_PORT}
+              protocol: tcp
+              mode: host
         deploy:
             replicas: 1
             restart_policy:
@@ -118,9 +142,6 @@ services:
 networks:
     appnet:
         driver: overlay
-    gateway_net:
-        external: true
-        name: gateway_gateway_net
 
 volumes:
     pgdata:
