@@ -1,4 +1,4 @@
-name: Promote from main
+name: Promote from main (new)
 
 on:
     push:
