@@ -6,7 +6,6 @@ services:
         image: caddy:latest
         volumes:
             - ./Caddyfile.gateway:/etc/caddy/Caddyfile:ro
-            - /srv/caddy/sites.d:/etc/caddy/sites.d:ro
             - caddy_data:/data
             - caddy_config:/config
         networks: [gateway_net]

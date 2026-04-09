@@ -1,46 +1,69 @@
-# this is a shared caddyfile for all preview/sandbox deployments
-# they cannot all have their own caddyfile sadly 
-
 {
     admin :2019
-    on_demand_tls {
-        ask http://localhost:8888/allow-domain
-    }
     debug
 }
 
-:8888 {
-    @allow expression {path} == "/allow-domain" && ({query.domain}.matches("pr-[0-9]+\\.pubstar\\.org") || {query.domain} == "sandbox.pubstar.org")
-    handle @allow {
-        respond "OK" 200
+*.pubstar.org {
+    tls internal
+
+    encode gzip
+
+    handle_path /assets* {
+        reverse_proxy {
+            dynamic a preview-{labels.2}_minio 9000
+        }
     }
 
-    respond "Not allowed" 403
-}
-
-(s3site) {
-    @pathWithSlash path_regexp dir (.+)/$
-    handle @pathWithSlash {
-        redir {re.dir.1} permanent
+    handle_path /assets-ui* {
+        reverse_proxy {
+            dynamic a preview-{labels.2}_minio 9001
+        }
     }
 
-    rewrite * /{args[0]}{uri}
+    handle_path /site-builder* {
+        reverse_proxy {
+            dynamic a preview-{labels.2}_site-builder 4000
+        }
+    }
 
-    reverse_proxy {args[1]} {
-        @error status 403 404
-        handle_response @error {
-            rewrite * {uri}/index.html
-            reverse_proxy {args[1]} {
-                @nestedError status 404
-                handle_response @nestedError {
-                    respond "Not found" 404
+    handle_path /sites/* {
+        @pathWithSlash path_regexp dir (.+)/$
+        handle @pathWithSlash {
+            redir {re.dir.1} permanent
+        }
+
+        rewrite * /assets{uri}
+
+        reverse_proxy {
+            dynamic a preview-{labels.2}_minio 9000
+
+            @error status 403 404
+            handle_response @error {
+                rewrite * {uri}/index.html
+                reverse_proxy {
+                    dynamic a preview-{labels.2}_minio 9000
+
+                    @nestedError status 404
+                    handle_response @nestedError {
+                        respond "Not found" 404
+                    }
                 }
             }
         }
     }
-}
 
-import /etc/caddy/sites.d/*.caddy
+    handle_path /emails/* {
+        reverse_proxy {
+            dynamic a preview-{labels.2}_inbucket 9000
+        }
+    }
+
+    handle {
+        reverse_proxy {
+            dynamic a preview-{labels.2}_platform 3000
+        }
+    }
+}
 
 :80 {
     respond "OK" 200

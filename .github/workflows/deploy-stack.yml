@@ -114,7 +114,8 @@ jobs:
 
                     cd "${APP_DIR}"
                     git fetch --prune --tags origin
-                    git checkout --detach "${IMAGE_TAG}" 2>/dev/null || git checkout --detach "origin/${BRANCH}"
+                    # always checkout the latest commit on the branch, even if we are skipping the build
+                    git checkout --detach "origin/${BRANCH}"
 
                     cd infra
                     umask 077
@@ -132,31 +133,12 @@ jobs:
                     sudo docker pull ghcr.io/knowledgefutures/platform:"$IMAGE_TAG"
 
                     if [[ "$USES_GATEWAY" == "true" ]]; then
-                      # deploy/update the gateway stack
                       echo "deploying gateway stack..."
                       sudo docker stack deploy -c stack.gateway.yml --prune gateway
 
-                      # force-update the proxy so bind-mounted caddyfile changes get picked up
-                      sudo docker service update --force gateway_proxy 2>/dev/null || true
-                      sleep 5
-
-                      # write per-site caddy config from template
-                      sudo mkdir -p /srv/caddy/sites.d
-
-                      export DEPLOY_HOST STACK_NAME
-                      envsubst '$DEPLOY_HOST $STACK_NAME' < Caddyfile.site.template \
-                        | sudo tee /srv/caddy/sites.d/${STACK_NAME}.caddy > /dev/null
-
-                      # deploy the app stack
                       sudo env IMAGE_TAG="$IMAGE_TAG" DEPLOY_HOST="$DEPLOY_HOST" \
                         docker stack deploy -c "$STACK_FILE" \
                         --with-registry-auth --resolve-image always --prune "$STACK_NAME"
-
-                      # reload caddy to pick up the new site config
-                      gateway_container=$(sudo docker ps --filter "label=com.docker.swarm.service.name=gateway_proxy" --format '{{.ID}}' | head -1)
-                      if [[ -n "$gateway_container" ]]; then
-                        sudo docker exec "$gateway_container" caddy reload --config /etc/caddy/Caddyfile
-                      fi
 
                     else
                       # standalone mode (production) -- deploy full stack with its own caddy
@@ -266,12 +248,7 @@ jobs:
                     fi
 
                     if [[ "$USES_GATEWAY" == "true" ]]; then
-                      sudo rm -f "/srv/caddy/sites.d/${STACK_NAME}.caddy"
-
-                      gateway_container=$(sudo docker ps --filter "label=com.docker.swarm.service.name=gateway_proxy" --format '{{.ID}}' | head -1)
-                      if [[ -n "$gateway_container" ]]; then
-                        sudo docker exec "$gateway_container" caddy reload --config /etc/caddy/Caddyfile
-                      fi
+                      echo "gateway routes are dynamic, no per-site cleanup needed"
                     fi
 
                     sudo docker image prune -f
