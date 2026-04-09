@@ -1,5 +1,6 @@
 {
     admin :2019
+    debug
 }
 
 {$PUBPUB_HOSTNAME} {
