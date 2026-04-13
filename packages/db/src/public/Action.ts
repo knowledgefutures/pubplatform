@@ -11,7 +11,6 @@ export enum Action {
 	move = "move",
 	googleDriveImport = "googleDriveImport",
 	datacite = "datacite",
-	buildJournalSite = "buildJournalSite",
 	createPub = "createPub",
 	buildSite = "buildSite",
 }

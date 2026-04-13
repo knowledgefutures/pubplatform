@@ -279,6 +279,13 @@ type MaybePubRelatedCounts<Options extends MaybePubOptions> =
 		? { relatedPubsCount?: never }
 		: { relatedPubsCount?: number }
 
+type MaybePubIncomingRelations<Options extends MaybePubOptions> =
+	Options["withIncomingRelations"] extends true
+		? { incomingRelations: Record<string, ProcessedPub[]> }
+		: Options["withIncomingRelations"] extends false
+			? { incomingRelations?: never }
+			: { incomingRelations?: Record<string, ProcessedPub[]> }
+
 export type DetailLevel = "count" | "full" | "base"
 
 export type StageAutomationSelectOptions = {
@@ -336,6 +343,15 @@ export type MaybePubOptions = {
 	 * @default false
 	 */
 	withRelatedCounts?: boolean
+
+	/**
+	 * Whether to include incoming relations (other pubs that reference this pub).
+	 * When true, each ProcessedPub will have an `incomingRelations` field:
+	 * `Record<string, ProcessedPub[]>` keyed by field slug.
+	 *
+	 * @default false
+	 */
+	withIncomingRelations?: boolean
 
 	/**
 	 * The search query to use for matching values
@@ -439,6 +455,7 @@ export type ProcessedPub<Options extends MaybePubOptions = {}> = ProcessedPubBas
 	MaybePubPubType<Options> &
 	MaybePubMembers<Options> &
 	MaybePubRelatedCounts<Options> &
+	MaybePubIncomingRelations<Options> &
 	MaybeSearchResults<Options>
 
 export type ProcessedPubWithForm<

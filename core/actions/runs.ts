@@ -1,4 +1,3 @@
-export { run as buildJournalSite } from "./buildJournalSite/run"
 export { run as buildSite } from "./buildSite/run"
 export { run as createPub } from "./createPub/run"
 export { run as datacite } from "./datacite/run"

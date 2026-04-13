@@ -139,10 +139,12 @@ export function createAnnounceIngestPayload({
 	reviewUrl,
 	originUrl,
 	targetUrl,
+	workUrl,
 }: {
 	reviewUrl: string
 	originUrl: string
 	targetUrl: string
+	workUrl?: string
 }): CoarNotifyPayload {
 	return {
 		"@context": ["https://www.w3.org/ns/activitystreams", "https://coar-notify.net"],
@@ -156,6 +158,7 @@ export function createAnnounceIngestPayload({
 		object: {
 			id: reviewUrl,
 			type: ["Page", "sorg:Review"],
+			...(workUrl && { "as:inReplyTo": workUrl }),
 		},
 		target: {
 			id: originUrl,
@@ -270,6 +273,20 @@ export function getAvailableResponses(
 	}
 	if (types.includes("Offer") && types.includes("coar-notify:IngestAction")) {
 		return ["Accept", "Reject", "Announce Ingest"]
+	}
+	return []
+}
+
+/**
+ * Determine possible follow-up actions for a sent notification.
+ * For example, after sending an Accept for a review offer, you may want
+ * to follow up with an Announce Review.
+ */
+export function getAvailableFollowUps(payload: CoarNotifyPayload): Array<"Announce Review"> {
+	const types = Array.isArray(payload.type) ? payload.type : [payload.type]
+
+	if (types.includes("Accept")) {
+		return ["Announce Review"]
 	}
 	return []
 }

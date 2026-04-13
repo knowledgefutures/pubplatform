@@ -101,7 +101,6 @@ jobs:
                   echo "core_label=$ECR_REGISTRY/${ECR_REPOSITORY_NAME_OVERRIDE:-$ECR_REPOSITORY_PREFIX-core}:$IMAGE_TAG" >> $GITHUB_OUTPUT
                   echo "jobs_label=$ECR_REGISTRY/${ECR_REPOSITORY_NAME_OVERRIDE:-$ECR_REPOSITORY_PREFIX-jobs}:$IMAGE_TAG" >> $GITHUB_OUTPUT
                   echo "base_label=$ECR_REGISTRY/$ECR_REPOSITORY_PREFIX:$IMAGE_TAG" >> $GITHUB_OUTPUT
-                  echo "site_builder_label=$ECR_REGISTRY/${ECR_REPOSITORY_NAME_OVERRIDE:-$ECR_REPOSITORY_PREFIX-site-builder}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile --prefer-offline
@@ -125,7 +124,6 @@ jobs:
               run: pnpm integration:setup
               env:
                   INTEGRATION_TESTS_IMAGE: ${{steps.label.outputs.core_label}}
-                  SITE_BUILDER_IMAGE: ${{steps.label.outputs.site_builder_label}}
                   JOBS_IMAGE: ${{steps.label.outputs.jobs_label}}
 
             - name: Log out Container ID for health check
@@ -147,7 +145,6 @@ jobs:
               run: docker compose -f docker-compose.test.yml --profile integration logs -t
               env:
                   INTEGRATION_TESTS_IMAGE: ${{steps.label.outputs.core_label}}
-                  SITE_BUILDER_IMAGE: ${{steps.label.outputs.site_builder_label}}
                   JOBS_IMAGE: ${{steps.label.outputs.jobs_label}}
 
             - name: Upload core playwright snapshots artifact

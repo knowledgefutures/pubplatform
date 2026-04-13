@@ -72,3 +72,6 @@ storybook-static
 ./playwright
 
 .local_data
+
+# mock-notify store
+.notifications.json

@@ -131,6 +131,7 @@ async function loadAutomationContext(args: {
 						withRelatedPubs: true,
 						withStage: false,
 						withValues: true,
+						withIncomingRelations: true,
 						depth: 3,
 					}
 				)

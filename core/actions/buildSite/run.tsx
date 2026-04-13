@@ -1,6 +1,7 @@
 "use server"
 
 import type { JsonValue } from "contracts"
+import type { PageGroup } from "contracts/resources/site-builder-2"
 import type { PubsId } from "db/public"
 import type { PubValues } from "~/lib/server"
 import type { action } from "./action"
@@ -14,14 +15,12 @@ import { logger } from "logger"
 import { tryCatch } from "utils/try-catch"
 
 import { env } from "~/lib/env/env"
-import { getPubTitle } from "~/lib/pubs"
 import { getPubsWithRelatedValues } from "~/lib/server"
 import { getSiteBuilderToken } from "~/lib/server/apiAccessTokens"
 import { getCommunitySlug } from "~/lib/server/cache/getCommunitySlug"
 import { getCommunity } from "~/lib/server/community"
 import { applyJsonataFilter, compileJsonataQuery } from "~/lib/server/jsonata-query"
 import { updatePub } from "~/lib/server/pub"
-import { buildInterpolationContext } from "../_lib/interpolationContext"
 import { defineRun } from "../types"
 
 /**
@@ -63,54 +62,40 @@ export const run = defineRun<typeof action>(
 			},
 		})
 
-		const pages = await Promise.all(
+		// Resolve filters to pub IDs and determine mode for each page group
+		const pageGroups: PageGroup[] = await Promise.all(
 			config.pages.map(async (page) => {
-				const query = compileJsonataQuery(page.filter)
+				if (!page.filter) {
+					return {
+						mode: "static" as const,
+						transform: page.transform,
+						slugTemplate: page.slug,
+						extension: page.extension ?? "html",
+						pubIds: [],
+					}
+				}
 
+				const query = compileJsonataQuery(page.filter)
 				const pubs = await getPubsWithRelatedValues(
 					{ communityId },
 					{
 						customFilter: (eb) => applyJsonataFilter(eb, query, { communitySlug }),
 						depth: 1,
-						withValues: true,
-						withRelatedPubs: true,
-						withPubType: true,
+						withValues: false,
+						withRelatedPubs: false,
 					}
 				)
 
-				const interpolatedPubs = await Promise.all(
-					pubs.map(async (pub) => {
-						const pubContext = buildInterpolationContext({
-							community,
-							pub,
-							env: { PUBPUB_URL: env.PUBPUB_URL },
-							useDummyValues: true,
-						})
-						const [error, slug] = await tryCatch(interpolate(page.slug, pubContext))
-						if (!slug)
-							logger.error({
-								msg: "Error interpolating slug . Will continue with pub id.",
-								err: error,
-							})
-						const slllug = error ? pub.id : slug
-						return {
-							id: pub.id,
-							title: getPubTitle(pub),
-							content: page.transform,
-							slug: slllug,
-						}
-					})
-				)
+				const mode = page.slug.includes("$.pub")
+					? ("per-pub" as const)
+					: ("single" as const)
 
 				return {
-					pages: interpolatedPubs.map((pub) => ({
-						id: pub.id,
-						title: pub.title,
-						content: page.transform,
-						slug: pub.slug as string,
-					})),
+					mode,
 					transform: page.transform,
+					slugTemplate: page.slug,
 					extension: page.extension ?? "html",
+					pubIds: pubs.map((p) => p.id),
 				}
 			})
 		)
@@ -129,20 +114,18 @@ export const run = defineRun<typeof action>(
 			msg: `Initializing site build`,
 			communitySlug,
 			mapping: config,
-			headers: {
-				authorization: `Bearer ${siteBuilderToken}`,
-			},
 		})
 
 		const [buildError, result] = await tryCatch(
 			siteBuilderClient.build({
 				body: {
-					automationRunId: automationRunId,
+					automationRunId,
 					communitySlug,
+					communityId,
+					communityName: community.name,
 					subpath: config.subpath,
-					css: config.css,
-					pages,
 					siteUrl: env.PUBPUB_URL,
+					pageGroups,
 				},
 				headers: {
 					authorization: `Bearer ${siteBuilderToken}`,

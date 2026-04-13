@@ -1,7 +1,11 @@
 /**
- * In-memory store for COAR Notify payloads
- * This is shared across all API routes via module singleton pattern
+ * File-backed store for COAR Notify payloads.
+ * Persists notifications to a JSON file so they survive Next.js hot-reloads
+ * during development. The file is cleared on server start.
  */
+
+import fs from "node:fs"
+import path from "node:path"
 
 export interface CoarNotifyPayload {
 	"@context": string[]
@@ -44,8 +48,21 @@ export interface StoredNotification {
 	error?: string
 }
 
+const STORE_PATH = path.join(process.cwd(), ".notifications.json")
+
 class NotificationStore {
-	private notifications: StoredNotification[] = []
+	private read(): StoredNotification[] {
+		try {
+			const data = fs.readFileSync(STORE_PATH, "utf-8")
+			return JSON.parse(data)
+		} catch {
+			return []
+		}
+	}
+
+	private write(notifications: StoredNotification[]): void {
+		fs.writeFileSync(STORE_PATH, JSON.stringify(notifications))
+	}
 
 	addReceived(payload: CoarNotifyPayload): StoredNotification {
 		const notification: StoredNotification = {
@@ -54,7 +71,9 @@ class NotificationStore {
 			direction: "received",
 			timestamp: new Date().toISOString(),
 		}
-		this.notifications.unshift(notification)
+		const notifications = this.read()
+		notifications.unshift(notification)
+		this.write(notifications)
 		return notification
 	}
 
@@ -73,30 +92,34 @@ class NotificationStore {
 			status,
 			error,
 		}
-		this.notifications.unshift(notification)
+		const notifications = this.read()
+		notifications.unshift(notification)
+		this.write(notifications)
 		return notification
 	}
 
 	getAll(): StoredNotification[] {
-		return this.notifications
+		return this.read()
 	}
 
 	getReceived(): StoredNotification[] {
-		return this.notifications.filter((n) => n.direction === "received")
+		return this.read().filter((n) => n.direction === "received")
 	}
 
 	getSent(): StoredNotification[] {
-		return this.notifications.filter((n) => n.direction === "sent")
+		return this.read().filter((n) => n.direction === "sent")
 	}
 
 	clear(): void {
-		this.notifications = []
+		this.write([])
 	}
 
 	delete(id: string): boolean {
-		const index = this.notifications.findIndex((n) => n.id === id)
+		const notifications = this.read()
+		const index = notifications.findIndex((n) => n.id === id)
 		if (index !== -1) {
-			this.notifications.splice(index, 1)
+			notifications.splice(index, 1)
+			this.write(notifications)
 			return true
 		}
 		return false

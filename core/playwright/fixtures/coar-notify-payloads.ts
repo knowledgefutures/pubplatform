@@ -231,10 +231,12 @@ export function createAnnounceIngestPayload({
 	reviewId,
 	serviceUrl,
 	aggregatorUrl,
+	workUrl,
 }: {
 	reviewId: string
 	serviceUrl: string
 	aggregatorUrl: string
+	workUrl?: string
 }): CoarNotifyPayload {
 	const reviewUrl = `${serviceUrl}/review/${reviewId}`
 	return {
@@ -249,6 +251,7 @@ export function createAnnounceIngestPayload({
 		object: {
 			id: reviewUrl,
 			type: ["Page", "sorg:Review"],
+			...(workUrl && { "as:inReplyTo": workUrl }),
 		},
 		target: {
 			id: serviceUrl,
