@@ -1,8 +1,8 @@
 /* eslint-disable no-restricted-properties */
 import { spawnSync } from "node:child_process"
 import { config } from "dotenv"
-
 import { makeWorkerUtils } from "graphile-worker"
+
 import { logger } from "logger"
 
 export const setup = async () => {
