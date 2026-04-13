@@ -21,15 +21,16 @@ export const setup = async () => {
 		shell: true,
 		stdio: "inherit",
 	})
-	const { stderr, error } = result
-	if (!error) {
-		logger.info("Database reset successful")
-	} else {
+	if (result.error) {
 		logger.error(
 			"Something went wrong while trying to reset the database before running tests."
 		)
-		throw error
+		throw result.error
 	}
+	if (result.status !== 0) {
+		throw new Error(`Database reset failed with exit code ${result.status}`)
+	}
+	logger.info("Database reset successful")
 }
 
 export default setup
