@@ -28,7 +28,6 @@ services:
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
       PORT: '3000'
-      PUBPUB_URL: ${PUBPUB_URL}
       SITE_BUILDER_ENDPOINT: http://site-builder:4000
     networks: [appnet]
     healthcheck:
@@ -120,14 +119,6 @@ services:
       restart_policy:
         condition: any
 
-  inbucket:
-    image: inbucket/inbucket:latest
-    networks: [appnet]
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: any
-
 networks:
   appnet:
     driver: overlay
@@ -137,6 +128,5 @@ networks:
 
 volumes:
   pgdata:
-  minio_data:
   caddy_data:
   caddy_config:
