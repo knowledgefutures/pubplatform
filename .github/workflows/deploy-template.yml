@@ -117,7 +117,7 @@ jobs:
               id: deploy-service-only
               # This one is different. The single-image case is when not deploying core.
               if: inputs.service != 'core'
-              uses: aws-actions/amazon-ecs-deploy-task-definition@16f052ed696e6e5bf88c208a8e5ba1af7ced3310
+              uses: aws-actions/amazon-ecs-deploy-task-definition@fc8fc60f3a60ffd500fcb13b209c59d221ac8c8c
               with:
                   # it is because of this line that the two steps need different if conditions
                   task-definition: ${{ steps.task-def-service.outputs.task-definition }}
@@ -128,7 +128,7 @@ jobs:
             - name: Deploy Amazon ECS task definition including migrations
               id: deploy-service-and-migrations
               if: inputs.service == 'core'
-              uses: aws-actions/amazon-ecs-deploy-task-definition@16f052ed696e6e5bf88c208a8e5ba1af7ced3310
+              uses: aws-actions/amazon-ecs-deploy-task-definition@fc8fc60f3a60ffd500fcb13b209c59d221ac8c8c
               with:
                   # it is because of this line that the two steps need different if conditions
                   task-definition: ${{ steps.task-def-migration.outputs.task-definition }}
