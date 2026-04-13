@@ -28,7 +28,7 @@ jobs:
             ENV_FILE: .env.docker-compose.dev
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install Node.js
               uses: actions/setup-node@v4
