@@ -143,11 +143,12 @@ jobs:
                       MINIO_PORT="3${PR_NUM}"
                       MINIO_CONSOLE_PORT="4${PR_NUM}"
                       INBUCKET_PORT="5${PR_NUM}"
+                      MOCK_NOTIFY_PORT="6${PR_NUM}"
 
                       sudo env IMAGE_TAG="$IMAGE_TAG" DEPLOY_HOST="$DEPLOY_HOST" \
                         PLATFORM_PORT="$PLATFORM_PORT" BUILDER_PORT="$BUILDER_PORT" \
                         MINIO_PORT="$MINIO_PORT" MINIO_CONSOLE_PORT="$MINIO_CONSOLE_PORT" \
-                        INBUCKET_PORT="$INBUCKET_PORT" \
+                        INBUCKET_PORT="$INBUCKET_PORT" MOCK_NOTIFY_PORT="$MOCK_NOTIFY_PORT" \
                         docker stack deploy -c "$STACK_FILE" \
                         --with-registry-auth --resolve-image always --prune "$STACK_NAME"
 
