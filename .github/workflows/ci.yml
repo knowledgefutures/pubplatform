@@ -73,9 +73,5 @@ jobs:
               if: matrix.task == 'test-run'
               run: pnpm test:setup
 
-            - name: Run migrations
-              if: matrix.task == 'test-run'
-              run: pnpm --filter core migrate-test
-
             - name: Run task
               run: NODE_ENV=test pnpm ${{ matrix.task }}

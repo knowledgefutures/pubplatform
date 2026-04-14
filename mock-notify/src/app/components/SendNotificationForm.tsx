@@ -41,7 +41,8 @@ const TEMPLATE_OPTIONS: PayloadTemplateType[] = [
 export function SendNotificationForm({ onSent, prefill }: SendNotificationFormProps) {
 	const [mode, setMode] = useState<FormMode>("template")
 	const [targetUrl, setTargetUrl] = useState(
-		prefill?.targetUrl ?? "http://localhost:3000/api/v0/c/coar-notify/site/webhook/coar-inbox"
+		prefill?.targetUrl ??
+			"http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox"
 	)
 	const [templateType, setTemplateType] = useState<PayloadTemplateType>(
 		prefill?.templateType ?? "Offer Review"
@@ -57,7 +58,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 	)
 	const [objectCiteAs, setObjectCiteAs] = useState("")
 	const [objectItemUrl, setObjectItemUrl] = useState("")
-	const [reviewUrl, setReviewUrl] = useState("http://localhost:4001/review/review-001")
+	const [reviewUrl, setReviewUrl] = useState("http://localhost:4001/reviews/sample-review")
 	const [originUrl, setOriginUrl] = useState(prefill?.originUrl ?? "http://localhost:4001")
 	const [targetServiceUrl, setTargetServiceUrl] = useState(
 		prefill?.targetServiceUrl ?? "http://localhost:3000"
@@ -65,6 +66,49 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 	const [serviceName, setServiceName] = useState("Mock Review Service")
 	const [inReplyTo, setInReplyTo] = useState(prefill?.inReplyTo ?? "")
 	const [inReplyToUrl, setInReplyToUrl] = useState(prefill?.inReplyToObjectUrl ?? "")
+	const [workUrl, setWorkUrl] = useState(
+		"http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
+	)
+
+	// Default target URLs per template type for demo convenience
+	const TEMPLATE_DEFAULTS: Record<
+		PayloadTemplateType,
+		{ targetUrl: string; targetServiceUrl: string }
+	> = {
+		"Offer Review": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us2-unjournal",
+		},
+		"Announce Review": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
+		},
+		"Offer Ingest": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us4-repository/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us4-repository",
+		},
+		"Announce Ingest": {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us4-repository/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us4-repository",
+		},
+		Accept: {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
+		},
+		Reject: {
+			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
+			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
+		},
+	}
+
+	const handleTemplateChange = (newType: PayloadTemplateType) => {
+		setTemplateType(newType)
+		if (!prefill) {
+			const defaults = TEMPLATE_DEFAULTS[newType]
+			setTargetUrl(defaults.targetUrl)
+			setTargetServiceUrl(defaults.targetServiceUrl)
+		}
+	}
 
 	const generatePayload = (): CoarNotifyPayload => {
 		switch (templateType) {
@@ -95,6 +139,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 					reviewUrl,
 					originUrl,
 					targetUrl: targetServiceUrl,
+					workUrl: workUrl || undefined,
 				})
 			case "Accept":
 				return createAcceptPayload({
@@ -237,13 +282,6 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
-							<input
-								type="text"
-								value={reviewUrl}
-								onChange={(e) => setReviewUrl(e.target.value)}
-								placeholder="http://localhost:4001/review/..."
-								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-							/>
 						</div>
 						<div>
 							<label className="mb-1 block font-medium text-gray-700 text-sm">
@@ -297,6 +335,47 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 					</>
 				)
 			case "Offer Ingest":
+				return (
+					<>
+						<div>
+							<label className="mb-1 block font-medium text-gray-700 text-sm">
+								Review URL (full URL)
+								<input
+									type="text"
+									value={reviewUrl}
+									onChange={(e) => setReviewUrl(e.target.value)}
+									placeholder="http://localhost:4001/review/..."
+									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								/>
+							</label>
+						</div>
+						<div>
+							<label className="mb-1 block font-medium text-gray-700 text-sm">
+								Origin URL (this service)
+								<input
+									type="text"
+									value={originUrl}
+									onChange={(e) => setOriginUrl(e.target.value)}
+									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								/>
+							</label>
+						</div>
+						<div>
+							<label
+								htmlFor="aggregatorUrl"
+								className="mb-1 block font-medium text-gray-700 text-sm"
+							>
+								Aggregator URL
+							</label>
+							<input
+								type="text"
+								value={targetServiceUrl}
+								onChange={(e) => setTargetServiceUrl(e.target.value)}
+								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							/>
+						</div>
+					</>
+				)
 			case "Announce Ingest":
 				return (
 					<>
@@ -307,17 +386,22 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									type="text"
 									value={reviewUrl}
 									onChange={(e) => setReviewUrl(e.target.value)}
-									placeholder="http://localhost:4000/review/..."
+									placeholder="http://localhost:4001/review/..."
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
-							<input
-								type="text"
-								value={reviewUrl}
-								onChange={(e) => setReviewUrl(e.target.value)}
-								placeholder="http://localhost:4001/review/..."
-								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-							/>
+						</div>
+						<div>
+							<label className="mb-1 block font-medium text-gray-700 text-sm">
+								Work URL (as:inReplyTo) - pub URL containing the work being reviewed
+								<input
+									type="text"
+									value={workUrl}
+									onChange={(e) => setWorkUrl(e.target.value)}
+									placeholder="http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
+									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								/>
+							</label>
 						</div>
 						<div>
 							<label className="mb-1 block font-medium text-gray-700 text-sm">
@@ -467,7 +551,7 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 								id="templateType"
 								value={templateType}
 								onChange={(e) =>
-									setTemplateType(e.target.value as PayloadTemplateType)
+									handleTemplateChange(e.target.value as PayloadTemplateType)
 								}
 								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 							>

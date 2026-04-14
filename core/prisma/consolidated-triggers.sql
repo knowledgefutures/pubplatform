@@ -1033,7 +1033,8 @@ BEGIN
     IF (NEW."pubId" IS NULL) THEN
         RETURN NEW;
     ELSE
-        correct_row = to_jsonb(NEW);
+        -- Strip large JSON columns to avoid exceeding pg_notify's 8000 byte payload limit
+        correct_row = to_jsonb(NEW) - 'config' - 'result' - 'json' - 'params';
     END IF;
 
 
@@ -1045,7 +1046,7 @@ BEGIN
         TG_TABLE_NAME,
         TG_OP
     );
-    
+
     RETURN NEW;
 END;
 $$

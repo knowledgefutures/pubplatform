@@ -11,8 +11,7 @@ const toDynamic = (path: string): ComponentType<{}> =>
 		loading: () => <Skeleton className="h-64 w-full" />,
 	})
 
-const map = {
-	[Action.buildJournalSite]: toDynamic("buildJournalSite"),
+const map: Record<Action, ComponentType<{}>> = {
 	[Action.datacite]: toDynamic("datacite"),
 	[Action.email]: toDynamic("email"),
 	[Action.googleDriveImport]: toDynamic("googleDriveImport"),

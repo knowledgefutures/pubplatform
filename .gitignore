@@ -72,6 +72,7 @@ storybook-static
 ./playwright
 
 .local_data
+<<<<<<< HEAD
 
 # infra decrypted env files (encrypted versions are tracked)
 infra/.env
@@ -79,3 +80,9 @@ infra/.env.staging
 
 !.env*.enc
 !.env.example
+||||||| 7d07affaa
+=======
+
+# mock-notify store
+.notifications.json
+>>>>>>> main

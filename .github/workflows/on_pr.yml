@@ -15,6 +15,7 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    # check if the docs are modified
     path-filter:
         runs-on: ubuntu-latest
         if: github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' || github.event.action == 'closed' || github.event.action == 'labeled' || github.event.action == 'unlabeled'
@@ -31,7 +32,7 @@ jobs:
                       docs:
                           - 'docs/**'
 
-    # you can skip the build by adding 'skip-build' to the commit message, useful when testing tests
+    # you can skip the build by adding 'skip-build' to the commit message, useful when testing e2e tests or experimenting with the deploy
     skip_build_sha:
         outputs:
             last-successful-build-sha: ${{ steps.last-build.outputs.last-successful-build-sha }}
@@ -164,35 +165,35 @@ jobs:
             GHCR_USER: ${{ secrets.GHCR_USER }}
             GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
-    # deploy-docs-preview:
-    #     permissions:
-    #         contents: write
-    #         pages: write
-    #         pull-requests: write
-    #     needs:
-    #         - path-filter
-    #     if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') && needs.path-filter.outputs.docs == 'true'
-    #     uses: ./.github/workflows/build-docs.yml
-    #     with:
-    #         preview: true
+    deploy-docs-preview:
+        permissions:
+            contents: write
+            pages: write
+            pull-requests: write
+        needs:
+            - path-filter
+        if: (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize') && needs.path-filter.outputs.docs == 'true'
+        uses: ./.github/workflows/build-docs.yml
+        with:
+            preview: true
 
-    # close-docs-preview:
-    #     needs:
-    #         - path-filter
-    #     permissions:
-    #         contents: write
-    #         pages: write
-    #         pull-requests: write
-    #     if: github.event.action == 'closed' && needs.path-filter.outputs.docs == 'true'
-    #     runs-on: ubuntu-latest
-    #     steps:
-    #         - uses: actions/checkout@v6
+    close-docs-preview:
+        needs:
+            - path-filter
+        permissions:
+            contents: write
+            pages: write
+            pull-requests: write
+        if: github.event.action == 'closed' && needs.path-filter.outputs.docs == 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
 
-    #         - name: Close docs preview
-    #           uses: rossjrw/pr-preview-action@v1
-    #           with:
-    #               source-dir: docs/out
-    #               action: remove
+            - name: Close docs preview
+              uses: rossjrw/pr-preview-action@v1
+              with:
+                  source-dir: docs/out
+                  action: remove
 
     status-check:
         needs:

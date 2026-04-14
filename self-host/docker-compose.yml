@@ -119,18 +119,6 @@ services:
         networks:
             - app-network
 
-    site-builder:
-        image: ghcr.io/pubpub/platform-site-builder:latest
-        env_file: .env
-        networks:
-            - app-network
-        ports:
-            - "4000:4000"
-        depends_on:
-            - platform
-            - platform-jobs
-            - minio
-
 volumes:
     caddy-data:
     caddy-config:

@@ -1,5 +1,8 @@
 import type { ReadStream } from "node:fs"
 
+import type { ProcessedPub } from "contracts"
+import type { PageGroup } from "contracts/resources/site-builder-2"
+
 import fs from "node:fs/promises"
 import path from "node:path"
 import { PassThrough } from "node:stream"
@@ -11,9 +14,11 @@ import { fetchRequestHandler, tsr } from "@ts-rest/serverless/fetch"
 import archiver from "archiver"
 import { Hono } from "hono"
 
-import { siteApi } from "contracts"
+import { interpolate } from "@pubpub/json-interpolate"
+import { createPubProxy, siteApi } from "contracts"
 import { siteBuilderApi } from "contracts/resources/site-builder-2"
 import { logger } from "logger"
+import { tryCatch } from "utils/try-catch"
 
 import { SERVER_ENV } from "./env"
 
@@ -42,14 +47,6 @@ export const getS3Client = () => {
 	})
 
 	return s3Client
-}
-
-const _formatBytes = (bytes: number): string => {
-	if (bytes === 0) return "0 Bytes"
-	const k = 1024
-	const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
-	return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
 }
 
 export const uploadFileToS3 = async (
@@ -320,107 +317,218 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 	throw new Error(`UNKNOWN ERROR: ${response.body}`)
 }
 
-// ---- Bespoke SSG ----
+// ---- Pub fetching ----
 
-const renderHtmlPage = (title: string, content: string, css: string): string => {
-	const styleTag = css ? `\n\t<style>${css}</style>` : ""
+const PUB_BATCH_SIZE = 50
+
+const fetchPubs = async (opts: {
+	siteUrl: string
+	communitySlug: string
+	authToken: string
+	pubIds: string[]
+}): Promise<ProcessedPub[]> => {
+	if (opts.pubIds.length === 0) return []
+
+	const client = initClient(siteApi, {
+		baseUrl: opts.siteUrl,
+		baseHeaders: {
+			Authorization: `Bearer ${opts.authToken}`,
+		},
+	})
+
+	// Batch pub IDs to avoid URL length limits
+	const batches: string[][] = []
+	for (let i = 0; i < opts.pubIds.length; i += PUB_BATCH_SIZE) {
+		batches.push(opts.pubIds.slice(i, i + PUB_BATCH_SIZE))
+	}
+
+	const allPubs: ProcessedPub[] = []
+	for (const batch of batches) {
+		const response = await client.pubs.getMany({
+			params: { communitySlug: opts.communitySlug },
+			query: {
+				pubIds: batch as any,
+				withRelatedPubs: true,
+				withPubType: true,
+				withValues: true,
+				depth: 3,
+				limit: batch.length,
+			},
+		})
+
+		if (response.status !== 200) {
+			throw new Error(
+				`Failed to fetch pubs: ${(response.body as any)?.message ?? response.status}`
+			)
+		}
+
+		allPubs.push(...(response.body as ProcessedPub[]))
+	}
+
+	return allPubs
+}
+
+// ---- SSG rendering ----
+
+const stringifyContent = (content: unknown): string =>
+	typeof content === "object" && content !== null
+		? JSON.stringify(content, null, 2)
+		: String(content ?? "")
+
+const computeSiteBase = (slug: string): string => {
+	const depth = slug.split("/").filter(Boolean).length
+	return depth === 0 ? "." : Array(depth).fill("..").join("/")
+}
+
+const NIL_UUID = "00000000-0000-0000-0000-000000000000"
+
+type RenderedPage = { id: string; title: string; slug: string; content: string }
+
+const renderPageGroup = async (
+	group: PageGroup,
+	opts: {
+		communitySlug: string
+		communityId: string
+		communityName: string
+		siteUrl: string
+		authToken: string
+	}
+): Promise<{ pages: RenderedPage[]; extension: string }> => {
+	const extension = group.extension ?? "html"
+
+	// Static mode: no pubs, interpolate with empty context
+	if (group.mode === "static") {
+		const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, {}))
+		const interpolatedSlug = (slugErr ? "static" : slug) as string
+		const [contentErr, content] = await tryCatch(interpolate(group.transform, {}))
+		if (contentErr) logger.error({ msg: "Error interpolating static page", err: contentErr })
+		return {
+			extension,
+			pages: [
+				{
+					id: NIL_UUID,
+					title: interpolatedSlug,
+					content: stringifyContent(content),
+					slug: interpolatedSlug,
+				},
+			],
+		}
+	}
+
+	// Fetch pubs for this group
+	const pubs = await fetchPubs({
+		siteUrl: opts.siteUrl,
+		communitySlug: opts.communitySlug,
+		authToken: opts.authToken,
+		pubIds: group.pubIds,
+	})
+
+	const communityContext = {
+		id: opts.communityId,
+		name: opts.communityName,
+		slug: opts.communitySlug,
+	}
+
+	// Single mode: one page with all pubs as $.pubs
+	if (group.mode === "single") {
+		const pubProxies = pubs.map((p) => createPubProxy(p, opts.communitySlug))
+		const context: Record<string, unknown> = {
+			pubs: pubProxies,
+			community: communityContext,
+			env: { PUBPUB_URL: opts.siteUrl },
+		}
+		const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, context))
+		const interpolatedSlug = (slugErr ? "index" : slug) as string
+		context.site = { base: computeSiteBase(interpolatedSlug) }
+		const [contentErr, content] = await tryCatch(interpolate(group.transform, context))
+		if (contentErr) logger.error({ msg: "Error interpolating single page", err: contentErr })
+		return {
+			extension,
+			pages: [
+				{
+					id: NIL_UUID,
+					title: interpolatedSlug,
+					content: stringifyContent(content),
+					slug: interpolatedSlug,
+				},
+			],
+		}
+	}
+
+	// Per-pub mode: one page per pub with $.pub in context
+	const pages = await Promise.all(
+		pubs.map(async (pub) => {
+			const pubProxy = createPubProxy(pub, opts.communitySlug)
+			const context: Record<string, unknown> = {
+				pub: pubProxy,
+				community: communityContext,
+				env: { PUBPUB_URL: opts.siteUrl },
+			}
+			const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, context))
+			if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })
+			const interpolatedSlug = (slugErr ? pub.id : slug) as string
+			context.site = { base: computeSiteBase(interpolatedSlug) }
+			const [contentErr, content] = await tryCatch(interpolate(group.transform, context))
+			if (contentErr) logger.error({ msg: "Error interpolating content", err: contentErr })
+			return {
+				id: pub.id,
+				title: pub.title ?? pub.id,
+				content: stringifyContent(content),
+				slug: interpolatedSlug,
+			}
+		})
+	)
+
+	return { extension, pages }
+}
+
+// ---- File writing ----
+
+const renderHtmlPage = (title: string, content: string): string => {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 \t<meta charset="UTF-8" />
 \t<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-\t<title>${title}</title>${styleTag}
+\t<title>${title}</title>
 </head>
 <body>
+<div class="site-content">
 ${content}
+</div>
 </body>
 </html>`
 }
 
-type PageGroup = {
-	pages: { id: string; title: string; slug: string; content: string }[]
-	transform: string
-	extension?: string
-}
-
-const PUB_BATCH_SIZE = 50
-
-const chunk = <T>(arr: T[], size: number): T[][] =>
-	Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-		arr.slice(i * size, i * size + size)
-	)
-
-const buildSite = async ({
-	communitySlug,
-	authToken,
-	pages,
-	css,
-	distDir,
-}: {
-	communitySlug: string
-	authToken: string
-	pages: PageGroup[]
-	css: string
+const writePages = async (
+	renderedGroups: { pages: RenderedPage[]; extension: string }[],
 	distDir: string
-}): Promise<void> => {
-	const client = initClient(siteApi, {
-		baseUrl: SERVER_ENV.PUBPUB_URL,
-		baseHeaders: {
-			Authorization: `Bearer ${authToken}`,
-		},
-	})
-
+): Promise<void> => {
 	await fs.mkdir(distDir, { recursive: true })
 
 	await Promise.all(
-		pages.map(async (group) => {
+		renderedGroups.map(async (group) => {
 			const extension = group.extension ?? "html"
-			const pubIds = group.pages.map((page) => page.id)
-
-			if (pubIds.length === 0) return
-
-			const pagesByPubId = new Map(group.pages.map((p) => [p.id, p]))
+			if (group.pages.length === 0) return
 
 			await Promise.all(
-				chunk(pubIds, PUB_BATCH_SIZE).map(async (batch) => {
-					const response = await client.pubs.getMany({
-						params: { communitySlug },
-						query: {
-							transform: group.transform,
-							pubIds: batch as any,
-							limit: batch.length,
-						},
-					})
-
-					if (response.status !== 200) {
-						throw new Error(
-							`Failed to fetch pubs. Status: ${response.status} Message: ${(response.body as any)?.message ?? "Unknown error"}`
-						)
-					}
-
-					await Promise.all(
-						response.body.map(async (pub) => {
-							const pageInfo = pagesByPubId.get(pub.id)
-							if (!pageInfo) return
-
-							const content = (pub as any).content as string
-							const fileContent =
-								extension === "html"
-									? renderHtmlPage(pageInfo.title, content, css)
-									: content
-
-							const normalized = pageInfo.slug.replace(/\/+$/, "")
-							const fileName =
-								normalized === ""
-									? `index.${extension}`
-									: extension === "html"
-										? `${normalized}/index.html`
-										: `${normalized}.${extension}`
-							const filePath = path.join(distDir, fileName)
-							await fs.mkdir(path.dirname(filePath), { recursive: true })
-							await fs.writeFile(filePath, fileContent, "utf-8")
-						})
-					)
+				group.pages.map(async (pageInfo) => {
+					const normalized = pageInfo.slug.replace(/\/+$/, "")
+					const fileName =
+						normalized === ""
+							? `index.${extension}`
+							: extension === "html"
+								? `${normalized}/index.html`
+								: `${normalized}.${extension}`
+					const isCompleteHtml =
+						extension === "html" && pageInfo.content.trimStart().startsWith("<!DOCTYPE")
+					const fileContent =
+						extension === "html" && !isCompleteHtml
+							? renderHtmlPage(pageInfo.title, pageInfo.content)
+							: pageInfo.content
+					const filePath = path.join(distDir, fileName)
+					await fs.mkdir(path.dirname(filePath), { recursive: true })
+					await fs.writeFile(filePath, fileContent, "utf-8")
 				})
 			)
 		})
@@ -445,37 +553,40 @@ const router = tsr.router(siteBuilderApi, {
 			const timestamp = Date.now()
 			const distDir = `./dist/${communitySlug}/${body.automationRunId}`
 
-			const pages = body.pages
-			const css = body.css ?? ""
-
 			try {
 				logger.info({
 					msg: "Building site",
 					communitySlug,
 					automationRunId: body.automationRunId,
+					pageGroups: body.pageGroups.length,
 				})
-				await buildSite({
-					communitySlug,
-					authToken,
-					pages,
-					css,
-					distDir,
-				})
-			} catch (err) {
-				const error = err as Error
-				logger.error({ msg: "Build failed", error })
-				return {
-					status: 500,
-					body: { success: false, message: `Build failed: ${error.message}` },
+
+				// Render all page groups (fetch pubs, interpolate templates)
+				const renderedGroups = await Promise.all(
+					body.pageGroups.map((group) =>
+						renderPageGroup(group, {
+							communitySlug,
+							communityId: body.communityId,
+							communityName: body.communityName,
+							siteUrl: body.siteUrl,
+							authToken,
+						})
+					)
+				)
+
+				// Write rendered pages to disk
+				await writePages(renderedGroups, distDir)
+
+				// Find the first rendered page for the URL
+				const firstPage = renderedGroups.flatMap((g) => g.pages)[0]
+
+				let zipUploadResult: string
+				let folderUploadResult: {
+					uploadedFiles: number
+					s3FolderPath: string
+					s3FolderUrl: string
 				}
-			}
 
-			let zipUploadResult: string | undefined
-			let folderUploadResult:
-				| { uploadedFiles: number; s3FolderPath: string; s3FolderUrl: string }
-				| undefined
-
-			try {
 				const zipFileName = `site-${timestamp}.zip`
 				const zipUploadId = "site-archives"
 				zipUploadResult = await createZipAndUploadToS3(distDir, zipUploadId, zipFileName)
@@ -489,8 +600,6 @@ const router = tsr.router(siteBuilderApi, {
 				if (SERVER_ENV.SITES_BASE_URL) {
 					const baseUrl = SERVER_ENV.SITES_BASE_URL.replace(/\/$/, "")
 					publicSiteUrl = `${baseUrl}/${communitySlug}/${subpath}/`
-
-					const firstPage = pages[0]?.pages?.[0]
 					if (firstPage) {
 						const pageSlug = firstPage.slug || firstPage.id
 						firstPageUrl = `${publicSiteUrl}${pageSlug}`
@@ -505,30 +614,24 @@ const router = tsr.router(siteBuilderApi, {
 						success: true,
 						message: "Site built and uploaded successfully",
 						url: zipUploadResult,
-						timestamp: timestamp,
-						fileSize: 0,
-						fileSizeFormatted: `${folderUploadResult.uploadedFiles} files uploaded`,
+						timestamp,
 						s3FolderPath: folderUploadResult.s3FolderPath,
 						s3FolderUrl: folderUploadResult.s3FolderUrl,
 						siteUrl: publicSiteUrl,
-						firstPageUrl: firstPageUrl,
+						firstPageUrl,
 					},
 				}
 			} catch (err) {
 				const error = err as Error
-				logger.error({ msg: "Build zip upload failed", error })
+				logger.error({ msg: "Build failed", error })
 				return {
 					status: 500,
-					body: {
-						success: false,
-						message: error.message || "An unknown error occurred",
-						...(zipUploadResult && { url: zipUploadResult }),
-					},
+					body: { success: false, message: `Build failed: ${error.message}` },
 				}
 			}
 		} catch (err) {
 			const error = err as Error
-			logger.error({ msg: "Build zip upload and folder upload failed", error })
+			logger.error({ msg: "Build failed", error })
 			return {
 				status: 500,
 				body: {

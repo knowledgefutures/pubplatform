@@ -19,6 +19,9 @@ on:
       site-builder-image:
         description: 'Site builder image ref'
         value: ${{ jobs.build-site-builder.outputs.image-sha }}
+      coar-server-image:
+        description: 'Coar server image ref'
+        value: ${{ jobs.build-coar-server.outputs.image-sha }}
     secrets:
       SENTRY_AUTH_TOKEN:
         required: true
@@ -48,9 +51,21 @@ jobs:
   build-site-builder:
     uses: ./.github/workflows/ghcr-build-template.yml
     with:
-      package: site-builder
+      package: site-builder-2
       target: jobs
       ghcr_image_name: platform-site-builder
+      publish_latest: ${{ inputs.publish_latest }}
+      image_tag: ${{ inputs.image_tag }}
+    secrets:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+    
+  build-coar-server:
+    uses: ./.github/workflows/ghcr-build-template.yml
+    with:
+      package: mock-notify
+      target: jobs
+      ghcr_image_name: mock-coar-notify-server
       publish_latest: ${{ inputs.publish_latest }}
       image_tag: ${{ inputs.image_tag }}
     secrets:

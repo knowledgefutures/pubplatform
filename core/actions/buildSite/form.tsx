@@ -16,7 +16,7 @@ import { QueryBuilder } from "ui/queryBuilder"
 import { useServerAction } from "~/lib/serverActions"
 import { ActionField } from "../_lib/ActionField"
 import { useActionForm } from "../_lib/ActionForm"
-import { DEFAULT_PAGE_TEMPLATE, DEFAULT_SITE_CSS } from "./action"
+import { DEFAULT_PAGE_TEMPLATE } from "./action"
 import { previewResult } from "./formActions"
 
 export default function BuildSiteActionForm() {
@@ -60,11 +60,6 @@ export default function BuildSiteActionForm() {
 		form.setValue(`${pagesPath}.${index}.transform`, DEFAULT_PAGE_TEMPLATE)
 	}
 
-	const insertDefaultCss = () => {
-		const cssPath = path ? `${path}.css` : "css"
-		form.setValue(cssPath, DEFAULT_SITE_CSS)
-	}
-
 	return (
 		<FieldSet className="space-y-6">
 			<div className="space-y-4">
@@ -73,33 +68,6 @@ export default function BuildSiteActionForm() {
 					label="Deployment Path"
 					description="URL path for this build (e.g., 'v1' or '2024'). Defaults to a unique ID."
 				/>
-
-				<div>
-					<div className="mb-2 flex items-center justify-between">
-						<FieldLabel>Custom CSS</FieldLabel>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							className="h-7 text-xs"
-							onClick={insertDefaultCss}
-						>
-							Insert default
-						</Button>
-					</div>
-					<ActionField
-						name="css"
-						render={({ field }) => (
-							<MonacoFormField
-								field={field}
-								language="css"
-								theme={theme}
-								height="150px"
-								expandedHeight="50vh"
-							/>
-						)}
-					/>
-				</div>
 			</div>
 
 			<div className="space-y-3">

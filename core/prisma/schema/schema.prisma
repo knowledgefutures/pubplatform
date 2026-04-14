@@ -321,7 +321,6 @@ enum Action {
   move
   googleDriveImport
   datacite
-  buildJournalSite
   buildSite
   createPub
 }

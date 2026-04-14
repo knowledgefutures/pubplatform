@@ -67,17 +67,6 @@ export default function Home() {
 	return (
 		<main className="min-h-screen">
 			<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-				{/* Header */}
-				<div className="mb-8">
-					<h1 className="font-bold text-3xl text-gray-900">Mock COAR Notify Server</h1>
-					<p className="mt-2 text-gray-600">
-						Inbox URL:{" "}
-						<code className="rounded bg-gray-100 px-2 py-1 text-sm">
-							http://localhost:4001/api/inbox
-						</code>
-					</p>
-				</div>
-
 				<div className="grid gap-8 lg:grid-cols-3">
 					{/* Send Notification Form */}
 					<div className="lg:col-span-1" ref={formRef}>
@@ -162,10 +151,12 @@ export default function Home() {
 										requests.
 									</div>
 								) : (
-									notifications.map((notification) => (
+									notifications.map((notification, index) => (
 										<NotificationCard
 											key={notification.id}
 											notification={notification}
+											isLatest={index === 0}
+											notifications={notifications}
 											onDelete={() => handleDelete(notification.id)}
 											onRespond={handleRespond}
 										/>
