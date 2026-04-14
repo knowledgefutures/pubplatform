@@ -140,6 +140,20 @@ services:
             replicas: 1
             restart_policy:
                 condition: any
+    
+    mock-notify:
+        image: ghcr.io/knowledgefutures/mock-notify-server:${IMAGE_TAG}
+        networks: [appnet]
+        ports:
+            - target: 8080
+              published: ${MOCK_NOTIFY_PORT}
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                max_attempts: 5
 
 networks:
     appnet:
