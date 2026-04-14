@@ -40,10 +40,9 @@ const TEMPLATE_OPTIONS: PayloadTemplateType[] = [
 	"Reject",
 ]
 
-function makeTemplateDefaults(pubpubUrl: string): Record<
-	PayloadTemplateType,
-	{ targetUrl: string; targetServiceUrl: string }
-> {
+function makeTemplateDefaults(
+	pubpubUrl: string
+): Record<PayloadTemplateType, { targetUrl: string; targetServiceUrl: string }> {
 	return {
 		"Offer Review": {
 			targetUrl: `${pubpubUrl}/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox`,
@@ -98,15 +97,11 @@ export function SendNotificationForm({ config, onSent, prefill }: SendNotificati
 	const [objectItemUrl, setObjectItemUrl] = useState("")
 	const [reviewUrl, setReviewUrl] = useState(`${selfUrl}/reviews/sample-review`)
 	const [originUrl, setOriginUrl] = useState(prefill?.originUrl ?? selfUrl)
-	const [targetServiceUrl, setTargetServiceUrl] = useState(
-		prefill?.targetServiceUrl ?? pubpubUrl
-	)
+	const [targetServiceUrl, setTargetServiceUrl] = useState(prefill?.targetServiceUrl ?? pubpubUrl)
 	const [serviceName, setServiceName] = useState("Mock Review Service")
 	const [inReplyTo, setInReplyTo] = useState(prefill?.inReplyTo ?? "")
 	const [inReplyToUrl, setInReplyToUrl] = useState(prefill?.inReplyToObjectUrl ?? "")
-	const [workUrl, setWorkUrl] = useState(
-		`${pubpubUrl}/c/coar-us4-repository/pub/{pubId}`
-	)
+	const [workUrl, setWorkUrl] = useState(`${pubpubUrl}/c/coar-us4-repository/pub/{pubId}`)
 
 	const handleTemplateChange = (newType: PayloadTemplateType) => {
 		setTemplateType(newType)
@@ -398,8 +393,7 @@ export function SendNotificationForm({ config, onSent, prefill }: SendNotificati
 						</div>
 						<div>
 							<label className="mb-1 block font-medium text-gray-700 text-sm">
-								Work URL (as:inReplyTo) - pub URL containing the work being
-								reviewed
+								Work URL (as:inReplyTo) - pub URL containing the work being reviewed
 								<input
 									type="text"
 									value={workUrl}
