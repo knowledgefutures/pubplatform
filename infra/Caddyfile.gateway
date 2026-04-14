@@ -50,7 +50,7 @@
         }
     }
 
-    handle_path /emails* {
+    handle /emails* {
         reverse_proxy host.docker.internal:{inbucket_port}
     }
 

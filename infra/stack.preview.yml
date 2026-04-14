@@ -144,10 +144,8 @@ services:
     mock-notify:
         image: ghcr.io/knowledgefutures/mock-coar-notify-server:${IMAGE_TAG}
         networks: [appnet]
-        environment:
-            BASE_PATH: /mock-notify
         ports:
-            - target: 8080
+            - target: 3000
               published: ${MOCK_NOTIFY_PORT}
               protocol: tcp
               mode: host

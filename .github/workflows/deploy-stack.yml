@@ -135,6 +135,9 @@ jobs:
                     if [[ "$USES_GATEWAY" == "true" ]]; then
                       echo "deploying gateway stack..."
                       sudo docker stack deploy -c stack.gateway.yml --prune gateway
+                      # caddy reads its config once at startup, force a restart so it
+                      # picks up any changes to the bind-mounted Caddyfile
+                      sudo docker service update --force gateway_proxy
 
                       # derive host ports from PR number (prefix digit + pr number)
                       PR_NUM="${STACK_NAME##*-}"

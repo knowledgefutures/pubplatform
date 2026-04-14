@@ -138,3 +138,12 @@ COPY --from=withpackage --chown=node:node /usr/src/app/core/public ./core/public
 COPY --from=withpackage --chown=node:node /usr/src/app/core/prisma/migrations ./core/prisma/migrations
 
 CMD ["node", "--enable-source-maps", "core/server.js"]
+
+### Mock Notify
+
+FROM prod-setup AS next-app-mock-notify
+WORKDIR /usr/src/app
+COPY --from=withpackage --chown=node:node /usr/src/app/mock-notify/.next/standalone ./
+COPY --from=withpackage --chown=node:node /usr/src/app/mock-notify/.next/static ./mock-notify/.next/static
+
+CMD ["node", "mock-notify/server.js"]
