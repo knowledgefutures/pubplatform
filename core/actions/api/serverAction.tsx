@@ -5,6 +5,7 @@ import type { RunAutomationArgs } from "../_lib/runAutomation"
 import type { AutomationRunResult } from "../results"
 
 import { AutomationEvent, Capabilities, MembershipType } from "db/public"
+import { logger } from "logger"
 
 import { getLoginData } from "~/lib/authentication/loginData"
 import { userCan } from "~/lib/authorization/capabilities"
@@ -12,7 +13,7 @@ import { defineServerAction } from "~/lib/server/defineServerAction"
 import { runAutomation } from "../_lib/runAutomation"
 import { getActionByName } from "."
 
-export const runAutomationManual = defineServerAction(async function runActionInstance(
+export const runAutomationManual = defineServerAction(async function runAutomationManual(
 	args: Omit<RunAutomationArgs, "user" | "trigger"> & {
 		manualActionInstancesOverrideArgs: {
 			[actionInstanceId: ActionInstancesId]: Record<string, unknown>
@@ -85,6 +86,8 @@ export const runAutomationManual = defineServerAction(async function runActionIn
 	})
 
 	if (!result.success) {
+		logger.error({ msg: "Automation run failed", result })
+
 		return {
 			success: false,
 			error: result.actionRuns

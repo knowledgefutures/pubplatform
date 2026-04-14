@@ -11,13 +11,13 @@ const { getTrx } = createForEachMockedTransaction()
 beforeAll(async () => {
 	// check if minio is up
 
-	if (!env.ASSETS_STORAGE_ENDPOINT) {
+	if (!env.S3_ENDPOINT) {
 		throw new Error(
 			"You should only run this test against a local minio instance, not to prod S3"
 		)
 	}
 
-	const check = await fetch(env.ASSETS_STORAGE_ENDPOINT, {
+	const check = await fetch(env.S3_ENDPOINT, {
 		method: "OPTIONS",
 	})
 

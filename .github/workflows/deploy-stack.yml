@@ -1,0 +1,271 @@
+name: Deploy Stack
+
+on:
+    workflow_call:
+        inputs:
+            action:
+                required: true
+                type: string
+                description: "'deploy' or 'teardown'"
+            image_tag:
+                required: false
+                type: string
+                description: "image tag to deploy"
+            stack_name:
+                required: true
+                type: string
+                description: "docker swarm stack name"
+            hostname:
+                required: true
+                type: string
+                description: "public hostname for this deployment"
+            env_file:
+                required: true
+                type: string
+                description: "sops-encrypted env file to decrypt (relative to infra/)"
+            stack_file:
+                required: true
+                type: string
+                description: "compose file to deploy (e.g. stack.yml or stack.preview.yml)"
+            uses_gateway:
+                required: true
+                type: boolean
+                description: "if true, deploy behind the shared Caddy gateway"
+            ssh_host_secret:
+                required: true
+                type: string
+                description: "name of the SSH_HOST secret to use (value passed as secret)"
+        secrets:
+            SSH_PRIVATE_KEY:
+                required: true
+            SSH_USER:
+                required: true
+            SSH_HOST:
+                required: true
+            GHCR_USER:
+                required: true
+            GHCR_TOKEN:
+                required: true
+
+permissions:
+    contents: read
+    pull-requests: write
+
+jobs:
+    deploy:
+        if: inputs.action == 'deploy'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Start SSH agent
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Add known hosts
+              run: |
+                  mkdir -p ~/.ssh
+                  ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Deploy stack
+              env:
+                  SSH_USER: ${{ secrets.SSH_USER }}
+                  SSH_HOST: ${{ secrets.SSH_HOST }}
+                  REPO: ${{ github.repository }}
+                  BRANCH: ${{ github.head_ref || github.ref_name }}
+                  GHCR_USER: ${{ secrets.GHCR_USER }}
+                  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+                  IMAGE_TAG: ${{ inputs.image_tag }}
+                  STACK_NAME: ${{ inputs.stack_name }}
+                  DEPLOY_HOST: ${{ inputs.hostname }}
+                  ENV_FILE: ${{ inputs.env_file }}
+                  STACK_FILE: ${{ inputs.stack_file }}
+                  USES_GATEWAY: ${{ inputs.uses_gateway }}
+              run: |
+                  ssh "${SSH_USER}@${SSH_HOST}" \
+                    "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' STACK_NAME='${STACK_NAME}' DEPLOY_HOST='${DEPLOY_HOST}' ENV_FILE='${ENV_FILE}' STACK_FILE='${STACK_FILE}' USES_GATEWAY='${USES_GATEWAY}' bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
+                    set -euo pipefail
+
+                    REPO="${1:?missing repo}"
+                    BRANCH="${2:-main}"
+
+                    : "${IMAGE_TAG:?missing IMAGE_TAG}"
+                    : "${GHCR_USER:?missing GHCR_USER}"
+                    : "${GHCR_TOKEN:?missing GHCR_TOKEN}"
+                    : "${STACK_NAME:?missing STACK_NAME}"
+                    : "${DEPLOY_HOST:?missing DEPLOY_HOST}"
+                    : "${ENV_FILE:?missing ENV_FILE}"
+                    : "${STACK_FILE:?missing STACK_FILE}"
+
+                    REPO_NAME="${REPO##*/}"
+                    APP_DIR="/srv/${REPO_NAME}"
+                    REPO_SSH="git@github.com:${REPO}.git"
+
+                    ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
+                    chmod 600 ~/.ssh/known_hosts
+
+                    if [[ ! -d "${APP_DIR}/.git" ]]; then
+                      sudo mkdir -p "${APP_DIR}"
+                      sudo chown -R "$USER:$USER" "${APP_DIR}"
+                      git clone --branch "${BRANCH}" "${REPO_SSH}" "${APP_DIR}"
+                    fi
+
+                    cd "${APP_DIR}"
+                    git fetch --prune --tags origin
+                    # always checkout the latest commit on the branch, even if we are skipping the build
+                    git checkout --detach "origin/${BRANCH}"
+
+                    cd infra
+                    umask 077
+
+                    # write to a per-stack env file to avoid races between concurrent deploys
+                    sops -d --input-type dotenv --output-type dotenv "$ENV_FILE" > ".env.${STACK_NAME}"
+                    ln -sf ".env.${STACK_NAME}" .env
+
+                    if ! sudo docker info --format '{{.Swarm.LocalNodeState}}' | grep -qx active; then
+                      sudo docker swarm init --advertise-addr "$(hostname -I | awk '{print $1}')"
+                    fi
+
+                    echo "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+                    sudo docker pull ghcr.io/knowledgefutures/platform:"$IMAGE_TAG"
+
+                    if [[ "$USES_GATEWAY" == "true" ]]; then
+                      echo "deploying gateway stack..."
+                      sudo docker stack deploy -c stack.gateway.yml --prune gateway
+                      # caddy reads its config once at startup, force a restart so it
+                      # picks up any changes to the bind-mounted Caddyfile
+                      sudo docker service update --force gateway_proxy
+
+                      # derive host ports from PR number (prefix digit + pr number)
+                      PR_NUM="${STACK_NAME##*-}"
+                      PLATFORM_PORT="1${PR_NUM}"
+                      BUILDER_PORT="2${PR_NUM}"
+                      MINIO_PORT="3${PR_NUM}"
+                      MINIO_CONSOLE_PORT="4${PR_NUM}"
+                      INBUCKET_PORT="5${PR_NUM}"
+                      MOCK_NOTIFY_PORT="6${PR_NUM}"
+
+                      sudo env IMAGE_TAG="$IMAGE_TAG" DEPLOY_HOST="$DEPLOY_HOST" \
+                        PLATFORM_PORT="$PLATFORM_PORT" BUILDER_PORT="$BUILDER_PORT" \
+                        MINIO_PORT="$MINIO_PORT" MINIO_CONSOLE_PORT="$MINIO_CONSOLE_PORT" \
+                        INBUCKET_PORT="$INBUCKET_PORT" MOCK_NOTIFY_PORT="$MOCK_NOTIFY_PORT" \
+                        docker stack deploy -c "$STACK_FILE" \
+                        --with-registry-auth --resolve-image always --prune "$STACK_NAME"
+
+                    else
+                      # standalone mode (production) -- deploy full stack with its own caddy
+                      echo "deploying with IMAGE_TAG=$IMAGE_TAG"
+
+                      sudo env IMAGE_TAG="$IMAGE_TAG" \
+                        docker stack deploy -c "$STACK_FILE" \
+                        --with-registry-auth --resolve-image always --prune "$STACK_NAME"
+                    fi
+
+                    sudo docker stack services "$STACK_NAME"
+                    sudo docker image prune -f
+
+                    wait_rollout() {
+                      echo "waiting for rollout of $1..."
+                      svc="$1"
+                      timeout="${2:-600}"
+                      end=$((SECONDS+timeout))
+
+                      while (( SECONDS < end )); do
+                        desired="$(sudo docker service inspect "$svc" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "")"
+                        running="$(sudo docker service ps "$svc" --filter desired-state=running --format '{{.CurrentState}}' 2>/dev/null | grep -c '^Running' || true)"
+                        state="$(sudo docker service inspect "$svc" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || echo "")"
+                        echo "  $svc: desired=$desired running=$running state=$state"
+
+                        if [[ -n "$desired" && "$running" == "$desired" ]] && { [[ -z "$state" ]] || [[ "$state" == "completed" ]]; }; then
+                          echo "  $svc rollout complete"
+                          return 0
+                        fi
+
+                        sleep 5
+                      done
+
+                      echo "rollout timeout for $svc"
+                      return 1
+                    }
+
+                    wait_rollout "${STACK_NAME}_platform" 600
+
+                  EOS
+
+            - name: Comment on PR
+              if: github.event_name == 'pull_request'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const body = `Preview deployed at https://${{ inputs.hostname }}`;
+                      const { data: comments } = await github.rest.issues.listComments({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.issue.number,
+                      });
+                      const existing = comments.find(c => c.body.includes('Preview deployed at'));
+                      if (existing) {
+                        await github.rest.issues.updateComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          comment_id: existing.id,
+                          body,
+                        });
+                      } else {
+                        await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.issue.number,
+                          body,
+                        });
+                      }
+
+    teardown:
+        if: inputs.action == 'teardown'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Start SSH agent
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Add known hosts
+              run: |
+                  mkdir -p ~/.ssh
+                  ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Teardown stack
+              env:
+                  SSH_USER: ${{ secrets.SSH_USER }}
+                  SSH_HOST: ${{ secrets.SSH_HOST }}
+                  STACK_NAME: ${{ inputs.stack_name }}
+                  USES_GATEWAY: ${{ inputs.uses_gateway }}
+              run: |
+                  ssh "${SSH_USER}@${SSH_HOST}" \
+                    "env STACK_NAME='${STACK_NAME}' USES_GATEWAY='${USES_GATEWAY}' bash -s" <<'EOS'
+                    set -euo pipefail
+                    : "${STACK_NAME:?missing STACK_NAME}"
+
+                    echo "tearing down stack $STACK_NAME"
+
+                    if sudo docker stack ls --format '{{.Name}}' | grep -qx "$STACK_NAME"; then
+                      sudo docker stack rm "$STACK_NAME"
+                      sleep 10
+                      sudo docker volume ls --filter "label=com.docker.stack.namespace=$STACK_NAME" -q \
+                        | xargs -r sudo docker volume rm || true
+                      echo "stack $STACK_NAME removed"
+                    else
+                      echo "stack $STACK_NAME not found, nothing to tear down"
+                    fi
+
+                    if [[ "$USES_GATEWAY" == "true" ]]; then
+                      echo "gateway uses dynamic map routing, no per-site cleanup needed"
+                    fi
+
+                    sudo docker image prune -f
+
+                  EOS

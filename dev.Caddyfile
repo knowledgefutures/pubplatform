@@ -45,13 +45,13 @@
     # visit: http://localhost:8080/my-community/journal-2024/
     
     handle_path /sites/* {
-        import s3site {$ASSETS_BUCKET_NAME:assets} {$S3_ENDPOINT:garage:3900}
+        import s3site {$S3_BUCKET_NAME:assets} {$S3_ENDPOINT:garage:3900}
     }
 
     # simpler path without /sites prefix
     # handles /{communitySlug}/{subpath}/...
     handle /* {
-        import s3site "{$ASSETS_BUCKET_NAME:assets}/sites" {$S3_ENDPOINT:garage:3900}
+        import s3site "{$S3_BUCKET_NAME:assets}/sites" {$S3_ENDPOINT:garage:3900}
     }
 }
 
@@ -72,7 +72,7 @@
 #
 # {
 #     filesystem sites s3 {
-#         bucket {$ASSETS_BUCKET_NAME:assets}
+#         bucket {$S3_BUCKET_NAME:assets}
 #         region {$S3_REGION:garage}
 #         endpoint {$S3_ENDPOINT:http://garage:3900}
 #         use_path_style

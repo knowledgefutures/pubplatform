@@ -29,5 +29,9 @@
 **/values.dev.yaml
 **/build
 **/dist
+**/.github
+**/.turbo
+**/.infra
+
 LICENSE
 README.md

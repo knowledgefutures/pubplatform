@@ -69,9 +69,7 @@ services:
 
     # caddy with s3fs for serving static sites from minio
     caddy-sites:
-        build:
-            context: .
-            dockerfile: Dockerfile.caddy
+        image: caddy:latest
         env_file:
             - path: .env.docker-compose.dev
               required: true

@@ -1,0 +1,132 @@
+services:
+  proxy:
+    image: ghcr.io/knowledgefutures/caddy-sites:latest
+    env_file: [.env]
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [appnet]
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+  platform:
+    image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
+    env_file: [.env]
+    environment:
+      HOSTNAME: '0.0.0.0'
+      NODE_ENV: production
+      PORT: '3000'
+      SITE_BUILDER_ENDPOINT: http://site-builder:4000
+    networks: [appnet]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          node -e "require('http')
+          .get('http://127.0.0.1:3000/api/health', r => process.exit(r.statusCode < 400 ? 0 : 1))
+          .on('error', () => process.exit(1));"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 60s
+    deploy:
+      replicas: 2
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+        failure_action: rollback
+      rollback_config:
+        order: stop-first
+        parallelism: 1
+      restart_policy:
+        condition: on-failure
+
+  platform-jobs:
+    image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
+    env_file: [.env]
+    environment:
+      NODE_ENV: production
+      PUBPUB_URL: http://platform:3000
+    networks: [appnet]
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+
+  site-builder:
+    image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
+    env_file: [.env]
+    environment:
+      NODE_ENV: production
+      PUBPUB_URL: http://platform:3000
+      PORT: '4000'
+    networks: [appnet]
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 5s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+
+  db:
+    image: postgres:15
+    tmpfs:
+      - /dev/shm:size=2147483648
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    command: >
+      -c shared_buffers=2GB
+      -c effective_cache_size=6GB
+      -c work_mem=16MB
+      -c maintenance_work_mem=512MB
+      -c max_connections=500
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [appnet, dbaccess]
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+  cache:
+    image: valkey/valkey:8-alpine
+    networks: [appnet]
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+networks:
+  appnet:
+    driver: overlay
+  dbaccess:
+    driver: overlay
+    attachable: true
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

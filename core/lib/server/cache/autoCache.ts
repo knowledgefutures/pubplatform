@@ -4,12 +4,14 @@ import type { AutoCacheOptions, DirectAutoOutput, ExecuteFn, SQB } from "./types
 import { cache } from "react"
 
 import { logger } from "logger"
+import { tryCatch } from "utils/try-catch"
 
 import { env } from "~/lib/env/env"
 import { createCacheTag, createCommunityCacheTags } from "./cacheTags"
 import { getCommunitySlug } from "./getCommunitySlug"
 import { memoize } from "./memoize"
 import { cachedFindTables, directAutoOutput } from "./sharedAuto"
+import { shouldSkipCache as shouldSkipCacheStore } from "./skipCacheStore"
 import { getTablesWithLinkedTables } from "./specialTables"
 import { getTransactionStore, setTransactionStore } from "./transactionStorage"
 
@@ -60,9 +62,32 @@ const executeWithCache = <
 	options?: AutoCacheOptions
 ) => {
 	const executeFn = cache(async (...args: Parameters<Q[M]>) => {
-		const communitySlug = options?.communitySlug ?? (await getCommunitySlug())
-
 		const compiledQuery = qb.compile()
+
+		const willSkipCacheStore = shouldSkipCacheStore("store")
+		const willSkipCacheFn = options?.skipCacheFn?.()
+
+		const willSkipCache = willSkipCacheStore || willSkipCacheFn
+
+		if (willSkipCache) {
+			logger.debug(
+				willSkipCacheStore
+					? `Skipping cache for query ${compiledQuery.sql} because of skipCacheStore`
+					: `Skipping cache for query ${compiledQuery.sql} because of skipCacheFn`
+			)
+
+			return qb[method](...args) as ReturnType<Q[M]>
+		}
+
+		const [error, communitySlug] = options?.communitySlug
+			? [null, options.communitySlug]
+			: await tryCatch(getCommunitySlug())
+
+		if (error) {
+			logger.error(`Error getting community slug: ${error.message}`)
+			logger.error(compiledQuery.sql)
+			throw error
+		}
 
 		const tables = await cachedFindTables(compiledQuery, "select")
 
@@ -88,7 +113,7 @@ const executeWithCache = <
 			asOne
 		)
 
-		if (shouldSkipCache || options?.skipCacheFn?.()) {
+		if (shouldSkipCache) {
 			if (env.CACHE_LOG) {
 				logger.debug(`AUTOCACHE: Skipping cache for query: ${asOne}`)
 			}

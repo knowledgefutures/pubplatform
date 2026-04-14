@@ -6,6 +6,8 @@ import { generateOpenApi } from "@ts-rest/open-api"
 
 import { siteApi } from "contracts"
 
+import { env } from "~/lib/env/env"
+
 type TraverseContractResult = "SKIP" | "CONTINUE" | "STOP"
 
 const traverseContract = (
@@ -54,7 +56,7 @@ export const createOpenApiDocument = (communitySlug?: string): OpenAPIObject => 
 				description: "The development API server",
 			},
 			{
-				url: "https://app.pubpub.org/",
+				url: env.PUBPUB_URL,
 				description: "The production API server",
 			},
 		],

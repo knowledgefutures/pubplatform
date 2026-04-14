@@ -78,6 +78,9 @@ ENV DOCKERBUILD=1
 ARG CI
 ENV CI=$CI
 
+ARG BASE_PATH=""
+ENV BASE_PATH=$BASE_PATH
+
 RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
   pnpm --filter $PACKAGE build
 
@@ -134,7 +137,16 @@ WORKDIR /usr/src/app
 COPY --from=withpackage --chown=node:node /usr/src/app/core/.next/standalone ./
 COPY --from=withpackage --chown=node:node /usr/src/app/core/.next/static ./core/.next/static
 COPY --from=withpackage --chown=node:node /usr/src/app/core/public ./core/public
-# needed to set the database url correctly based on PGHOST variables
-COPY --from=withpackage --chown=node:node /usr/src/app/core/.env.docker ./core/.env
+# migration sql files, applied automatically during startup instrumentation
+COPY --from=withpackage --chown=node:node /usr/src/app/core/prisma/migrations ./core/prisma/migrations
 
-CMD ["node", "core/server.js"]
+CMD ["node", "--enable-source-maps", "core/server.js"]
+
+### Mock Notify
+
+FROM prod-setup AS next-app-mock-notify
+WORKDIR /usr/src/app
+COPY --from=withpackage --chown=node:node /usr/src/app/mock-notify/.next/standalone ./
+COPY --from=withpackage --chown=node:node /usr/src/app/mock-notify/.next/static ./mock-notify/.next/static
+
+CMD ["node", "mock-notify/server.js"]

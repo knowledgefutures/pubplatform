@@ -1,0 +1,69 @@
+name: Promote from main (new)
+
+on:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+
+permissions:
+    id-token: write
+    contents: read
+    packages: write
+    pull-requests: write
+
+concurrency:
+    group: deploy-main
+    cancel-in-progress: false
+
+jobs:
+    ci:
+        uses: ./.github/workflows/ci.yml
+
+    build-all:
+        needs: ci
+        permissions:
+            contents: read
+            packages: write
+        uses: ./.github/workflows/ghcr-build-all.yml
+        secrets:
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        with:
+            publish_latest: true
+
+    run-e2e:
+        needs:
+            - ci
+            - build-all
+        uses: ./.github/workflows/e2e.yml
+
+    deploy-sandbox:
+        needs: build-all
+        permissions:
+            contents: read
+            pull-requests: write
+        uses: ./.github/workflows/deploy-stack.yml
+        with:
+            action: deploy
+            image_tag: ${{ github.sha }}
+            stack_name: sandbox
+            hostname: sandbox.pubstar.org
+            env_file: .env.sandbox.enc
+            stack_file: stack.preview.yml
+            uses_gateway: true
+            ssh_host_secret: SSH_HOST_PREVIEW
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+    deploy-docs:
+        permissions:
+            contents: write
+            pages: write
+            pull-requests: write
+        uses: ./.github/workflows/build-docs.yml
+        with:
+            preview: false

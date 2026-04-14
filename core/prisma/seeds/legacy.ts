@@ -1,6 +1,5 @@
 import type { CommunitiesId, PubsId } from "db/public"
 
-import { readFile } from "node:fs/promises"
 import { faker } from "@faker-js/faker"
 
 import { CoreSchemaType, MemberRole } from "db/public"
@@ -13,7 +12,7 @@ import { usersExisting } from "./users"
 const abstract = `<p>The development of AAV capsids for therapeutic gene delivery has exploded in popularity over the past few years. <em>However</em>, humans aren’t the first or only species using viral capsids for gene delivery — wasps evolved this tactic over 100 million years ago. Parasitoid wasps that lay eggs inside arthropod hosts have co-opted ancient viruses for gene delivery to manipulate multiple aspects of the host’s biology, thereby increasing the probability of survival of the wasp larvae</p>`
 
 export const seedLegacy = async (communityId?: CommunitiesId) => {
-	const poniesText = await readFile(new URL("./ponies.snippet.html", import.meta.url), "utf-8")
+	const { poniesText } = await import("./ponies.snippet")
 
 	const articleSeed = (number = 1_000, asRelation = false) =>
 		Array.from({ length: number }, (_, idx) => {

@@ -1,0 +1,166 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/swarmlibs/dockerstack-schema/main/schema/dockerstack-spec.json
+
+services:
+
+    platform:
+        image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
+        env_file: [.env]
+        environment:
+            HOSTNAME: "0.0.0.0"
+            NODE_ENV: production
+            PORT: "3000"
+            PUBPUB_URL: https://${DEPLOY_HOST}
+            PUBPUB_HOSTNAME: ${DEPLOY_HOST}
+            SITE_BUILDER_ENDPOINT: http://site-builder:4000
+            S3_PUBLIC_ENDPOINT: https://${DEPLOY_HOST}/assets
+            FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
+            DB_RESET: "true"
+            DB_SEED: "true"
+            MOCK_NOTIFY_INBOX_URL: http://mock-notify:3000/mock-notify/api/inbox
+        networks: [appnet]
+        ports:
+            - target: 3000
+              published: ${PLATFORM_PORT}
+              protocol: tcp
+              mode: host
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - >
+                    node -e "require('http')
+                    .get('http://127.0.0.1:3000/api/health', r => process.exit(r.statusCode < 400 ? 0 : 1))
+                    .on('error', () => process.exit(1));"
+            interval: 10s
+            timeout: 3s
+            retries: 6
+            start_period: 60s
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    platform-jobs:
+        image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
+        env_file: [.env]
+        environment:
+            NODE_ENV: production
+            PUBPUB_URL: http://platform:3000
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    site-builder:
+        image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
+        env_file: [.env]
+        environment:
+            NODE_ENV: production
+            PUBPUB_URL: http://platform:3000
+            PORT: "4000"
+        networks: [appnet]
+        ports:
+            - target: 4000
+              published: ${BUILDER_PORT}
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+
+    db:
+        image: postgres:15
+        env_file: [.env]
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    cache:
+        image: valkey/valkey:8-alpine
+        networks: [appnet]
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    minio:
+        image: minio/minio:latest
+        env_file: [.env]
+        command: server --console-address ":9001" /data
+        environment:
+            MINIO_BROWSER_REDIRECT_URL: https://${DEPLOY_HOST}/assets-ui
+        networks: [appnet]
+        ports:
+            - target: 9000
+              published: ${MINIO_PORT}
+              protocol: tcp
+              mode: host
+            - target: 9001
+              published: ${MINIO_CONSOLE_PORT}
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+    minio-init:
+        image: minio/mc:latest
+        env_file: [.env]
+        entrypoint: >
+            /bin/sh -c '
+            /usr/bin/mc alias set myminio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
+            /usr/bin/mc mb --ignore-existing myminio/"$${S3_BUCKET_NAME}";
+            /usr/bin/mc anonymous set download myminio/"$${S3_BUCKET_NAME}";
+            /usr/bin/mc admin user add myminio "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}";
+            /usr/bin/mc admin policy attach myminio readwrite --user "$${S3_ACCESS_KEY}";'
+        networks: [appnet]
+        deploy:
+            mode: replicated-job
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                max_attempts: 5
+
+    inbucket:
+        image: inbucket/inbucket:latest
+        networks: [appnet]
+        environment:
+            INBUCKET_WEB_BASEPATH: /emails
+        ports:
+            - target: 9000
+              published: ${INBUCKET_PORT}
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+    
+    mock-notify:
+        image: ghcr.io/knowledgefutures/mock-coar-notify-server:${IMAGE_TAG}
+        networks: [appnet]
+        environment:
+            PUBPUB_URL: https://${DEPLOY_HOST}
+        ports:
+            - target: 3000
+              published: ${MOCK_NOTIFY_PORT}
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: on-failure
+                max_attempts: 5
+
+networks:
+    appnet:
+        driver: overlay
+
+volumes:
+    pgdata:

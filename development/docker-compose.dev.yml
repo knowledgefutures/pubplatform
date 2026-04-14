@@ -86,8 +86,8 @@ services:
         volumes:
             - ../dev.Caddyfile:/etc/caddy/Caddyfile
         environment:
-            - ASSETS_BUCKET_NAME=${ASSETS_BUCKET_NAME:-assets.v7.pubpub.org}
-            - S3_REGION=${ASSETS_REGION:-garage}
+            - S3_BUCKET_NAME=${S3_BUCKET_NAME:-assets.v7.pubpub.org}
+            - S3_REGION=${S3_REGION:-garage}
             - S3_ENDPOINT=garage:3900
         ports:
             - "8080:8080"
