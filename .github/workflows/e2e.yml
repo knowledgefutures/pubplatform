@@ -87,6 +87,7 @@ jobs:
               run: |
                   echo "core_label=ghcr.io/knowledgefutures/platform:$IMAGE_TAG" >> $GITHUB_OUTPUT
                   echo "jobs_label=ghcr.io/knowledgefutures/platform-jobs:$IMAGE_TAG" >> $GITHUB_OUTPUT
+                  echo "site_builder_label=ghcr.io/knowledgefutures/platform-site-builder:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile --prefer-offline
@@ -110,6 +111,7 @@ jobs:
               env:
                   INTEGRATION_TESTS_IMAGE: ${{ steps.label.outputs.core_label }}
                   JOBS_IMAGE: ${{ steps.label.outputs.jobs_label }}
+                  SITE_BUILDER_IMAGE: ${{ steps.label.outputs.site_builder_label }}
 
             - name: Log out Container ID for health check
               id: log-container-id
@@ -131,6 +133,7 @@ jobs:
               env:
                   INTEGRATION_TESTS_IMAGE: ${{steps.label.outputs.core_label}}
                   JOBS_IMAGE: ${{steps.label.outputs.jobs_label}}
+                  SITE_BUILDER_IMAGE: ${{steps.label.outputs.site_builder_label}}
 
             - name: Upload core playwright snapshots artifact
               if: failure() && matrix.package == 'core'
