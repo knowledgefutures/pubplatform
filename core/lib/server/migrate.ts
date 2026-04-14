@@ -157,6 +157,9 @@ export async function runMigrations() {
 					.set({ logs: String(err) })
 					.where("id", "=", id)
 					.execute()
+
+				logger.error({ msg: `Error applying migration ${dir}`, sql: migrationSql, err })
+
 				throw err
 			}
 
