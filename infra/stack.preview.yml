@@ -16,6 +16,7 @@ services:
             FLAGS: "uploads:off,invites:off,disabled-actions:http+email"
             DB_RESET: "true"
             DB_SEED: "true"
+            MOCK_NOTIFY_INBOX_URL: http://mock-notify:3000/mock-notify/api/inbox
         networks: [appnet]
         ports:
             - target: 3000

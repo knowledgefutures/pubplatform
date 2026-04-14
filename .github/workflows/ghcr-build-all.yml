@@ -64,6 +64,7 @@ jobs:
     uses: ./.github/workflows/ghcr-build-template.yml
     with:
       package: mock-notify
+      base_path: /mock-notify
       ghcr_image_name: mock-coar-notify-server
       publish_latest: ${{ inputs.publish_latest }}
       image_tag: ${{ inputs.image_tag }}

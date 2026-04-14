@@ -54,7 +54,7 @@
         reverse_proxy host.docker.internal:{inbucket_port}
     }
 
-    handle_path /mock-notify* {
+    handle /mock-notify* {
         reverse_proxy host.docker.internal:{mock_notify_port}
     }
 

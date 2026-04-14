@@ -78,6 +78,9 @@ ENV DOCKERBUILD=1
 ARG CI
 ENV CI=$CI
 
+ARG BASE_PATH=""
+ENV BASE_PATH=$BASE_PATH
+
 RUN --mount=type=secret,id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
   pnpm --filter $PACKAGE build
 

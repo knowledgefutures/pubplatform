@@ -12,7 +12,7 @@ import { env } from "~/lib/env/env"
 import { seedCommunity } from "../seed/seedCommunity"
 
 const WEBHOOK_PATH = "coar-inbox"
-const REMOTE_INBOX_URL = "http://localhost:4001/api/inbox"
+const REMOTE_INBOX_URL = process.env.MOCK_NOTIFY_INBOX_URL ?? "http://localhost:4001/api/inbox"
 
 const adminId = "dddddddd-dddd-4ddd-dddd-dddddddddd01" as UsersId
 const joeAuthorId = "dddddddd-dddd-4ddd-dddd-dddddddddd02" as UsersId

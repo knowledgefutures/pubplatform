@@ -19,6 +19,10 @@ on:
       image_tag:
         type: string
         description: "Override the image tag (e.g. v1.2.3). Falls back to git describe."
+      base_path:
+        type: string
+        default: ""
+        description: "Base path for Next.js apps (e.g. /mock-notify). Baked into the build."
     outputs:
       image-sha:
         description: 'Full GHCR image ref with SHA tag'
@@ -85,6 +89,7 @@ jobs:
           build-args: |
             PACKAGE=${{ inputs.package }}
             CI=true
+            BASE_PATH=${{ inputs.base_path }}
           secrets: |
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           target: ${{ steps.label.outputs.target }}
