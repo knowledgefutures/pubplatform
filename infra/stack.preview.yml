@@ -129,6 +129,8 @@ services:
     inbucket:
         image: inbucket/inbucket:latest
         networks: [appnet]
+        environment:
+            INBUCKET_WEB_BASEPATH: /emails
         ports:
             - target: 9000
               published: ${INBUCKET_PORT}
