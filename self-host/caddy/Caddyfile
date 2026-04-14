@@ -3,9 +3,9 @@
 }
 
 example.com {
-    # keep this if you want your files to be accessible at example.com/a*
+    # keep this if you want your files to be accessible at example.com/assets*
     # this should instead be a subdomain, like assets.example.com
-    handle_path /a* {
+    handle_path /assets* {
         reverse_proxy minio:9000
     }
 
@@ -18,16 +18,24 @@ example.com {
     }
 
     # serve static sites from s3/minio
-    # requires caddy built with s3fs module (see Dockerfile.caddy)
-    handle_path /sites/* {
-        root * /sites
-        file_server {
-            fs s3 {
-                bucket {$S3_BUCKET_NAME:assets}
-                region {$S3_REGION:us-east-1}
-                endpoint {$S3_ENDPOINT:http://minio:9000}
-                access_key {$S3_ACCESS_KEY}
-                secret_key {$S3_SECRET_KEY}
+   handle_path /sites/* {
+        @pathWithSlash path_regexp dir (.+)/$
+        handle @pathWithSlash {
+            redir {re.dir.1} permanent
+        }
+
+        rewrite * /assets{uri}
+
+        reverse_proxy host.docker.internal:{minio_port} {
+            @error status 403 404
+            handle_response @error {
+                rewrite * {uri}/index.html
+                reverse_proxy host.docker.internal:{minio_port} {
+                    @nestedError status 404
+                    handle_response @nestedError {
+                        respond "Not found" 404
+                    }
+                }
             }
         }
     }

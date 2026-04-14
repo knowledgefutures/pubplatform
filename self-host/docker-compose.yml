@@ -13,7 +13,7 @@ services:
             minio-init:
                 condition: service_completed_successfully
         platform: linux/amd64
-        image: ghcr.io/pubpub/platform:latest
+        image: ghcr.io/knowledgefutures/pubplatform:latest
         env_file: .env
         environment:
             DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -29,7 +29,7 @@ services:
             db:
                 condition: service_started
         platform: linux/amd64
-        image: ghcr.io/pubpub/platform-jobs:latest
+        image: ghcr.io/knowledgefutures/pubplatform-jobs:latest
         env_file: .env
         environment:
             DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -67,7 +67,7 @@ services:
     # note: requires the caddy-sites image built from Dockerfile.caddy
     # you can build it with: docker build -f Dockerfile.caddy -t ghcr.io/pubpub/caddy-sites:latest .
     caddy:
-        image: ghcr.io/pubpub/caddy-sites:latest
+        image: caddy:latest
         depends_on:
             - platform
             - platform-jobs
@@ -90,7 +90,13 @@ services:
         image: minio/minio:latest
         env_file: .env
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+            test:
+                [
+                    "CMD",
+                    "curl",
+                    "-f",
+                    "http://localhost:9000/minio/health/ready",
+                ]
             interval: 1m30s
             timeout: 30s
             retries: 5
