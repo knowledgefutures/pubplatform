@@ -1,6 +1,7 @@
 "use client"
 
 import type { StoredNotification } from "~/lib/store"
+import type { AppConfig } from "~/lib/urls"
 
 import { useState } from "react"
 
@@ -11,6 +12,7 @@ import {
 } from "~/lib/payloads"
 
 interface NotificationCardProps {
+	config: AppConfig
 	notification: StoredNotification
 	notifications: StoredNotification[]
 	onDelete: () => void
@@ -28,6 +30,7 @@ export interface ResponsePrefill {
 }
 
 export function NotificationCard({
+	config,
 	notification,
 	notifications,
 	onDelete,
@@ -134,7 +137,7 @@ export function NotificationCard({
 				templateType: responseType,
 				inReplyTo: payload.inReplyTo ?? payload.id,
 				inReplyToObjectUrl,
-				originUrl: payload.origin?.id ?? "http://localhost:4001",
+				originUrl: payload.origin?.id ?? config.selfUrl,
 				targetServiceUrl: payload.target?.id ?? "",
 			}
 			onRespond(responseType, prefill)
@@ -146,7 +149,7 @@ export function NotificationCard({
 				templateType: responseType,
 				inReplyTo: payload.id,
 				inReplyToObjectUrl: payload.object?.id ?? "",
-				originUrl: "http://localhost:4001",
+				originUrl: config.selfUrl,
 				targetServiceUrl: payload.origin?.id ?? "",
 			}
 			onRespond(responseType, prefill)

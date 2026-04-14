@@ -1,6 +1,7 @@
 "use client"
 
 import type { CoarNotifyPayload } from "~/lib/store"
+import type { AppConfig } from "~/lib/urls"
 
 import { useState } from "react"
 
@@ -13,10 +14,11 @@ import {
 	createRejectPayload,
 	type PayloadTemplateType,
 } from "~/lib/payloads"
+import { apiUrl } from "~/lib/urls"
 
 interface SendNotificationFormProps {
+	config: AppConfig
 	onSent: () => void
-	/** Pre-fill values for a response to an existing notification */
 	prefill?: {
 		targetUrl?: string
 		templateType?: PayloadTemplateType
@@ -38,73 +40,79 @@ const TEMPLATE_OPTIONS: PayloadTemplateType[] = [
 	"Reject",
 ]
 
-export function SendNotificationForm({ onSent, prefill }: SendNotificationFormProps) {
+function makeTemplateDefaults(pubpubUrl: string): Record<
+	PayloadTemplateType,
+	{ targetUrl: string; targetServiceUrl: string }
+> {
+	return {
+		"Offer Review": {
+			targetUrl: `${pubpubUrl}/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox`,
+			targetServiceUrl: `${pubpubUrl}/c/coar-us2-unjournal`,
+		},
+		"Announce Review": {
+			targetUrl: `${pubpubUrl}/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox`,
+			targetServiceUrl: `${pubpubUrl}/c/coar-us1-arcadia`,
+		},
+		"Offer Ingest": {
+			targetUrl: `${pubpubUrl}/api/v0/c/coar-us4-repository/site/webhook/coar-inbox`,
+			targetServiceUrl: `${pubpubUrl}/c/coar-us4-repository`,
+		},
+		"Announce Ingest": {
+			targetUrl: `${pubpubUrl}/api/v0/c/coar-us4-repository/site/webhook/coar-inbox`,
+			targetServiceUrl: `${pubpubUrl}/c/coar-us4-repository`,
+		},
+		Accept: {
+			targetUrl: `${pubpubUrl}/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox`,
+			targetServiceUrl: `${pubpubUrl}/c/coar-us1-arcadia`,
+		},
+		Reject: {
+			targetUrl: `${pubpubUrl}/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox`,
+			targetServiceUrl: `${pubpubUrl}/c/coar-us1-arcadia`,
+		},
+	}
+}
+
+export function SendNotificationForm({ config, onSent, prefill }: SendNotificationFormProps) {
+	const { pubpubUrl, selfUrl } = config
+	const templateDefaults = makeTemplateDefaults(pubpubUrl)
+
 	const [mode, setMode] = useState<FormMode>("template")
+
 	const [targetUrl, setTargetUrl] = useState(
-		prefill?.targetUrl ??
-			"http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox"
+		prefill?.targetUrl ?? templateDefaults["Offer Review"].targetUrl
 	)
+
 	const [templateType, setTemplateType] = useState<PayloadTemplateType>(
 		prefill?.templateType ?? "Offer Review"
 	)
+
 	const [customPayload, setCustomPayload] = useState("")
 	const [isSending, setIsSending] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState(false)
 
-	// Template fields - using complete URLs instead of IDs
 	const [objectUrl, setObjectUrl] = useState(
 		prefill?.inReplyToObjectUrl ?? "https://www.biorxiv.org/content/10.1101/2024.01.01.123456"
 	)
 	const [objectCiteAs, setObjectCiteAs] = useState("")
 	const [objectItemUrl, setObjectItemUrl] = useState("")
-	const [reviewUrl, setReviewUrl] = useState("http://localhost:4001/reviews/sample-review")
-	const [originUrl, setOriginUrl] = useState(prefill?.originUrl ?? "http://localhost:4001")
+	const [reviewUrl, setReviewUrl] = useState(`${selfUrl}/reviews/sample-review`)
+	const [originUrl, setOriginUrl] = useState(prefill?.originUrl ?? selfUrl)
 	const [targetServiceUrl, setTargetServiceUrl] = useState(
-		prefill?.targetServiceUrl ?? "http://localhost:3000"
+		prefill?.targetServiceUrl ?? pubpubUrl
 	)
 	const [serviceName, setServiceName] = useState("Mock Review Service")
 	const [inReplyTo, setInReplyTo] = useState(prefill?.inReplyTo ?? "")
 	const [inReplyToUrl, setInReplyToUrl] = useState(prefill?.inReplyToObjectUrl ?? "")
 	const [workUrl, setWorkUrl] = useState(
-		"http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
+		`${pubpubUrl}/c/coar-us4-repository/pub/{pubId}`
 	)
-
-	// Default target URLs per template type for demo convenience
-	const TEMPLATE_DEFAULTS: Record<
-		PayloadTemplateType,
-		{ targetUrl: string; targetServiceUrl: string }
-	> = {
-		"Offer Review": {
-			targetUrl: "http://localhost:3000/api/v0/c/coar-us2-unjournal/site/webhook/coar-inbox",
-			targetServiceUrl: "http://localhost:3000/c/coar-us2-unjournal",
-		},
-		"Announce Review": {
-			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
-			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
-		},
-		"Offer Ingest": {
-			targetUrl: "http://localhost:3000/api/v0/c/coar-us4-repository/site/webhook/coar-inbox",
-			targetServiceUrl: "http://localhost:3000/c/coar-us4-repository",
-		},
-		"Announce Ingest": {
-			targetUrl: "http://localhost:3000/api/v0/c/coar-us4-repository/site/webhook/coar-inbox",
-			targetServiceUrl: "http://localhost:3000/c/coar-us4-repository",
-		},
-		Accept: {
-			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
-			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
-		},
-		Reject: {
-			targetUrl: "http://localhost:3000/api/v0/c/coar-us1-arcadia/site/webhook/coar-inbox",
-			targetServiceUrl: "http://localhost:3000/c/coar-us1-arcadia",
-		},
-	}
 
 	const handleTemplateChange = (newType: PayloadTemplateType) => {
 		setTemplateType(newType)
+
 		if (!prefill) {
-			const defaults = TEMPLATE_DEFAULTS[newType]
+			const defaults = templateDefaults[newType]
 			setTargetUrl(defaults.targetUrl)
 			setTargetServiceUrl(defaults.targetServiceUrl)
 		}
@@ -165,13 +173,14 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 
 		try {
 			let payload: CoarNotifyPayload
+
 			if (mode === "template") {
 				payload = generatePayload()
 			} else {
 				payload = JSON.parse(customPayload)
 			}
 
-			const res = await fetch("/api/send", {
+			const res = await fetch(apiUrl("/api/send"), {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ targetUrl, payload }),
@@ -278,7 +287,6 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									type="text"
 									value={reviewUrl}
 									onChange={(e) => setReviewUrl(e.target.value)}
-									placeholder="http://localhost:4000/review/..."
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
@@ -290,7 +298,6 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									type="text"
 									value={inReplyToUrl}
 									onChange={(e) => setInReplyToUrl(e.target.value)}
-									placeholder="http://localhost:3000/c/community/pub/..."
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
@@ -344,7 +351,6 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									type="text"
 									value={reviewUrl}
 									onChange={(e) => setReviewUrl(e.target.value)}
-									placeholder="http://localhost:4001/review/..."
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
@@ -386,19 +392,18 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 									type="text"
 									value={reviewUrl}
 									onChange={(e) => setReviewUrl(e.target.value)}
-									placeholder="http://localhost:4001/review/..."
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
 						</div>
 						<div>
 							<label className="mb-1 block font-medium text-gray-700 text-sm">
-								Work URL (as:inReplyTo) - pub URL containing the work being reviewed
+								Work URL (as:inReplyTo) - pub URL containing the work being
+								reviewed
 								<input
 									type="text"
 									value={workUrl}
 									onChange={(e) => setWorkUrl(e.target.value)}
-									placeholder="http://localhost:3000/c/coar-us4-repository/pub/{pubId}"
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 								/>
 							</label>
@@ -533,7 +538,6 @@ export function SendNotificationForm({ onSent, prefill }: SendNotificationFormPr
 						value={targetUrl}
 						onChange={(e) => setTargetUrl(e.target.value)}
 						className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-						placeholder="http://localhost:3000/api/v0/c/..."
 					/>
 				</div>
 

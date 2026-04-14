@@ -145,6 +145,8 @@ services:
     mock-notify:
         image: ghcr.io/knowledgefutures/mock-coar-notify-server:${IMAGE_TAG}
         networks: [appnet]
+        environment:
+            PUBPUB_URL: https://${DEPLOY_HOST}
         ports:
             - target: 3000
               published: ${MOCK_NOTIFY_PORT}

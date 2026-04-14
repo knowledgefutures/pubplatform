@@ -1,5 +1,8 @@
-const MOCK_BASE = "http://localhost:4001"
-const REVIEW_URL = `${MOCK_BASE}/reviews/sample-review`
+const basePath = process.env.BASE_PATH || ""
+const pubpubUrl = process.env.PUBPUB_URL || "http://localhost:4001"
+
+const selfUrl = basePath ? `${pubpubUrl}${basePath}` : pubpubUrl
+const REVIEW_URL = `${selfUrl}/reviews/sample-review`
 
 const CORS_HEADERS = {
 	"Access-Control-Allow-Origin": "*",
