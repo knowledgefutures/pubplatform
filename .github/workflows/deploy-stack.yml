@@ -135,9 +135,18 @@ jobs:
                     if [[ "$USES_GATEWAY" == "true" ]]; then
                       echo "deploying gateway stack..."
                       sudo docker stack deploy -c stack.gateway.yml --prune gateway
+
                       # caddy reads its config once at startup, force a restart so it
-                      # picks up any changes to the bind-mounted Caddyfile
-                      sudo docker service update --force gateway_proxy
+                      # picks up any changes to the bind-mounted Caddyfile.
+                      # retry a few times because the stack deploy above may still be
+                      # converging, which causes "update out of sequence" errors.
+                      for attempt in 1 2 3 4 5; do
+                        if sudo docker service update --force gateway_proxy; then
+                          break
+                        fi
+                        echo "gateway_proxy update attempt $attempt failed, retrying in 5s..."
+                        sleep 5
+                      done
 
                       # derive host ports from the trailing number in the stack name
                       # preview-pr-123 -> 123, but non-numeric names like "sandbox" get a fixed offset
