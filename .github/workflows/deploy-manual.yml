@@ -1,0 +1,81 @@
+name: Manual Deploy
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Target environment"
+                required: true
+                type: choice
+                options:
+                    - sandbox
+                    - production
+            image_tag:
+                description: "Existing image tag to deploy (leave empty to build from current branch)"
+                required: false
+                type: string
+
+permissions:
+    id-token: write
+    contents: read
+    packages: write
+    pull-requests: write
+
+concurrency:
+    group: deploy-manual-${{ inputs.environment }}
+    cancel-in-progress: false
+
+jobs:
+    build-all:
+        if: inputs.image_tag == ''
+        permissions:
+            contents: read
+            packages: write
+        uses: ./.github/workflows/ghcr-build-all.yml
+        secrets:
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+    deploy-sandbox:
+        if: always() && inputs.environment == 'sandbox' && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
+        needs: build-all
+        permissions:
+            contents: read
+            pull-requests: write
+        uses: ./.github/workflows/deploy-stack.yml
+        with:
+            action: deploy
+            image_tag: ${{ inputs.image_tag || github.sha }}
+            stack_name: sandbox
+            hostname: sandbox.pubstar.org
+            env_file: .env.sandbox.enc
+            stack_file: stack.preview.yml
+            uses_gateway: true
+            ssh_host_secret: SSH_HOST_PREVIEW
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+    deploy-prod:
+        if: always() && inputs.environment == 'production' && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
+        needs: build-all
+        permissions:
+            contents: read
+        uses: ./.github/workflows/deploy-stack.yml
+        with:
+            action: deploy
+            image_tag: ${{ inputs.image_tag || github.sha }}
+            stack_name: pubstar
+            hostname: ${{ vars.PROD_HOSTNAME }}
+            env_file: .env.enc
+            stack_file: stack.yml
+            uses_gateway: false
+            ssh_host_secret: SSH_HOST_PROD
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_PROD }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
