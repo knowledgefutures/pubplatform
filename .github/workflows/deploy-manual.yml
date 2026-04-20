@@ -68,7 +68,7 @@ jobs:
             action: deploy
             image_tag: ${{ inputs.image_tag || github.sha }}
             stack_name: pubstar
-            hostname: ${{ vars.PROD_HOSTNAME }}
+            hostname: pubstar.org
             env_file: .env.enc
             stack_file: stack.yml
             uses_gateway: false
