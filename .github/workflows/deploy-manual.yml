@@ -20,7 +20,7 @@ permissions:
     id-token: write
     contents: read
     packages: write
-    pull-requests: write
+    # pull-requests: write
 
 concurrency:
     group: deploy-manual-${{ inputs.environment }}
