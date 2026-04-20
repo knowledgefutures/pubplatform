@@ -139,14 +139,21 @@ jobs:
                       # picks up any changes to the bind-mounted Caddyfile
                       sudo docker service update --force gateway_proxy
 
-                      # derive host ports from PR number (prefix digit + pr number)
-                      PR_NUM="${STACK_NAME##*-}"
-                      PLATFORM_PORT="1${PR_NUM}"
-                      BUILDER_PORT="2${PR_NUM}"
-                      MINIO_PORT="3${PR_NUM}"
-                      MINIO_CONSOLE_PORT="4${PR_NUM}"
-                      INBUCKET_PORT="5${PR_NUM}"
-                      MOCK_NOTIFY_PORT="6${PR_NUM}"
+                      # derive host ports from the trailing number in the stack name
+                      # preview-pr-123 -> 123, but non-numeric names like "sandbox" get a fixed offset
+                      SUFFIX="${STACK_NAME##*-}"
+                      if [[ "$SUFFIX" =~ ^[0-9]+$ ]]; then
+                        PORT_NUM="$SUFFIX"
+                      else
+                        PORT_NUM="9000"
+                      fi
+
+                      PLATFORM_PORT="1${PORT_NUM}"
+                      BUILDER_PORT="2${PORT_NUM}"
+                      MINIO_PORT="3${PORT_NUM}"
+                      MINIO_CONSOLE_PORT="4${PORT_NUM}"
+                      INBUCKET_PORT="5${PORT_NUM}"
+                      MOCK_NOTIFY_PORT="6${PORT_NUM}"
 
                       sudo env IMAGE_TAG="$IMAGE_TAG" DEPLOY_HOST="$DEPLOY_HOST" \
                         PLATFORM_PORT="$PLATFORM_PORT" BUILDER_PORT="$BUILDER_PORT" \
