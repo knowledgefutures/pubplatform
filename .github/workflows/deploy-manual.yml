@@ -58,6 +58,7 @@ jobs:
             GHCR_USER: ${{ secrets.GHCR_USER }}
             GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
+
     deploy-prod:
         if: always() && inputs.environment == 'production' && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
         needs: build-all
