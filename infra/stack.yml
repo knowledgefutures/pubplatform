@@ -93,10 +93,7 @@ services:
     image: postgres:15
     tmpfs:
       - /dev/shm:size=2147483648
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file: [.env]
     command: >
       -c shared_buffers=2GB
       -c effective_cache_size=6GB
