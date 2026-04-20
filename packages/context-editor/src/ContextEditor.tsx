@@ -14,6 +14,7 @@ import type { Node } from "prosemirror-model"
 import type { ForwardRefExoticComponent, RefAttributes, RefObject } from "react"
 
 import { useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { ProseMirror, ProseMirrorDoc, reactKeys } from "@handlewithcare/react-prosemirror"
 import { EditorState } from "prosemirror-state"
 import { fixTables } from "prosemirror-tables"
@@ -54,6 +55,14 @@ export interface ContextEditorProps {
 	> /* A react component that is given the ContextAtom pubtype and renders it accordingly */
 	hideMenu?: boolean
 	upload: (fileName: string) => Promise<string | { error: string }>
+
+	/**
+	 * When provided, the formatting menu is portaled into this DOM node instead of
+	 * rendering inline at the top of the editor. Used by `EditorLayout` to host a
+	 * full-width toolbar above a split editor/preview. The menu still lives inside
+	 * the ProseMirror React context, so its hooks continue to work.
+	 */
+	toolbarContainer?: Element | null
 
 	/**
 	 * Ref to the context editor getter
@@ -141,7 +150,9 @@ const ContextEditor = (props: ContextEditorProps) => {
 				editable={() => !props.disabled}
 				className={cn("font-serif", props.className)}
 			>
-				{props.hideMenu ? null : (
+				{props.hideMenu ? null : props.toolbarContainer ? (
+					createPortal(<MenuBar upload={props.upload} />, props.toolbarContainer)
+				) : (
 					<div className="sticky top-0 z-10">
 						<MenuBar upload={props.upload} />
 					</div>

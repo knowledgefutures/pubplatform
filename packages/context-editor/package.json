@@ -113,6 +113,7 @@
 		"react-dom": "catalog:react19",
 		"react-hook-form": "catalog:",
 		"react-reconciler": "catalog:react19",
+		"@pubpub/tailwind": "workspace:*",
 		"schemas": "workspace:*",
 		"ui": "workspace:*",
 		"utils": "workspace:*",

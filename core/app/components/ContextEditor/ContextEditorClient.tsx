@@ -1,4 +1,4 @@
-import type { ContextEditorProps } from "context-editor"
+import type { ContextEditorProps, EditorDisplayMode, EditorPaneMode } from "context-editor"
 import type { PubsId, PubTypes, PubTypesId } from "db/public"
 
 import { useCallback, useMemo } from "react"
@@ -17,14 +17,20 @@ import { client } from "~/lib/api"
 import { useServerAction } from "~/lib/serverActions"
 import { useCommunity } from "../providers/CommunityProvider"
 
+const editorSkeleton = (
+	<Skeleton className="h-[440px] w-full">
+		<Skeleton className="h-14 w-full rounded-b-none" />
+	</Skeleton>
+)
+
 const ContextEditor = dynamic(() => import("context-editor").then((mod) => mod.ContextEditor), {
 	ssr: false,
-	// make sure this is the same height as the context editor, otherwise looks ugly
-	loading: () => (
-		<Skeleton className="h-[440px] w-full">
-			<Skeleton className="h-14 w-full rounded-b-none" />
-		</Skeleton>
-	),
+	loading: () => editorSkeleton,
+})
+
+const EditorLayout = dynamic(() => import("context-editor").then((mod) => mod.EditorLayout), {
+	ssr: false,
+	loading: () => editorSkeleton,
 })
 
 export const ContextEditorClient = (
@@ -32,6 +38,10 @@ export const ContextEditorClient = (
 		pubTypes: Pick<PubTypes, "id" | "name">[]
 		pubId: PubsId
 		pubTypeId: PubTypesId
+		/** When true, wraps the editor in EditorLayout with fullscreen + preview controls. */
+		withLayout?: boolean
+		initialDisplay?: EditorDisplayMode
+		initialPanes?: EditorPaneMode
 		// Might be able to use more of this type in the future—for now, this component is a lil more stricty typed than context-editor
 	} & Pick<
 		ContextEditorProps,
@@ -76,26 +86,32 @@ export const ContextEditorClient = (
 	)
 
 	const memoEditor = useMemo(() => {
-		return (
-			<ContextEditor
-				pubId={props.pubId}
-				pubTypeId={props.pubTypeId}
-				pubTypes={props.pubTypes}
-				// @ts-expect-error - its fine, debounce returns `undefined` at the beginning
-				getPubs={debouncedGetPubs}
-				getPubById={() => {
-					return {}
-				}}
-				atomRenderingComponent={ContextAtom}
-				onChange={props.onChange}
-				initialDoc={props.initialDoc}
-				disabled={props.disabled}
-				className={props.className}
-				hideMenu={props.hideMenu}
-				upload={signedUploadUrl}
-				getterRef={props.getterRef}
-			/>
-		)
+		const sharedProps = {
+			pubId: props.pubId,
+			pubTypeId: props.pubTypeId,
+			pubTypes: props.pubTypes,
+			// debounce returns `undefined` at the beginning — safe to cast
+			getPubs: debouncedGetPubs as ContextEditorProps["getPubs"],
+			getPubById: () => ({}),
+			atomRenderingComponent: ContextAtom,
+			onChange: props.onChange,
+			initialDoc: props.initialDoc,
+			disabled: props.disabled,
+			className: props.className,
+			hideMenu: props.hideMenu,
+			upload: signedUploadUrl,
+			getterRef: props.getterRef,
+		}
+		if (props.withLayout) {
+			return (
+				<EditorLayout
+					{...sharedProps}
+					initialDisplay={props.initialDisplay}
+					initialPanes={props.initialPanes}
+				/>
+			)
+		}
+		return <ContextEditor {...sharedProps} />
 	}, [
 		props.pubTypes,
 		props.disabled,
@@ -106,6 +122,9 @@ export const ContextEditorClient = (
 		props.onChange,
 		props.pubId,
 		props.pubTypeId,
+		props.withLayout,
+		props.initialDisplay,
+		props.initialPanes,
 		signedUploadUrl,
 	])
 
