@@ -5,6 +5,13 @@
 	border-radius: 2px;
 	position: relative;
 }
+
+/* When the formatting menu (MenuBar) is portaled into EditorLayout's slot,
+   its `overflow-x-auto` causes browsers to promote overflow-y to auto and
+   show a stray vertical scrollbar. Clip it here. */
+[data-slot="editor-formatting"] > * {
+	overflow-y: hidden;
+}
 .wrap-widget {
 	user-select: none;
 	position: relative;

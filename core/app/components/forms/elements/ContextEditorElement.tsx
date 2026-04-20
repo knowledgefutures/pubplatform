@@ -109,8 +109,9 @@ const EditorFormElement = function EditorFormElement({
 						pubTypeId={pubTypeId}
 						initialDoc={initialDoc}
 						disabled={disabled}
-						className="h-96 overflow-scroll"
+						className="h-96 overflow-scroll rounded-md border"
 						onChange={handleChange}
+						withLayout
 					/>
 				</FormControl>
 			</div>

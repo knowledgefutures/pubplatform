@@ -1,5 +1,6 @@
 import type { Preview } from "@storybook/react"
 
+import "@pubpub/tailwind/style.css"
 import "../src/tailwind.css"
 import "../src/style.css"
 
