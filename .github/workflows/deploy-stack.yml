@@ -49,7 +49,7 @@ on:
 
 permissions:
     contents: read
-    pull-requests: write
+    # pull-requests: write
 
 jobs:
     deploy:
@@ -195,33 +195,33 @@ jobs:
 
                   EOS
 
-            - name: Comment on PR
-              if: github.event_name == 'pull_request'
-              uses: actions/github-script@v7
-              with:
-                  script: |
-                      const body = `Preview deployed at https://${{ inputs.hostname }}`;
-                      const { data: comments } = await github.rest.issues.listComments({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: context.issue.number,
-                      });
-                      const existing = comments.find(c => c.body.includes('Preview deployed at'));
-                      if (existing) {
-                        await github.rest.issues.updateComment({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          comment_id: existing.id,
-                          body,
-                        });
-                      } else {
-                        await github.rest.issues.createComment({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          issue_number: context.issue.number,
-                          body,
-                        });
-                      }
+            # - name: Comment on PR
+            #   if: github.event_name == 'pull_request'
+            #   uses: actions/github-script@v7
+            #   with:
+            #       script: |
+            #           const body = `Preview deployed at https://${{ inputs.hostname }}`;
+            #           const { data: comments } = await github.rest.issues.listComments({
+            #             owner: context.repo.owner,
+            #             repo: context.repo.repo,
+            #             issue_number: context.issue.number,
+            #           });
+            #           const existing = comments.find(c => c.body.includes('Preview deployed at'));
+            #           if (existing) {
+            #             await github.rest.issues.updateComment({
+            #               owner: context.repo.owner,
+            #               repo: context.repo.repo,
+            #               comment_id: existing.id,
+            #               body,
+            #             });
+            #           } else {
+            #             await github.rest.issues.createComment({
+            #               owner: context.repo.owner,
+            #               repo: context.repo.repo,
+            #               issue_number: context.issue.number,
+            #               body,
+            #             });
+            #           }
 
     teardown:
         if: inputs.action == 'teardown'
