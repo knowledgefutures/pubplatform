@@ -1,6 +1,6 @@
 services:
   proxy:
-    image: ghcr.io/knowledgefutures/caddy-sites:latest
+    image: caddy:2.11.2-alpine
     env_file: [.env]
     ports:
       - target: 80
