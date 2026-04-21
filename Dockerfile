@@ -100,7 +100,7 @@ WORKDIR /usr/src/app
 COPY --from=prepare-jobs --chown=node:node /tmp/app .
 
 # If the package is site-builder, create necessary directories and set permissions
-RUN if [ "$PACKAGE" = "site-builder" ]; then \
+RUN if [ "$PACKAGE" = "site-builder-2" ]; then \
   mkdir -p /usr/src/app/builds /usr/src/app/.astro /usr/src/app/dist && \
   chown -R node:node /usr/src/app/builds /usr/src/app/.astro /usr/src/app/dist; \
   fi
