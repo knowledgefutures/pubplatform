@@ -4,9 +4,7 @@
 }
 
 *.pubstar.org {
-    tls internal {
-        on_demand
-    }
+    tls internal
 
     # this is configured in the deploy-stack.yml workflow
     map {labels.2} {platform_port} {builder_port} {minio_port} {minio_console_port} {inbucket_port} {mock_notify_port} {
