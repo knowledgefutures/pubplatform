@@ -33,7 +33,8 @@
             redir {re.dir.1} permanent
         }
 
-        rewrite * /assets{uri}
+        # minio path-style: /{bucket}/sites/{communitySlug}/{subpath}/...
+        rewrite * /pubstar-assets/sites{uri}
 
         reverse_proxy host.docker.internal:{minio_port} {
             @error status 403 404

@@ -5,6 +5,7 @@ export const SERVER_ENV = createEnv({
 	server: {
 		PUBPUB_URL: z.string().url(),
 		S3_ENDPOINT: z.string().url().optional(),
+		S3_PUBLIC_ENDPOINT: z.string().url().optional(),
 		S3_REGION: z.string(),
 		S3_ACCESS_KEY: z.string(),
 		S3_SECRET_KEY: z.string(),

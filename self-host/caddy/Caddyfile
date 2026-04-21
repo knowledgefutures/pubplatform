@@ -18,19 +18,20 @@ example.com {
     }
 
     # serve static sites from s3/minio
-   handle_path /sites/* {
+    # rewrite maps to minio path-style: /{bucket}/sites/{community}/{subpath}/...
+    handle_path /sites/* {
         @pathWithSlash path_regexp dir (.+)/$
         handle @pathWithSlash {
             redir {re.dir.1} permanent
         }
 
-        rewrite * /assets{uri}
+        rewrite * /{$S3_BUCKET_NAME:pubstar-assets}/sites{uri}
 
-        reverse_proxy host.docker.internal:{minio_port} {
+        reverse_proxy minio:9000 {
             @error status 403 404
             handle_response @error {
                 rewrite * {uri}/index.html
-                reverse_proxy host.docker.internal:{minio_port} {
+                reverse_proxy minio:9000 {
                     @nestedError status 404
                     handle_response @nestedError {
                         respond "Not found" 404

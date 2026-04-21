@@ -10,28 +10,6 @@
         reverse_proxy site-builder:4000
     }
 
-    handle_path /sites/* {
-        @pathWithSlash path_regexp dir (.+)/$
-        handle @pathWithSlash {
-            redir {re.dir.1} permanent
-        }
-
-        rewrite * /assets{uri}
-
-        reverse_proxy host.docker.internal:{minio_port} {
-            @error status 403 404
-            handle_response @error {
-                rewrite * {uri}/index.html
-                reverse_proxy host.docker.internal:{minio_port} {
-                    @nestedError status 404
-                    handle_response @nestedError {
-                        respond "Not found" 404
-                    }
-                }
-            }
-        }
-    }
-
     handle {
         reverse_proxy platform:3000
     }

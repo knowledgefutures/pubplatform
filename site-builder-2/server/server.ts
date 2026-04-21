@@ -272,9 +272,12 @@ const uploadDirectoryToS3 = async (
 	await uploadRecursive(sourceDir, s3Prefix)
 
 	const s3FolderPath = s3Prefix
+
+	const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
 	let s3FolderUrl: string
-	if (SERVER_ENV.S3_ENDPOINT) {
-		s3FolderUrl = `${SERVER_ENV.S3_ENDPOINT}/${bucket}/${s3Prefix}`
+
+	if (publicEndpoint) {
+		s3FolderUrl = `${publicEndpoint}/${bucket}/${s3Prefix}`
 	} else {
 		s3FolderUrl = `https://${bucket}.s3.${SERVER_ENV.S3_REGION}.amazonaws.com/${s3Prefix}`
 	}
@@ -580,26 +583,35 @@ const router = tsr.router(siteBuilderApi, {
 				// Find the first rendered page for the URL
 				const firstPage = renderedGroups.flatMap((g) => g.pages)[0]
 
-				let zipUploadResult: string
-				let folderUploadResult: {
-					uploadedFiles: number
-					s3FolderPath: string
-					s3FolderUrl: string
-				}
-
 				const zipFileName = `site-${timestamp}.zip`
 				const zipUploadId = "site-archives"
-				zipUploadResult = await createZipAndUploadToS3(distDir, zipUploadId, zipFileName)
+				const zipInternalUrl = await createZipAndUploadToS3(
+					distDir,
+					zipUploadId,
+					zipFileName
+				)
 
 				const subpath = body.subpath ?? body.automationRunId
 				const s3Prefix = `sites/${communitySlug}/${subpath}`
-				folderUploadResult = await uploadDirectoryToS3(distDir, s3Prefix)
+				const folderUploadResult = await uploadDirectoryToS3(distDir, s3Prefix)
+
+				// construct public-facing zip url when a public endpoint is available
+				const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
+				let zipUrl: string
+
+				if (publicEndpoint) {
+					zipUrl = `${publicEndpoint}/${SERVER_ENV.S3_BUCKET_NAME}/${zipUploadId}/${zipFileName}`
+				} else {
+					zipUrl = zipInternalUrl
+				}
 
 				let publicSiteUrl: string | undefined
 				let firstPageUrl: string | undefined
+
 				if (SERVER_ENV.SITES_BASE_URL) {
 					const baseUrl = SERVER_ENV.SITES_BASE_URL.replace(/\/$/, "")
 					publicSiteUrl = `${baseUrl}/${communitySlug}/${subpath}/`
+
 					if (firstPage) {
 						const pageSlug = firstPage.slug || firstPage.id
 						firstPageUrl = `${publicSiteUrl}${pageSlug}`
@@ -613,7 +625,7 @@ const router = tsr.router(siteBuilderApi, {
 					body: {
 						success: true,
 						message: "Site built and uploaded successfully",
-						url: zipUploadResult,
+						url: zipUrl,
 						timestamp,
 						s3FolderPath: folderUploadResult.s3FolderPath,
 						s3FolderUrl: folderUploadResult.s3FolderUrl,
