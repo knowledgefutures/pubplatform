@@ -16,7 +16,7 @@ UPDATE
     pub_values
 SET
     value = replace(value::text, 'assets.app.pubpub.org.s3.us-east-1.amazonaws.com', 'assets.app.pubpub.org')::jsonb,
-    "lastModifiedBy" = 'system|' || extract(epoch FROM now())::text
+    "lastModifiedBy" = 'system|' || FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000)::text
 WHERE
     value::text LIKE '%assets.app.pubpub.org.s3.us-east-1.amazonaws.com%';
 
@@ -33,7 +33,7 @@ UPDATE
     pub_values
 SET
     value = replace(value::text, 's3.us-east-1.amazonaws.com/assets.app.pubpub.org', 'assets.app.pubpub.org')::jsonb,
-    "lastModifiedBy" = 'system|' || extract(epoch FROM now())::text
+    "lastModifiedBy" = 'system|' || FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000)::text
 WHERE
     value::text LIKE '%s3.us-east-1.amazonaws.com/assets.app.pubpub.org%';
 
@@ -49,7 +49,7 @@ UPDATE
     pub_values
 SET
     value = replace(value::text, 'assets.app.pubpub.org', 'assets.pubstar.org')::jsonb,
-    "lastModifiedBy" = 'system|' || extract(epoch FROM now())::text
+    "lastModifiedBy" = 'system|' || FLOOR(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000)::text
 WHERE
     value::text LIKE '%assets.app.pubpub.org%';
 
