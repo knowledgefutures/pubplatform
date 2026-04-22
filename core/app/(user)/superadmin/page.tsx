@@ -42,7 +42,7 @@ export default async function Page() {
 		created: new Date(c.createdAt),
 	})) satisfies TableCommunity[]
 
-	const migrations = "migrations" in migrationResult ? migrationResult.migrations : []
+	const migrations = "migrations" in migrationResult ? (migrationResult.migrations ?? []) : []
 	const migrationError = "error" in migrationResult ? migrationResult.error : undefined
 
 	return (
