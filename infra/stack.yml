@@ -30,6 +30,8 @@ services:
       PORT: '3000'
       DEPLOY_VERSION: ${IMAGE_TAG}
       SITE_BUILDER_ENDPOINT: http://site-builder:4000
+      S3_PUBLIC_ENDPOINT: https://assets.pubstar.org
+      S3_PUBLIC_URL_STYLE: root-path
     networks: [appnet]
     healthcheck:
       test:
@@ -81,6 +83,8 @@ services:
       DEPLOY_VERSION: ${IMAGE_TAG}
       PUBPUB_URL: http://platform:3000
       PORT: '4000'
+      S3_PUBLIC_ENDPOINT: https://assets.pubstar.org
+      S3_PUBLIC_URL_STYLE: root-path
     networks: [appnet]
     deploy:
       replicas: 1

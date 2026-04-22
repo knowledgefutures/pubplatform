@@ -35,6 +35,7 @@ import {
 	updateUser,
 } from "~/lib/server/user"
 import { LAST_VISITED_COOKIE } from "../../app/components/LastVisitedCommunity/constants"
+import { normalizeAssetUrl } from "../server/assets"
 import { createSiteBuilderToken } from "../server/apiAccessTokens"
 import { findCommunityBySlug } from "../server/community"
 import * as Email from "../server/email"
@@ -408,6 +409,7 @@ export const publicSignup = defineServerAction(async function signup(props: {
 	}
 
 	const trx = db.transaction()
+	const normalizedAvatar = props.avatar ? normalizeAssetUrl(props.avatar) : null
 
 	const newUser = await trx.execute(async (trx) => {
 		try {
@@ -421,7 +423,7 @@ export const publicSignup = defineServerAction(async function signup(props: {
 						generateUserSlug({ firstName: props.firstName, lastName: props.lastName }),
 					passwordHash: await createPasswordHash(props.password),
 					isVerified: false,
-					avatar: props.avatar ?? null,
+					avatar: normalizedAvatar,
 				},
 				trx
 			).executeTakeFirstOrThrow((err) => {
@@ -528,6 +530,7 @@ export const legacySignup = defineServerAction(async function signup(
 	}
 
 	const trx = db.transaction()
+	const normalizedAvatar = props.avatar ? normalizeAssetUrl(props.avatar) : null
 
 	const updatedUser = await trx.execute(async (trx) => {
 		const changedEmail = user.email !== props.email
@@ -537,7 +540,7 @@ export const legacySignup = defineServerAction(async function signup(
 				firstName: props.firstName,
 				lastName: props.lastName,
 				email: props.email,
-				avatar: props.avatar ?? null,
+				avatar: normalizedAvatar,
 				// If the user changed the email that they signed up with, make
 				// sure they are not verified (magic-link login will mark them as verified)
 				...(changedEmail ? { isVerified: false } : {}),
@@ -638,6 +641,9 @@ export const initializeSetup = defineServerAction(async function initializeSetup
 		userAvatar,
 	} = parsed.data
 
+	const normalizedUserAvatar = userAvatar ? normalizeAssetUrl(userAvatar) : null
+	const normalizedCommunityAvatar = communityAvatar ? normalizeAssetUrl(communityAvatar) : null
+
 	let result: { user: Users; community: Communities }
 	try {
 		result = await db.transaction().execute(async (trx) => {
@@ -653,7 +659,7 @@ export const initializeSetup = defineServerAction(async function initializeSetup
 					passwordHash,
 					isSuperAdmin: true,
 					isVerified: true,
-					avatar: userAvatar ?? null,
+					avatar: normalizedUserAvatar,
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow()
@@ -663,7 +669,7 @@ export const initializeSetup = defineServerAction(async function initializeSetup
 				.values({
 					name: communityName,
 					slug: slugifyString(communitySlug),
-					avatar: communityAvatar ?? null,
+					avatar: normalizedCommunityAvatar,
 				})
 				.returningAll()
 				.executeTakeFirstOrThrow()

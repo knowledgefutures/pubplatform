@@ -23,6 +23,140 @@ let s3Client: S3Client
 
 export type FileMetadata = InputTypeForCoreSchemaType<CoreSchemaType.FileUpload>[number]
 
+const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, "")
+
+const trimLeadingSlashes = (value: string) => value.replace(/^\/+/, "")
+
+const getPublicEndpoint = () => env.S3_PUBLIC_ENDPOINT || env.S3_ENDPOINT
+
+const getPublicUrlStyle = () => env.S3_PUBLIC_URL_STYLE ?? "bucket-path"
+
+const getPathRelativeToBase = (url: URL, baseUrl: string) => {
+	const base = new URL(baseUrl)
+
+	if (url.origin !== base.origin) {
+		return null
+	}
+
+	const basePath = trimSlashes(base.pathname)
+	const path = trimSlashes(url.pathname)
+
+	if (!basePath) {
+		return path
+	}
+
+	if (path === basePath) {
+		return ""
+	}
+
+	if (!path.startsWith(`${basePath}/`)) {
+		return null
+	}
+
+	return path.slice(basePath.length + 1)
+}
+
+const buildS3PublicUrl = (key: string) => {
+	const publicEndpoint = getPublicEndpoint()
+	const normalizedKey = trimLeadingSlashes(key)
+
+	if (!publicEndpoint) {
+		return `https://${env.S3_BUCKET_NAME}.s3.${env.S3_REGION}.amazonaws.com/${normalizedKey}`
+	}
+
+	const baseUrl = new URL(publicEndpoint)
+	const basePath = trimSlashes(baseUrl.pathname)
+
+	const shouldIncludeBucket = getPublicUrlStyle() === "bucket-path"
+
+	const pathSegments = [
+		basePath,
+		shouldIncludeBucket ? env.S3_BUCKET_NAME : null,
+		normalizedKey,
+	].filter(Boolean)
+
+	baseUrl.pathname = `/${pathSegments.join("/")}`
+
+	return baseUrl.toString()
+}
+
+const getS3ObjectKeyCandidates = (fileUrl: string) => {
+	try {
+		const parsedUrl = new URL(fileUrl)
+		const publicEndpoint = getPublicEndpoint()
+		const bucket = env.S3_BUCKET_NAME
+		const candidates = new Set<string>()
+
+		const addCandidate = (candidate: string | null) => {
+			if (!candidate) {
+				return
+			}
+
+			const normalized = trimLeadingSlashes(candidate)
+
+			if (normalized) {
+				candidates.add(normalized)
+			}
+		}
+
+		const addBucketRelativeCandidate = (candidate: string | null) => {
+			if (!candidate) {
+				return
+			}
+
+			const normalized = trimLeadingSlashes(candidate)
+			if (!normalized.startsWith(`${bucket}/`)) {
+				return
+			}
+
+			addCandidate(normalized.slice(bucket.length + 1))
+		}
+
+		if (publicEndpoint) {
+			const relativePath = getPathRelativeToBase(parsedUrl, publicEndpoint)
+			addBucketRelativeCandidate(relativePath)
+
+			if (getPublicUrlStyle() === "root-path") {
+				addCandidate(relativePath)
+			}
+		}
+
+		const path = trimLeadingSlashes(parsedUrl.pathname)
+
+		if (parsedUrl.hostname === bucket || parsedUrl.hostname.startsWith(`${bucket}.`)) {
+			addCandidate(path)
+		}
+
+		addBucketRelativeCandidate(path)
+
+		return Array.from(candidates)
+	} catch (_err) {
+		return []
+	}
+}
+
+const getS3ObjectKey = (fileUrl: string) => {
+	const candidates = getS3ObjectKeyCandidates(fileUrl)
+
+	return candidates[0] ?? null
+}
+
+const getTemporaryS3ObjectKey = (fileUrl: string) => {
+	const candidates = getS3ObjectKeyCandidates(fileUrl)
+
+	return candidates.find((candidate) => candidate.startsWith("temporary/")) ?? null
+}
+
+export const normalizeAssetUrl = (fileUrl: string) => {
+	const key = getS3ObjectKey(fileUrl)
+
+	if (!key) {
+		return fileUrl
+	}
+
+	return buildS3PublicUrl(key)
+}
+
 /**
  * Useful for migrating data from other S3 buckets to the new one.
  */
@@ -177,7 +311,7 @@ export const deleteFileFromS3 = async (fileUrl: string) => {
 	const client = getPublicS3Client()
 	const bucket = env.S3_BUCKET_NAME
 
-	const fileKey = fileUrl.split(new RegExp(`^.+${env.S3_BUCKET_NAME}/`))[1]
+	const fileKey = getS3ObjectKey(fileUrl)
 
 	if (!fileKey) {
 		logger.error({ msg: "Unable to parse URL of uploaded file", fileUrl })
@@ -209,14 +343,15 @@ export const makeFileUploadPermanent = async (
 	},
 	trx = db
 ) => {
-	const matches = tempUrl.match(`(^.+${env.S3_BUCKET_NAME}/)(temporary/.+)`)
-	const prefix = matches?.[1]
-	const source = matches?.[2]
-	if (!source || !fileName || !prefix) {
+	const source = getTemporaryS3ObjectKey(tempUrl)
+
+	if (!source || !fileName) {
 		logger.error({ msg: "Unable to parse URL of uploaded file", pubId, tempUrl })
 		throw new Error("Unable to parse URL of uploaded file")
 	}
+
 	const newKey = `${pubId}/${fileName}`
+	const newFileUrl = buildS3PublicUrl(newKey)
 
 	logger.info({
 		msg: "Retrieving S3 clients for makeFileUploadPermanent",
@@ -268,7 +403,7 @@ export const makeFileUploadPermanent = async (
 			value: eb.fn("jsonb_set", [
 				"value",
 				sql.raw("'{0,fileUploadUrl}'"),
-				eb.val(JSON.stringify(prefix + newKey)),
+				eb.val(JSON.stringify(newFileUrl)),
 			]),
 			lastModifiedBy: createLastModifiedBy({ userId }),
 		}))
@@ -329,7 +464,7 @@ export const uploadFileToS3 = async (
 			})
 	)
 
-	const result = await parallelUploads3.done()
+	await parallelUploads3.done()
 
-	return result.Location!
+	return buildS3PublicUrl(key)
 }

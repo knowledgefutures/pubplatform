@@ -13,6 +13,7 @@ import { getLoginData } from "~/lib/authentication/loginData"
 import { createSiteBuilderToken } from "~/lib/server/apiAccessTokens"
 import { autoRevalidate } from "~/lib/server/cache/autoRevalidate"
 import { defineServerAction } from "~/lib/server/defineServerAction"
+import { normalizeAssetUrl } from "~/lib/server/assets"
 import { slugifyString } from "~/lib/string"
 
 export const createCommunity = defineServerAction(async function createCommunity({
@@ -45,6 +46,9 @@ export const createCommunity = defineServerAction(async function createCommunity
 			error: "Cannot update example community",
 		}
 	}
+
+	const normalizedAvatar = avatar ? normalizeAssetUrl(avatar) : null
+
 	try {
 		const { communityId } = await autoRevalidate(
 			db
@@ -54,7 +58,7 @@ export const createCommunity = defineServerAction(async function createCommunity
 						.values({
 							name,
 							slug: slugifyString(slug),
-							avatar,
+							avatar: normalizedAvatar,
 						})
 						.returning("id")
 				)

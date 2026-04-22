@@ -31,6 +31,36 @@ interface ArchiverError extends Error {
 
 let s3Client: S3Client
 
+const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, "")
+
+const trimLeadingSlashes = (value: string) => value.replace(/^\/+/, "")
+
+const getPublicUrlStyle = () => SERVER_ENV.S3_PUBLIC_URL_STYLE ?? "bucket-path"
+
+const buildS3PublicUrl = (key: string) => {
+	const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
+	const normalizedKey = trimLeadingSlashes(key)
+
+	if (!publicEndpoint) {
+		return `https://${SERVER_ENV.S3_BUCKET_NAME}.s3.${SERVER_ENV.S3_REGION}.amazonaws.com/${normalizedKey}`
+	}
+
+	const baseUrl = new URL(publicEndpoint)
+	const basePath = trimSlashes(baseUrl.pathname)
+
+	const shouldIncludeBucket = getPublicUrlStyle() === "bucket-path"
+
+	const pathSegments = [
+		basePath,
+		shouldIncludeBucket ? SERVER_ENV.S3_BUCKET_NAME : null,
+		normalizedKey,
+	].filter(Boolean)
+
+	baseUrl.pathname = `/${pathSegments.join("/")}`
+
+	return baseUrl.toString()
+}
+
 export const getS3Client = () => {
 	if (s3Client) {
 		return s3Client
@@ -96,8 +126,9 @@ export const uploadFileToS3 = async (
 			})
 	)
 
-	const result = await parallelUploads3.done()
-	return result.Location!
+	await parallelUploads3.done()
+
+	return buildS3PublicUrl(key)
 }
 
 const createZipAndUploadToS3 = async (
@@ -272,15 +303,7 @@ const uploadDirectoryToS3 = async (
 	await uploadRecursive(sourceDir, s3Prefix)
 
 	const s3FolderPath = s3Prefix
-
-	const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
-	let s3FolderUrl: string
-
-	if (publicEndpoint) {
-		s3FolderUrl = `${publicEndpoint}/${bucket}/${s3Prefix}`
-	} else {
-		s3FolderUrl = `https://${bucket}.s3.${SERVER_ENV.S3_REGION}.amazonaws.com/${s3Prefix}`
-	}
+	const s3FolderUrl = buildS3PublicUrl(s3Prefix)
 
 	return { uploadedFiles, s3FolderPath, s3FolderUrl }
 }
@@ -585,25 +608,15 @@ const router = tsr.router(siteBuilderApi, {
 
 				const zipFileName = `site-${timestamp}.zip`
 				const zipUploadId = "site-archives"
-				const zipInternalUrl = await createZipAndUploadToS3(
-					distDir,
-					zipUploadId,
-					zipFileName
-				)
+				const zipInternalUrl = await createZipAndUploadToS3(distDir, zipUploadId, zipFileName)
 
 				const subpath = body.subpath ?? body.automationRunId
 				const s3Prefix = `sites/${communitySlug}/${subpath}`
 				const folderUploadResult = await uploadDirectoryToS3(distDir, s3Prefix)
 
-				// construct public-facing zip url when a public endpoint is available
 				const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
-				let zipUrl: string
-
-				if (publicEndpoint) {
-					zipUrl = `${publicEndpoint}/${SERVER_ENV.S3_BUCKET_NAME}/${zipUploadId}/${zipFileName}`
-				} else {
-					zipUrl = zipInternalUrl
-				}
+				const zipKey = `${zipUploadId}/${zipFileName}`
+				const zipUrl = publicEndpoint ? buildS3PublicUrl(zipKey) : zipInternalUrl
 
 				let publicSiteUrl: string | undefined
 				let firstPageUrl: string | undefined
