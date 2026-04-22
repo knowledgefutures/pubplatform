@@ -1,0 +1,35 @@
+{
+	"name": "editor-shell",
+	"type": "module",
+	"version": "0.0.1",
+	"exports": {
+		".": "./dist/editor-shell.js",
+		"./package.json": "./package.json"
+	},
+	"scripts": {
+		"type-check": "tsc --noEmit",
+		"type-check:go": "tsgo --noEmit"
+	},
+	"devDependencies": {
+		"@types/react": "catalog:react19",
+		"@types/react-dom": "catalog:react19",
+		"tsconfig": "workspace:*",
+		"typescript": "catalog:",
+		"@typescript/native-preview": "catalog:"
+	},
+	"dependencies": {
+		"lucide-react": "^0.469.0",
+		"react": "catalog:react19",
+		"react-dom": "catalog:react19",
+		"utils": "workspace:*"
+	},
+	"preconstruct": {
+		"entrypoints": ["index.ts"],
+		"exports": true,
+		"___experimentalFlags_WILL_CHANGE_IN_PATCH": {
+			"typeModule": true,
+			"distInRoot": true,
+			"importsConditions": true
+		}
+	}
+}
