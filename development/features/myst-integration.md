@@ -85,6 +85,36 @@ This feature is broken into four phases. Each phase is independently shippable a
 
 - Phase 1 (fullscreen/preview layout)
 
+### Implementation Plan
+
+**First slice:** Rather than tackle the full scope at once, start with (a) a MyST *source* editing mode that slots into the existing `EditorLayout` as an alternative to ProseMirror, and (b) client-side MyST → HTML preview. Defer ProseMirror ↔ MyST roundtrip, storage schema changes, and server-side rendering to a later sub-phase.
+
+**Approach:** Treat ProseMirror and MyST as **parallel content tracks per field** (a mode toggle, not a conversion). Addresses the "Roundtrip fidelity" open question by sidestepping it: in v1, a field is authored in one mode or the other, and switching modes does not attempt to convert existing content. Tradeoff: no seamless migration yet; users who start in ProseMirror can't carry their doc into MyST without manual re-entry.
+
+**Key anchors in current code:**
+
+- `EditorLayout` — `packages/context-editor/src/EditorLayout.tsx` (display/panes state, formatting-bar slot; the new source mode is another state dimension alongside these)
+- `PreviewPanel` — `packages/context-editor/src/components/PreviewPanel.tsx` (HTML render target; MyST preview mirrors this API)
+- CodeMirror 6 deps already in `packages/context-editor/package.json` (including `@codemirror/lang-markdown`) — no new CM deps needed for v1
+
+**MyST rendering stack (client-side):** `myst-parser` + `myst-to-html` + `unified` + `rehype-stringify`. All ESM, browser-safe (Vite-friendly), jupyter-book/mystmd. No `mystmd` CLI dep. Per-published-package size is small; parsing is synchronous via `processSync`.
+
+**Steps:**
+
+1. Add `myst-parser`, `myst-to-html`, `unified`, `rehype-stringify` to `packages/context-editor`.
+2. `MystSourceEditor` — new component wrapping CodeMirror 6 with `@codemirror/lang-markdown`. Accepts `initialSource: string`, emits `onChange(source)`. No MyST-specific highlighting in v1 (no CM6 MyST grammar exists); directives render as code-fence-ish blocks. Acceptable gap.
+3. `MystPreview` — mirrors `PreviewPanel`; accepts `source: string`, debounces, pipes through the mystmd pipeline to an HTML string, renders via `dangerouslySetInnerHTML`.
+4. Extend `EditorLayout` with `sourceMode: "prosemirror" | "myst"` state + a toggle button (placed near the existing view controls). When `myst`, the editor pane renders `MystSourceEditor` instead of `ContextEditor`, and the preview pane renders `MystPreview`.
+5. Storybook story seeding a MyST sample (admonition, figure, math, frontmatter) to verify rendering.
+
+**Out of scope for this slice:**
+
+- ProseMirror ↔ MyST conversion (round-trip or one-way)
+- Persisting MyST source to the DB (new schema, migration, field type) — preview works from in-memory state only
+- Server-side / site-builder rendering — Phase 4
+- MyST-specific CodeMirror syntax highlighting — deferred until an upstream grammar exists or we write one
+- Custom PubPub directives (`:::{pub}`) — Phase 3
+
 ---
 
 ## Phase 3: Custom Directives and Pub Includes

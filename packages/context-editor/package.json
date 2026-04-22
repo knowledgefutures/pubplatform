@@ -40,6 +40,7 @@
 		"@types/react": "catalog:react19",
 		"@types/react-dom": "catalog:react19",
 		"@types/uuid": "^9.0.8",
+		"@typescript/native-preview": "catalog:",
 		"@uiw/react-json-view": "2.0.0-alpha.27",
 		"@vitejs/plugin-react": "catalog:",
 		"prosemirror-dev-tools": "^4.2.0",
@@ -48,7 +49,6 @@
 		"tailwindcss": "catalog:",
 		"tsconfig": "workspace:*",
 		"typescript": "catalog:",
-		"@typescript/native-preview": "catalog:",
 		"vite": "catalog:",
 		"vitest": "catalog:"
 	},
@@ -87,8 +87,10 @@
 		"@lezer/python": "^1.1.18",
 		"@lezer/rust": "^1.0.2",
 		"@lezer/xml": "^1.0.6",
+		"@pubpub/tailwind": "workspace:*",
 		"@sinclair/typebox": "catalog:",
 		"deepmerge": "^4.3.1",
+		"editor-shell": "workspace:*",
 		"fuzzy": "^0.1.3",
 		"install": "^0.13.0",
 		"katex": "catalog:",
@@ -113,7 +115,6 @@
 		"react-dom": "catalog:react19",
 		"react-hook-form": "catalog:",
 		"react-reconciler": "catalog:react19",
-		"@pubpub/tailwind": "workspace:*",
 		"schemas": "workspace:*",
 		"ui": "workspace:*",
 		"utils": "workspace:*",
@@ -130,6 +131,11 @@
 				"./tailwind.config.cjs": "./tailwind.config.cjs"
 			}
 		},
-		"entrypoints": ["index.ts", "schemas/index.ts", "utils/index.ts", "utils/serialize.ts"]
+		"entrypoints": [
+			"index.ts",
+			"schemas/index.ts",
+			"utils/index.ts",
+			"utils/serialize.ts"
+		]
 	}
 }

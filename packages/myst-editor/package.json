@@ -1,0 +1,56 @@
+{
+	"name": "myst-editor",
+	"type": "module",
+	"version": "0.0.1",
+	"exports": {
+		".": "./dist/myst-editor.js",
+		"./package.json": "./package.json"
+	},
+	"scripts": {
+		"type-check": "tsc --noEmit",
+		"type-check:go": "tsgo --noEmit",
+		"storybook": "storybook dev -p 6007 --no-open",
+		"build-storybook": "storybook build"
+	},
+	"devDependencies": {
+		"@chromatic-com/storybook": "^4.1.1",
+		"@storybook/addon-docs": "^9.1.2",
+		"@storybook/addon-links": "^9.1.2",
+		"@storybook/react-vite": "^9.1.2",
+		"@tailwindcss/postcss": "^4.1.17",
+		"@tailwindcss/typography": "^0.5.16",
+		"@types/react": "catalog:react19",
+		"@types/react-dom": "catalog:react19",
+		"@vitejs/plugin-react": "catalog:",
+		"storybook": "^9.1.2",
+		"tailwindcss": "catalog:",
+		"tsconfig": "workspace:*",
+		"typescript": "catalog:",
+		"@typescript/native-preview": "catalog:",
+		"vite": "catalog:"
+	},
+	"dependencies": {
+		"@codemirror/commands": "^6.8.1",
+		"@codemirror/lang-markdown": "^6.3.4",
+		"@codemirror/language": "^6.11.3",
+		"@codemirror/state": "^6.5.2",
+		"@codemirror/view": "^6.38.1",
+		"@pubpub/tailwind": "workspace:*",
+		"editor-shell": "workspace:*",
+		"katex": "catalog:",
+		"myst-parser": "^1.7.1",
+		"myst-to-html": "^1.7.1",
+		"react": "catalog:react19",
+		"react-dom": "catalog:react19",
+		"utils": "workspace:*"
+	},
+	"preconstruct": {
+		"entrypoints": ["index.ts"],
+		"exports": true,
+		"___experimentalFlags_WILL_CHANGE_IN_PATCH": {
+			"typeModule": true,
+			"distInRoot": true,
+			"importsConditions": true
+		}
+	}
+}
