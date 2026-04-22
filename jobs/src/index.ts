@@ -1,7 +1,7 @@
 import type { TaskList } from "graphile-worker"
 
-import pg from "pg"
 import { run } from "graphile-worker"
+import pg from "pg"
 
 import { logger } from "logger"
 
@@ -34,9 +34,7 @@ async function waitForMigrations(connectionString: string, maxAttempts = 60, int
 					client.release()
 				}
 			} catch {
-				logger.info(
-					`waiting for migrations to complete (${attempt}/${maxAttempts})...`
-				)
+				logger.info(`waiting for migrations to complete (${attempt}/${maxAttempts})...`)
 				await new Promise((r) => setTimeout(r, intervalMs))
 			}
 		}

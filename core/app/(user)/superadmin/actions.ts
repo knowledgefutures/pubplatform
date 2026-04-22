@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache"
 
 import { getLoginData } from "~/lib/authentication/loginData"
-import { resolveFailedMigration, runMigrations } from "~/lib/server/migrate"
 import { defineServerAction } from "~/lib/server/defineServerAction"
+import { resolveFailedMigration, runMigrations } from "~/lib/server/migrate"
 
 export const resolveMigration = defineServerAction(async function resolveMigration({
 	migrationName,

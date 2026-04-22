@@ -1,11 +1,11 @@
+import type { TableCommunity } from "../communities/getCommunityTableColumns"
+
 import { redirect } from "next/navigation"
 
 import { db } from "~/kysely/database"
 import { getPageLoginData } from "~/lib/authentication/loginData"
 import { getMigrationStatus } from "~/lib/server/migrate"
 import { SuperadminDashboard } from "./SuperadminDashboard"
-
-import type { TableCommunity } from "../communities/getCommunityTableColumns"
 
 export const metadata = {
 	title: "Superadmin",
@@ -23,7 +23,13 @@ export default async function Page() {
 	const [communities, migrationResult] = await Promise.all([
 		db
 			.selectFrom("communities")
-			.select(["communities.id", "communities.name", "communities.slug", "communities.avatar", "createdAt"])
+			.select([
+				"communities.id",
+				"communities.name",
+				"communities.slug",
+				"communities.avatar",
+				"createdAt",
+			])
 			.execute(),
 		getMigrationStatus(),
 	])
