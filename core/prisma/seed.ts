@@ -29,11 +29,6 @@ export async function seed() {
 		connectionString: env.DATABASE_URL,
 	})
 
-	logger.info("drop existing jobs")
-	await workerUtils.withPgClient(async (client) => {
-		await client.query(`DROP SCHEMA IF EXISTS graphile_worker CASCADE`)
-	})
-
 	await workerUtils.migrate()
 
 	// eslint-disable-next-line no-restricted-properties

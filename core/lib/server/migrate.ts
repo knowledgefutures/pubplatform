@@ -182,6 +182,7 @@ export async function runMigrations() {
 		if (shouldReset) {
 			logger.info("resetting database (DB_RESET is set)")
 			await pool.query("DROP SCHEMA public CASCADE")
+			await pool.query("DROP SCHEMA IF EXISTS graphile_worker CASCADE")
 			await pool.query("CREATE SCHEMA public")
 		}
 
