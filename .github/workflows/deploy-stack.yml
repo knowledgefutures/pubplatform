@@ -103,6 +103,15 @@ jobs:
                     APP_DIR="/srv/${REPO_NAME}"
                     REPO_SSH="git@github.com:${REPO}.git"
 
+                    # server-side lock: prevent concurrent deploys to the same stack
+                    LOCK_DIR="/tmp/deploy-locks"
+                    mkdir -p "$LOCK_DIR"
+                    exec 9>"${LOCK_DIR}/${STACK_NAME}.lock"
+                    if ! flock -n 9; then
+                      echo "::error::another deploy to ${STACK_NAME} is already in progress"
+                      exit 1
+                    fi
+
                     ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
                     chmod 600 ~/.ssh/known_hosts
 
@@ -114,15 +123,12 @@ jobs:
 
                     cd "${APP_DIR}"
                     git fetch --prune --tags origin
-                    # always checkout the latest commit on the branch, even if we are skipping the build
                     git checkout --detach "origin/${BRANCH}"
 
                     cd infra
                     umask 077
 
-                    # write to a per-stack env file to avoid races between concurrent deploys
                     sops -d --input-type dotenv --output-type dotenv "$ENV_FILE" > ".env.${STACK_NAME}"
-                    ln -sf ".env.${STACK_NAME}" .env
 
                     if ! sudo docker info --format '{{.Swarm.LocalNodeState}}' | grep -qx active; then
                       sudo docker swarm init --advertise-addr "$(hostname -I | awk '{print $1}')"
@@ -136,10 +142,6 @@ jobs:
                       echo "deploying gateway stack..."
                       sudo docker stack deploy -c stack.gateway.yml --prune gateway
 
-                      # caddy reads its config once at startup, force a restart so it
-                      # picks up any changes to the bind-mounted Caddyfile.
-                      # retry a few times because the stack deploy above may still be
-                      # converging, which causes "update out of sequence" errors.
                       for attempt in 1 2 3 4 5; do
                         if sudo docker service update --force gateway_proxy; then
                           break
@@ -148,8 +150,6 @@ jobs:
                         sleep 5
                       done
 
-                      # derive host ports from the trailing number in the stack name
-                      # preview-pr-123 -> 123, but non-numeric names like "sandbox" get a fixed offset
                       SUFFIX="${STACK_NAME##*-}"
                       if [[ "$SUFFIX" =~ ^[0-9]+$ ]]; then
                         PORT_NUM="$SUFFIX"
@@ -164,7 +164,7 @@ jobs:
                       INBUCKET_PORT="5${PORT_NUM}"
                       MOCK_NOTIFY_PORT="6${PORT_NUM}"
 
-                      sudo env IMAGE_TAG="$IMAGE_TAG" DEPLOY_HOST="$DEPLOY_HOST" \
+                      sudo env IMAGE_TAG="$IMAGE_TAG" STACK_NAME="$STACK_NAME" DEPLOY_HOST="$DEPLOY_HOST" \
                         PLATFORM_PORT="$PLATFORM_PORT" BUILDER_PORT="$BUILDER_PORT" \
                         MINIO_PORT="$MINIO_PORT" MINIO_CONSOLE_PORT="$MINIO_CONSOLE_PORT" \
                         INBUCKET_PORT="$INBUCKET_PORT" MOCK_NOTIFY_PORT="$MOCK_NOTIFY_PORT" \
@@ -172,10 +172,9 @@ jobs:
                         --with-registry-auth --resolve-image always --prune "$STACK_NAME"
 
                     else
-                      # standalone mode (production) -- deploy full stack with its own caddy
                       echo "deploying with IMAGE_TAG=$IMAGE_TAG"
 
-                      sudo env IMAGE_TAG="$IMAGE_TAG" \
+                      sudo env IMAGE_TAG="$IMAGE_TAG" STACK_NAME="$STACK_NAME" \
                         docker stack deploy -c "$STACK_FILE" \
                         --with-registry-auth --resolve-image always --prune "$STACK_NAME"
                     fi
@@ -183,17 +182,42 @@ jobs:
                     sudo docker stack services "$STACK_NAME"
                     sudo docker image prune -f
 
+                    dump_failure_info() {
+                      local svc="$1"
+                      echo ""
+                      echo "::group::service inspect ($svc)"
+                      sudo docker service inspect "$svc" --pretty 2>&1 || true
+                      echo "::endgroup::"
+
+                      echo "::group::task history ($svc)"
+                      sudo docker service ps "$svc" --no-trunc 2>&1 || true
+                      echo "::endgroup::"
+
+                      echo "::group::recent logs ($svc)"
+                      sudo docker service logs "$svc" --tail 200 --no-task-ids --timestamps 2>&1 || true
+                      echo "::endgroup::"
+                    }
+
                     wait_rollout() {
-                      echo "waiting for rollout of $1..."
-                      svc="$1"
-                      timeout="${2:-600}"
-                      end=$((SECONDS+timeout))
+                      local svc="$1"
+                      local timeout="${2:-600}"
+                      local end=$((SECONDS + timeout))
+
+                      echo "waiting for rollout of $svc (timeout ${timeout}s)..."
 
                       while (( SECONDS < end )); do
+                        local desired running state
                         desired="$(sudo docker service inspect "$svc" --format '{{.Spec.Mode.Replicated.Replicas}}' 2>/dev/null || echo "")"
                         running="$(sudo docker service ps "$svc" --filter desired-state=running --format '{{.CurrentState}}' 2>/dev/null | grep -c '^Running' || true)"
                         state="$(sudo docker service inspect "$svc" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || echo "")"
-                        echo "  $svc: desired=$desired running=$running state=$state"
+
+                        echo "  $svc: desired=$desired running=$running update_state=$state"
+
+                        if [[ "$state" == "rollback_started" || "$state" == "rollback_completed" ]]; then
+                          echo "::error::rollback detected for $svc (state=$state)"
+                          dump_failure_info "$svc"
+                          return 1
+                        fi
 
                         if [[ -n "$desired" && "$running" == "$desired" ]] && { [[ -z "$state" ]] || [[ "$state" == "completed" ]]; }; then
                           echo "  $svc rollout complete"
@@ -203,7 +227,8 @@ jobs:
                         sleep 5
                       done
 
-                      echo "rollout timeout for $svc"
+                      echo "::error::rollout timeout for $svc after ${timeout}s"
+                      dump_failure_info "$svc"
                       return 1
                     }
 

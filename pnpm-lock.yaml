@@ -807,6 +807,9 @@ importers:
       logger:
         specifier: workspace:*
         version: link:../packages/logger
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
       react:
         specifier: catalog:react19
         version: 19.2.3
@@ -820,6 +823,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.11
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.15.5
       '@typescript/native-preview':
         specifier: 'catalog:'
         version: 7.0.0-dev.20260119.1

@@ -13,7 +13,7 @@ permissions:
     pull-requests: write
 
 concurrency:
-    group: deploy-main
+    group: deploy-sandbox
     cancel-in-progress: false
 
 jobs:

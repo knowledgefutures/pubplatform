@@ -16,7 +16,7 @@ const execAsync = promisify(exec)
 import { logger } from "logger"
 
 // arbitrary but stable id used to prevent concurrent migration runs across replicas
-const ADVISORY_LOCK_ID = 72_398_241
+export const ADVISORY_LOCK_ID = 72_398_241
 
 const CREATE_MIGRATIONS_TABLE = `
 CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
@@ -56,14 +56,105 @@ async function waitForDatabase(pool: pg.Pool, maxAttempts = 30, intervalMs = 200
 	}
 }
 
+async function autoResolveFailedMigrations(db: Kysely<Database>) {
+	const failed = await db
+		.selectFrom("_prisma_migrations")
+		.select(["id", "migration_name", "logs"])
+		.where("finished_at", "is", null)
+		.where("rolled_back_at", "is", null)
+		.execute()
+
+	if (failed.length === 0) {
+		return
+	}
+
+	// migrations run inside a postgres transaction, so if they fail the sql
+	// changes are fully rolled back. it is safe to mark them as rolled_back
+	// and let the next attempt re-apply them cleanly.
+	const names = failed.map((r) => r.migration_name).join(", ")
+	logger.warn(
+		`auto-resolving ${failed.length} failed migration(s): ${names}. ` +
+			`these will be retried on this startup.`
+	)
+
+	for (const row of failed) {
+		logger.info(
+			`marking migration ${row.migration_name} as rolled back` +
+				(row.logs ? ` (previous error: ${row.logs.slice(0, 200)})` : "")
+		)
+
+		await db
+			.updateTable("_prisma_migrations")
+			.set({ rolled_back_at: new Date() })
+			.where("id", "=", row.id)
+			.execute()
+	}
+}
+
+export async function getMigrationStatus() {
+	const connectionString = process.env.DATABASE_URL
+	if (!connectionString) {
+		return { error: "DATABASE_URL is not set" }
+	}
+
+	const pool = new pg.Pool({ connectionString, max: 1 })
+	const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
+
+	try {
+		const migrations = await db
+			.selectFrom("_prisma_migrations")
+			.selectAll()
+			.orderBy("started_at", "asc")
+			.execute()
+
+		return { migrations }
+	} catch (err) {
+		return { error: String(err) }
+	} finally {
+		await db.destroy()
+	}
+}
+
+export async function resolveFailedMigration(migrationName: string) {
+	const connectionString = process.env.DATABASE_URL
+	if (!connectionString) {
+		return { error: "DATABASE_URL is not set" }
+	}
+
+	const pool = new pg.Pool({ connectionString, max: 1 })
+	const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
+
+	try {
+		const migration = await db
+			.selectFrom("_prisma_migrations")
+			.selectAll()
+			.where("migration_name", "=", migrationName)
+			.where("finished_at", "is", null)
+			.where("rolled_back_at", "is", null)
+			.executeTakeFirst()
+
+		if (!migration) {
+			return { error: `no failed migration found with name: ${migrationName}` }
+		}
+
+		await db
+			.updateTable("_prisma_migrations")
+			.set({ rolled_back_at: new Date() })
+			.where("id", "=", migration.id)
+			.execute()
+
+		return { resolved: migrationName }
+	} finally {
+		await db.destroy()
+	}
+}
+
 export async function runMigrations() {
 	const connectionString = process.env.DATABASE_URL
 	if (!connectionString) {
 		throw new Error("DATABASE_URL is required to run migrations")
 	}
 
-	// in next.js standalone mode, server.js does process.chdir(__dirname)
-	// which sets cwd to the app directory (e.g. /usr/src/app/core)
 	const migrationsDir = process.env.MIGRATIONS_DIR
 		? resolve(process.env.MIGRATIONS_DIR)
 		: resolve(process.cwd(), "prisma", "migrations")
@@ -94,23 +185,9 @@ export async function runMigrations() {
 			await pool.query("CREATE SCHEMA public")
 		}
 
-		// raw string query so pg uses the simple protocol (supports multi-statement sql)
 		await pool.query(CREATE_MIGRATIONS_TABLE)
 
-		const failed = await db
-			.selectFrom("_prisma_migrations")
-			.select("migration_name")
-			.where("finished_at", "is", null)
-			.where("rolled_back_at", "is", null)
-			.execute()
-
-		if (failed.length > 0) {
-			const names = failed.map((r) => r.migration_name).join(", ")
-			throw new Error(
-				`found migrations in a failed state that need manual resolution: ${names}. ` +
-					`mark them as rolled back or delete their rows from _prisma_migrations to proceed.`
-			)
-		}
+		await autoResolveFailedMigrations(db)
 
 		const applied = await db
 			.selectFrom("_prisma_migrations")
@@ -182,11 +259,9 @@ export async function runMigrations() {
 			logger.info("running database seed (DB_SEED is set)")
 			const { seed } = await import("~/prisma/seed")
 
-			// prevents autocache from running, breaking seed
 			const { withUncached } = await import("~/lib/server/cache/skipCacheStore")
 			await withUncached(seed, "both")
 
-			// try and reset cache
 			logger.info(`Clearing cache...`)
 			const [error, output] = await tryCatch(
 				execAsync("echo 'FLUSHALL' | nc $VALKEY_HOST 6379")

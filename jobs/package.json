@@ -18,12 +18,14 @@
 		"db": "workspace:*",
 		"graphile-worker": "^0.16.6",
 		"logger": "workspace:*",
+		"pg": "^8.16.3",
 		"react": "catalog:react19",
 		"tsx": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/node": "catalog:",
+		"@types/pg": "^8.15.5",
 		"dotenv-cli": "^7.4.4",
 		"tsconfig": "workspace:*",
 		"typescript": "catalog:",

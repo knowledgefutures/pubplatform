@@ -22,7 +22,7 @@ permissions:
     # pull-requests: write
 
 concurrency:
-    group: deploy-manual-${{ inputs.environment }}
+    group: deploy-${{ inputs.environment == 'production' && 'pubstar' || 'sandbox' }}
     cancel-in-progress: false
 
 jobs:

@@ -4,11 +4,12 @@ services:
 
     platform:
         image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
-        env_file: [.env]
+        env_file: [.env.${STACK_NAME}]
         environment:
             HOSTNAME: "0.0.0.0"
             NODE_ENV: production
             PORT: "3000"
+            DEPLOY_VERSION: ${IMAGE_TAG}
             PUBPUB_URL: https://${DEPLOY_HOST}
             PUBPUB_HOSTNAME: ${DEPLOY_HOST}
             SITE_BUILDER_ENDPOINT: http://site-builder:4000
@@ -41,9 +42,10 @@ services:
 
     platform-jobs:
         image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
-        env_file: [.env]
+        env_file: [.env.${STACK_NAME}]
         environment:
             NODE_ENV: production
+            DEPLOY_VERSION: ${IMAGE_TAG}
             PUBPUB_URL: http://platform:3000
         networks: [appnet]
         deploy:
@@ -53,9 +55,10 @@ services:
 
     site-builder:
         image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
-        env_file: [.env]
+        env_file: [.env.${STACK_NAME}]
         environment:
             NODE_ENV: production
+            DEPLOY_VERSION: ${IMAGE_TAG}
             PUBPUB_URL: http://platform:3000
             PORT: "4000"
             SITES_BASE_URL: https://${DEPLOY_HOST}/sites
@@ -73,7 +76,7 @@ services:
 
     db:
         image: postgres:15
-        env_file: [.env]
+        env_file: [.env.${STACK_NAME}]
         volumes:
             - pgdata:/var/lib/postgresql/data
         networks: [appnet]
@@ -92,7 +95,7 @@ services:
 
     minio:
         image: minio/minio:latest
-        env_file: [.env]
+        env_file: [.env.${STACK_NAME}]
         command: server --console-address ":9001" /data
         environment:
             MINIO_BROWSER_REDIRECT_URL: https://${DEPLOY_HOST}/assets-ui
@@ -113,7 +116,7 @@ services:
 
     minio-init:
         image: minio/mc:latest
-        env_file: [.env]
+        env_file: [.env.${STACK_NAME}]
         entrypoint: >
             /bin/sh -c '
             /usr/bin/mc alias set myminio http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";

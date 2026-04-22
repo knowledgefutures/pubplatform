@@ -1,7 +1,7 @@
 services:
   proxy:
     image: caddy:2.11.2-alpine
-    env_file: [.env]
+    env_file: [.env.${STACK_NAME}]
     ports:
       - target: 80
         published: 80
@@ -23,11 +23,12 @@ services:
 
   platform:
     image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
-    env_file: [.env]
+    env_file: [.env.${STACK_NAME}]
     environment:
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
       PORT: '3000'
+      DEPLOY_VERSION: ${IMAGE_TAG}
       SITE_BUILDER_ENDPOINT: http://site-builder:4000
     networks: [appnet]
     healthcheck:
@@ -56,9 +57,10 @@ services:
 
   platform-jobs:
     image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
-    env_file: [.env]
+    env_file: [.env.${STACK_NAME}]
     environment:
       NODE_ENV: production
+      DEPLOY_VERSION: ${IMAGE_TAG}
       PUBPUB_URL: http://platform:3000
     networks: [appnet]
     deploy:
@@ -73,9 +75,10 @@ services:
 
   site-builder:
     image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
-    env_file: [.env]
+    env_file: [.env.${STACK_NAME}]
     environment:
       NODE_ENV: production
+      DEPLOY_VERSION: ${IMAGE_TAG}
       PUBPUB_URL: http://platform:3000
       PORT: '4000'
     networks: [appnet]
@@ -93,7 +96,7 @@ services:
     image: postgres:15
     tmpfs:
       - /dev/shm:size=2147483648
-    env_file: [.env]
+    env_file: [.env.${STACK_NAME}]
     command: >
       -c shared_buffers=2GB
       -c effective_cache_size=6GB

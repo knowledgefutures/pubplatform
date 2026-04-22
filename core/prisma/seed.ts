@@ -31,7 +31,7 @@ export async function seed() {
 
 	logger.info("drop existing jobs")
 	await workerUtils.withPgClient(async (client) => {
-		await client.query(`DROP SCHEMA graphile_worker CASCADE`)
+		await client.query(`DROP SCHEMA IF EXISTS graphile_worker CASCADE`)
 	})
 
 	await workerUtils.migrate()
