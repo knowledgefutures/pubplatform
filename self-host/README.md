@@ -163,12 +163,12 @@ Other providers may likely work as well, but are not tested.
 To use Mailgun, you will need to create an account on [Mailgun](https://www.mailgun.com/) and set the following environment variables:
 
 ```sh
-MAILGUN_SMTP_HOST="smtp.mailgun.org"
-MAILGUN_SMTP_PORT=587
-MAILGUN_SMTP_USERNAME="postmaster@your-mailgun-domain.mailgun.org"
-MAILGUN_SMTP_PASSWORD="your-mailgun-password"
-MAILGUN_SMTP_FROM="email@your-mailgun-domain.mailgun.org"
-MAILGUN_SMTP_FROM_NAME="Your Organization"
+SMTP_HOST="smtp.mailgun.org"
+SMTP_PORT=587
+SMTP_USERNAME="postmaster@your-mailgun-domain.mailgun.org"
+SMTP_PASSWORD="your-mailgun-password"
+SMTP_FROM="email@your-mailgun-domain.mailgun.org"
+SMTP_FROM_NAME="Your Organization"
 ```
 
 ##### Gmail
@@ -178,24 +178,24 @@ To use Gmail to relay emails through PubPub, you will need to create an [app pas
 You will be limited to 2000 emails per day by default this way.
 
 ```sh
-MAILGUN_SMTP_HOST="smtp.gmail.com"
-MAILGUN_SMTP_PORT=587 # or 465 for SSL
-MAILGUN_SMTP_USERNAME="email@gmail.com"
-MAILGUN_SMTP_PASSWORD="your app password" # this will be a 16 character string
-MAILGUN_SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
-MAILGUN_SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587 # or 465 for SSL
+SMTP_USERNAME="email@gmail.com"
+SMTP_PASSWORD="your app password" # this will be a 16 character string
+SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
+SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
 ```
 
 If you need a higher limit of 10,000 emails, you can use the SMTP relay service. This will require extra configuration however:
 https://support.google.com/a/answer/176600?hl=en
 
 ```sh
-MAILGUN_SMTP_HOST="smtp-relay.gmail.com"
-MAILGUN_SMTP_PORT=587 # or 465 for SSL
-MAILGUN_SMTP_USERNAME="email@gmail.com"
-MAILGUN_SMTP_PASSWORD="your app password" # this will be a 16 character string
-MAILGUN_SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
-MAILGUN_SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
+SMTP_HOST="smtp-relay.gmail.com"
+SMTP_PORT=587 # or 465 for SSL
+SMTP_USERNAME="email@gmail.com"
+SMTP_PASSWORD="your app password" # this will be a 16 character string
+SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
+SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
 ```
 
 ##### Office 365
@@ -205,12 +205,12 @@ You can (for now) send emails through Office 365 Outlook/Exchange through SMTP, 
 You cannot send emails through shared mailboxes, you will need to an existing Microsoft account with a valid Office 365 subscription.
 
 ```sh
-MAILGUN_SMTP_HOST="smtp.office365.com"
-MAILGUN_SMTP_PORT=587
-MAILGUN_SMTP_USERNAME="email@outlook.com"
-MAILGUN_SMTP_PASSWORD="your-password"
-MAILGUN_SMTP_FROM="email@outlook.com" # technically optional, but you will almost definitely need to set this, as it will use `hello@pubpub.org` by default.
-MAILGUN_SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
+SMTP_HOST="smtp.office365.com"
+SMTP_PORT=587
+SMTP_USERNAME="email@outlook.com"
+SMTP_PASSWORD="your-password"
+SMTP_FROM="email@outlook.com" # technically optional, but you will almost definitely need to set this, as it will use `hello@pubpub.org` by default.
+SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
 ```
 
 ##### No email
@@ -235,16 +235,16 @@ You may want to use your own postgres database instead, in which case you can di
 
 ```yml
 db:
-    condition: service_started
+  condition: service_started
 ```
 
 from the `depends_on` section of the `platform` service.
 
 ```yml
 platform:
-    depends_on:
-        db:
-            condition: service_started
+  depends_on:
+    db:
+      condition: service_started
 ```
 
 #### MinIO
