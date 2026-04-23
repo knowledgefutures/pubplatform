@@ -621,7 +621,11 @@ const router = tsr.router(siteBuilderApi, {
 
 				const zipFileName = `site-${timestamp}.zip`
 				const zipUploadId = "site-archives"
-				const zipInternalUrl = await createZipAndUploadToS3(distDir, zipUploadId, zipFileName)
+				const zipInternalUrl = await createZipAndUploadToS3(
+					distDir,
+					zipUploadId,
+					zipFileName
+				)
 
 				const subpath = body.subpath ?? body.automationRunId
 				const s3Prefix = `sites/${communitySlug}/${subpath}`

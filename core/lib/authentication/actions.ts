@@ -35,8 +35,8 @@ import {
 	updateUser,
 } from "~/lib/server/user"
 import { LAST_VISITED_COOKIE } from "../../app/components/LastVisitedCommunity/constants"
-import { normalizeAssetUrl } from "../server/assets"
 import { createSiteBuilderToken } from "../server/apiAccessTokens"
+import { normalizeAssetUrl } from "../server/assets"
 import { findCommunityBySlug } from "../server/community"
 import * as Email from "../server/email"
 import { insertCommunityMemberships, selectCommunityMemberships } from "../server/member"

@@ -11,9 +11,9 @@ import { db } from "~/kysely/database"
 import { isUniqueConstraintError } from "~/kysely/errors"
 import { getLoginData } from "~/lib/authentication/loginData"
 import { createSiteBuilderToken } from "~/lib/server/apiAccessTokens"
+import { normalizeAssetUrl } from "~/lib/server/assets"
 import { autoRevalidate } from "~/lib/server/cache/autoRevalidate"
 import { defineServerAction } from "~/lib/server/defineServerAction"
-import { normalizeAssetUrl } from "~/lib/server/assets"
 import { slugifyString } from "~/lib/string"
 
 export const createCommunity = defineServerAction(async function createCommunity({
