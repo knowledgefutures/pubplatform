@@ -10,6 +10,7 @@ import { JSONPath } from "jsonpath-plus"
 import { interpolate } from "@pubpub/json-interpolate"
 import { logger } from "logger"
 
+import { env } from "~/lib/env/env"
 import { updatePub } from "~/lib/server/pub"
 import { defineRun } from "../types"
 
@@ -31,10 +32,48 @@ const extractValue = async (data: unknown, expression: string): Promise<unknown>
 	return interpolate(expression, data)
 }
 
+const isAllowedHttpHost = (hostname: string, allowedDomains: string[]) => {
+	const normalizedHostname = hostname.toLowerCase()
+
+	return allowedDomains.some((allowedDomain) => {
+		const normalizedDomain = allowedDomain.toLowerCase()
+		const isSubdomainRule = normalizedDomain.startsWith(".")
+
+		if (!isSubdomainRule) {
+			return normalizedHostname === normalizedDomain
+		}
+
+		const domain = normalizedDomain.slice(1)
+		return normalizedHostname === domain || normalizedHostname.endsWith(normalizedDomain)
+	})
+}
+
 export const run = defineRun<typeof action>(async ({ pub, config, lastModifiedBy }) => {
 	const { url, method, authToken } = config
 
 	const finalOutputMap = config?.outputMap ?? []
+
+	const parsedUrl = new URL(url)
+	const isHttpProtocol = parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:"
+
+	if (!isHttpProtocol) {
+		return {
+			success: false,
+			title: "Error",
+			error: `Invalid URL protocol "${parsedUrl.protocol}". Only http and https are allowed.`,
+		}
+	}
+
+	const allowedDomains = env.FLAGS?.get("http-allowed-domains") ?? []
+	const shouldRestrictDomains = allowedDomains.length > 0
+
+	if (shouldRestrictDomains && !isAllowedHttpHost(parsedUrl.hostname, allowedDomains)) {
+		return {
+			success: false,
+			title: "Error",
+			error: `Domain "${parsedUrl.hostname}" is not allowed. Allowed domains: ${allowedDomains.join(", ")}`,
+		}
+	}
 
 	const body = typeof config.body === "string" ? config.body : JSON.stringify(config.body)
 

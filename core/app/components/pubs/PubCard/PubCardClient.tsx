@@ -193,7 +193,7 @@ export const PubCardHeader = ({
 	return (
 		<div
 			data-slot="pub-card-header"
-			className={cn("z-10 flex flex-row gap-2 overflow-x-scroll p-0 leading-4", className)}
+			className={cn("z-10 flex flex-row gap-2 overflow-x-auto p-0 leading-4", className)}
 		>
 			{children}
 		</div>

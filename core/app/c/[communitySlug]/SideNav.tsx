@@ -4,20 +4,24 @@ import type { MaybeHas } from "utils/types"
 import type { CommunityData } from "~/lib/server/community"
 
 import { cache, Suspense } from "react"
+import { Bell } from "lucide-react"
 
 import { Capabilities, MembershipType } from "db/public"
 import {
 	BookOpen,
 	BookOpenText,
 	Bot,
+	ExternalLink,
 	FlagTriangleRightIcon,
 	Form,
 	FormInput,
 	Layers3,
+	Mail,
 	Settings2,
 	ToyBrick,
 	UsersRound,
 } from "ui/icon"
+import { InfoButton } from "ui/info-button"
 import {
 	Sidebar,
 	SidebarContent,
@@ -27,6 +31,7 @@ import {
 	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarMenuSkeleton,
 	SidebarMenuSubItem,
@@ -37,6 +42,7 @@ import { SidebarSearchDialogTrigger } from "~/app/components/Search/SearchDialog
 import { SidebarDarkmodeToggle } from "~/app/components/theme/DarkmodeToggle"
 import { getLoginData } from "~/lib/authentication/loginData"
 import { userCan, userCanViewStagePage } from "~/lib/authorization/capabilities"
+import { env } from "~/lib/env/env"
 import CommunitySwitcher from "./CommunitySwitcher"
 import LoginSwitcher from "./LoginSwitcher"
 import NavLink from "./NavLink"
@@ -73,6 +79,12 @@ type LinkGroupDefinition = {
 	name: string
 	authorization: null | ((userId: UsersId, communityId: CommunitiesId) => Promise<boolean>)
 	links: LinkDefinition[]
+}
+
+type EnvironmentToolLink = {
+	href: string
+	text: string
+	icon: React.ReactNode
 }
 
 const userCanEditCommunityCached = cache(async (userId: UsersId, communityId: CommunitiesId) => {
@@ -194,6 +206,35 @@ const adminLinks: LinkGroupDefinition = {
 			],
 		},
 	],
+}
+
+const getEnvironmentToolLinks = (): EnvironmentToolLink[] => {
+	const pubpubUrl = new URL(env.PUBPUB_URL)
+
+	const flags = env.FLAGS?.get("show-test-only-tools")
+	if (!flags) {
+		return []
+	}
+
+	const isLocalhost = pubpubUrl.hostname === "localhost" || pubpubUrl.hostname === "127.0.0.1"
+	const inbucketUrl =
+		env.INBUCKET_URL ?? (isLocalhost ? "http://localhost:54324" : `${pubpubUrl.origin}/emails`)
+	const mockNotifyUrl = isLocalhost
+		? "http://localhost:4001/mock-notify"
+		: `${pubpubUrl.origin}/mock-notify`
+
+	return [
+		{
+			href: inbucketUrl,
+			text: "Email Inbox",
+			icon: <Mail size={16} />,
+		},
+		{
+			href: mockNotifyUrl,
+			text: "COAR Server",
+			icon: <Bell size={16} />,
+		},
+	]
 }
 
 export const COLLAPSIBLE_TYPE: Parameters<typeof Sidebar>[0]["collapsible"] = "icon"
@@ -345,6 +386,7 @@ const LinkGroup = async ({
 
 const SideNav: React.FC<Props> = async ({ community, availableCommunities }) => {
 	const { user } = await getLoginData()
+	const environmentToolLinks = getEnvironmentToolLinks()
 
 	if (!user) {
 		return null
@@ -368,6 +410,35 @@ const SideNav: React.FC<Props> = async ({ community, availableCommunities }) => 
 					<LinkGroup user={user} community={community} group={viewLinks} />
 					<LinkGroup user={user} community={community} group={manageLinks} />
 					<LinkGroup user={user} community={community} group={adminLinks} />
+					{environmentToolLinks.length > 0 ? (
+						<SidebarGroup className="group-data-[collapsible=icon]:py-0">
+							<SidebarGroupLabel className="flex items-center gap-1 font-semibold text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
+								<span>Dev tools</span>
+								<InfoButton>
+									These are only visible in development or preview environments.
+								</InfoButton>
+							</SidebarGroupLabel>
+							<SidebarGroupContent className="group-data-[state=expanded]:px-2">
+								<SidebarMenu>
+									{environmentToolLinks.map((toolLink) => (
+										<SidebarMenuItem key={toolLink.href}>
+											<SidebarMenuButton asChild>
+												<a
+													href={toolLink.href}
+													target="_blank"
+													rel="noreferrer"
+												>
+													{toolLink.icon}
+													<span className="text-sm">{toolLink.text}</span>
+													<ExternalLink size={14} className="ml-auto" />
+												</a>
+											</SidebarMenuButton>
+										</SidebarMenuItem>
+									))}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</SidebarGroup>
+					) : null}
 				</div>
 			</SidebarContent>
 			<SidebarFooter className="pb-4 group-data-[state=expanded]:px-2">

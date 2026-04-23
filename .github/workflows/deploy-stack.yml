@@ -99,6 +99,13 @@ jobs:
                     : "${ENV_FILE:?missing ENV_FILE}"
                     : "${STACK_FILE:?missing STACK_FILE}"
 
+                    ASSETS_HOST="$DEPLOY_HOST"
+                    if [[ "$DEPLOY_HOST" =~ ^pr-([0-9]+)\.pubstar\.org$ ]]; then
+                      ASSETS_HOST="pr-${BASH_REMATCH[1]}-assets.pubstar.org"
+                    elif [[ "$DEPLOY_HOST" == "sandbox.pubstar.org" ]]; then
+                      ASSETS_HOST="sandbox-assets.pubstar.org"
+                    fi
+
                     REPO_NAME="${REPO##*/}"
                     APP_DIR="/srv/${REPO_NAME}"
                     REPO_SSH="git@github.com:${REPO}.git"
@@ -194,7 +201,7 @@ jobs:
                       INBUCKET_PORT="5${PORT_NUM}"
                       MOCK_NOTIFY_PORT="6${PORT_NUM}"
 
-                      sudo env IMAGE_TAG="$IMAGE_TAG" STACK_NAME="$STACK_NAME" DEPLOY_HOST="$DEPLOY_HOST" \
+                      sudo env IMAGE_TAG="$IMAGE_TAG" STACK_NAME="$STACK_NAME" DEPLOY_HOST="$DEPLOY_HOST" ASSETS_HOST="$ASSETS_HOST" \
                         PLATFORM_PORT="$PLATFORM_PORT" BUILDER_PORT="$BUILDER_PORT" \
                         MINIO_PORT="$MINIO_PORT" MINIO_CONSOLE_PORT="$MINIO_CONSOLE_PORT" \
                         INBUCKET_PORT="$INBUCKET_PORT" MOCK_NOTIFY_PORT="$MOCK_NOTIFY_PORT" \
@@ -204,7 +211,7 @@ jobs:
                     else
                       echo "deploying with IMAGE_TAG=$IMAGE_TAG"
 
-                      sudo env IMAGE_TAG="$IMAGE_TAG" STACK_NAME="$STACK_NAME" \
+                      sudo env IMAGE_TAG="$IMAGE_TAG" STACK_NAME="$STACK_NAME" ASSETS_HOST="$ASSETS_HOST" \
                         docker stack deploy -c "$STACK_FILE" \
                         --with-registry-auth --resolve-image always --prune "$STACK_NAME"
                     fi

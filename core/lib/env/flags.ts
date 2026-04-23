@@ -44,12 +44,31 @@ const flagSchema = z.union([
 			.pipe(actionSchema.array()),
 	]),
 	z.tuple([
+		z.literal("http-allowed-domains"),
+		z
+			.string()
+			.optional()
+			.transform((s) =>
+				s
+					? s
+							.split("+")
+							.map((domain) => domain.trim())
+							.filter((domain) => domain.length > 0)
+					: []
+			)
+			.pipe(z.string().array()),
+	]),
+	z.tuple([
 		z.literal("invites"),
 		z.string().transform(flagStateToBoolean).optional().default("on"),
 	]),
 	z.tuple([
 		z.literal("uploads"),
 		z.string().transform(flagStateToBoolean).optional().default("on"),
+	]),
+	z.tuple([
+		z.literal("show-test-only-tools"),
+		z.string().transform(flagStateToBoolean).optional().default("off"),
 	]),
 ])
 
