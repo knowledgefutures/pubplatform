@@ -17,7 +17,7 @@
 
     encode gzip
 
-    @assetsHost host_regexp assets ^(?:pr-\d+-assets|sandbox-assets)\.pubstar\.org$
+    @assetsHost header_regexp assets Host ^(?:pr-\d+-assets|sandbox-assets)\.pubstar\.org$
     handle @assetsHost {
         reverse_proxy host.docker.internal:{minio_port}
     }
