@@ -24,7 +24,7 @@ type RequiredOptions = Required<Pick<SendMailOptions, "to" | "subject">> &
 
 export const DEFAULT_OPTIONS = {
 	from: env.SMTP_FROM,
-	name: env.SMTP_FROM_NAME 
+	name: env.SMTP_FROM_NAME,
 } as const
 
 function buildSend(emailPromise: () => Promise<RequiredOptions>) {
