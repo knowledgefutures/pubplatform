@@ -27,9 +27,20 @@ const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, "")
 
 const trimLeadingSlashes = (value: string) => value.replace(/^\/+/, "")
 
-const getPublicEndpoint = () => env.S3_PUBLIC_ENDPOINT || env.S3_ENDPOINT
+const isBucketHost = (hostname: string) =>
+	hostname === env.S3_BUCKET_NAME || hostname.startsWith(`${env.S3_BUCKET_NAME}.`)
 
-const getPublicUrlStyle = () => env.S3_PUBLIC_URL_STYLE ?? "bucket-path"
+const shouldIncludeBucketInPath = (baseUrl: URL) => {
+	const basePath = trimSlashes(baseUrl.pathname)
+	const basePathIncludesBucket =
+		basePath === env.S3_BUCKET_NAME || basePath.startsWith(`${env.S3_BUCKET_NAME}/`)
+
+	if (basePathIncludesBucket) {
+		return false
+	}
+
+	return !isBucketHost(baseUrl.hostname)
+}
 
 const getPathRelativeToBase = (url: URL, baseUrl: string) => {
 	const base = new URL(baseUrl)
@@ -57,7 +68,7 @@ const getPathRelativeToBase = (url: URL, baseUrl: string) => {
 }
 
 const buildS3PublicUrl = (key: string) => {
-	const publicEndpoint = getPublicEndpoint()
+	const publicEndpoint = env.S3_PUBLIC_ENDPOINT || env.S3_ENDPOINT
 	const normalizedKey = trimLeadingSlashes(key)
 
 	if (!publicEndpoint) {
@@ -66,8 +77,7 @@ const buildS3PublicUrl = (key: string) => {
 
 	const baseUrl = new URL(publicEndpoint)
 	const basePath = trimSlashes(baseUrl.pathname)
-
-	const shouldIncludeBucket = getPublicUrlStyle() === "bucket-path"
+	const shouldIncludeBucket = shouldIncludeBucketInPath(baseUrl)
 
 	const pathSegments = [
 		basePath,
@@ -83,7 +93,6 @@ const buildS3PublicUrl = (key: string) => {
 const getS3ObjectKeyCandidates = (fileUrl: string) => {
 	try {
 		const parsedUrl = new URL(fileUrl)
-		const publicEndpoint = getPublicEndpoint()
 		const bucket = env.S3_BUCKET_NAME
 		const candidates = new Set<string>()
 
@@ -112,18 +121,22 @@ const getS3ObjectKeyCandidates = (fileUrl: string) => {
 			addCandidate(normalized.slice(bucket.length + 1))
 		}
 
-		if (publicEndpoint) {
-			const relativePath = getPathRelativeToBase(parsedUrl, publicEndpoint)
-			addBucketRelativeCandidate(relativePath)
-
-			if (getPublicUrlStyle() === "root-path") {
-				addCandidate(relativePath)
+		const addCandidateFromBaseUrl = (baseUrl: string | undefined) => {
+			if (!baseUrl) {
+				return
 			}
+
+			const relativePath = getPathRelativeToBase(parsedUrl, baseUrl)
+			addBucketRelativeCandidate(relativePath)
+			addCandidate(relativePath)
 		}
+
+		addCandidateFromBaseUrl(env.S3_PUBLIC_ENDPOINT)
+		addCandidateFromBaseUrl(env.S3_ENDPOINT)
 
 		const path = trimLeadingSlashes(parsedUrl.pathname)
 
-		if (parsedUrl.hostname === bucket || parsedUrl.hostname.startsWith(`${bucket}.`)) {
+		if (isBucketHost(parsedUrl.hostname)) {
 			addCandidate(path)
 		}
 
@@ -229,23 +242,22 @@ export const getS3Client = () => {
 	return s3Client
 }
 
-// we create a separate client for generating signed URLs that uses the public endpoint
-// this is bc, when using `minio` locally, the server
-// uses `minio:9000`, but for the client this does not make sense
-export const getPublicS3Client = () => {
+// signed urls are generated against the storage endpoint.
+// this endpoint must be reachable by clients uploading directly to s3.
+export const getSignedUploadS3Client = () => {
 	const region = env.S3_REGION
 	const key = env.S3_ACCESS_KEY
 	const secret = env.S3_SECRET_KEY
-	const publicEndpoint = env.S3_PUBLIC_ENDPOINT || env.S3_ENDPOINT
+	const uploadEndpoint = env.S3_ENDPOINT
 
 	return new S3Client({
-		endpoint: publicEndpoint,
+		endpoint: uploadEndpoint,
 		region: region,
 		credentials: {
 			accessKeyId: key,
 			secretAccessKey: secret,
 		},
-		forcePathStyle: !!publicEndpoint, // Required for MinIO
+		forcePathStyle: !!uploadEndpoint, // Required for MinIO
 	})
 }
 
@@ -257,7 +269,7 @@ export const generateSignedAssetUploadUrl = async (
 	const communitySlug = await getCommunitySlug()
 	const key = `${kind === "temporary" ? "temporary/" : ""}${communitySlug}/${userId}/${crypto.randomUUID()}/${fileName}`
 
-	const client = getPublicS3Client() // use public client for signed URLs
+	const client = getSignedUploadS3Client()
 
 	const bucket = env.S3_BUCKET_NAME
 	const command = new PutObjectCommand({
@@ -273,7 +285,7 @@ export const generateSignedAssetUploadUrl = async (
 }
 
 const generateSignedUploadUrl = async (key: string) => {
-	const client = getPublicS3Client()
+	const client = getSignedUploadS3Client()
 	const bucket = env.S3_BUCKET_NAME
 	const command = new PutObjectCommand({
 		Bucket: bucket,
@@ -308,7 +320,7 @@ export class InvalidFileUrlError extends Error {
  * Be very careful with this, always confirm whether the user is allowed to access this file
  */
 export const deleteFileFromS3 = async (fileUrl: string) => {
-	const client = getPublicS3Client()
+	const client = getS3Client()
 	const bucket = env.S3_BUCKET_NAME
 
 	const fileKey = getS3ObjectKey(fileUrl)

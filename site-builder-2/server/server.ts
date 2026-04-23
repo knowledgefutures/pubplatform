@@ -35,7 +35,21 @@ const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, "")
 
 const trimLeadingSlashes = (value: string) => value.replace(/^\/+/, "")
 
-const getPublicUrlStyle = () => SERVER_ENV.S3_PUBLIC_URL_STYLE ?? "bucket-path"
+const isBucketHost = (hostname: string) =>
+	hostname === SERVER_ENV.S3_BUCKET_NAME || hostname.startsWith(`${SERVER_ENV.S3_BUCKET_NAME}.`)
+
+const shouldIncludeBucketInPath = (baseUrl: URL) => {
+	const basePath = trimSlashes(baseUrl.pathname)
+	const basePathIncludesBucket =
+		basePath === SERVER_ENV.S3_BUCKET_NAME ||
+		basePath.startsWith(`${SERVER_ENV.S3_BUCKET_NAME}/`)
+
+	if (basePathIncludesBucket) {
+		return false
+	}
+
+	return !isBucketHost(baseUrl.hostname)
+}
 
 const buildS3PublicUrl = (key: string) => {
 	const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
@@ -47,8 +61,7 @@ const buildS3PublicUrl = (key: string) => {
 
 	const baseUrl = new URL(publicEndpoint)
 	const basePath = trimSlashes(baseUrl.pathname)
-
-	const shouldIncludeBucket = getPublicUrlStyle() === "bucket-path"
+	const shouldIncludeBucket = shouldIncludeBucketInPath(baseUrl)
 
 	const pathSegments = [
 		basePath,

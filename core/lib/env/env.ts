@@ -21,12 +21,7 @@ export const env = createEnv({
 		S3_ACCESS_KEY: z.string(),
 		S3_SECRET_KEY: z.string(),
 		S3_ENDPOINT: z.string().url().optional(),
-		S3_PUBLIC_URL_STYLE: z.enum(["bucket-path", "root-path"]).optional(),
-		S3_PUBLIC_ENDPOINT: z
-			.string()
-			.url()
-			.optional()
-			.transform((val) => (!val && process.env.S3_ENDPOINT ? process.env.S3_ENDPOINT : val)),
+		S3_PUBLIC_ENDPOINT: z.string().url().optional(),
 		/**
 		 * Whether or not to verbosely log `memoize` cache hits and misses
 		 */
