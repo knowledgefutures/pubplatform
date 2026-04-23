@@ -13,6 +13,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { sql } from "kysely"
 
 import { logger } from "logger"
+import { tryCatch } from "utils/try-catch"
 
 import { db } from "~/kysely/database"
 import { env } from "../env/env"
@@ -22,6 +23,10 @@ import { getCommunitySlug } from "./cache/getCommunitySlug"
 let s3Client: S3Client
 
 export type FileMetadata = InputTypeForCoreSchemaType<CoreSchemaType.FileUpload>[number]
+export type SignedUploadTarget = {
+	signedUrl: string
+	publicUrl: string
+}
 
 const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, "")
 
@@ -160,6 +165,51 @@ const getTemporaryS3ObjectKey = (fileUrl: string) => {
 	return candidates.find((candidate) => candidate.startsWith("temporary/")) ?? null
 }
 
+const isS3GetObjectPermissionError = (error: unknown) => {
+	if (!error || typeof error !== "object") {
+		return false
+	}
+
+	const s3Error = error as { name?: string; message?: string }
+	return s3Error.name === "AccessDenied" && s3Error.message?.includes("s3:GetObject") === true
+}
+
+const copyObjectViaPublicEndpoint = async ({
+	sourceKey,
+	destinationKey,
+	s3Client,
+}: {
+	sourceKey: string
+	destinationKey: string
+	s3Client: S3Client
+}) => {
+	const sourceUrl = buildS3PublicUrl(sourceKey)
+	const sourceResponse = await fetch(sourceUrl, { cache: "no-store" })
+
+	if (!sourceResponse.ok) {
+		throw new Error(`Unable to download source object from public endpoint: ${sourceUrl}`)
+	}
+
+	const sourceContentType =
+		sourceResponse.headers.get("content-type") ?? "application/octet-stream"
+	const sourceBody = Buffer.from(await sourceResponse.arrayBuffer())
+
+	const upload = new Upload({
+		client: s3Client,
+		params: {
+			Bucket: env.S3_BUCKET_NAME,
+			Key: destinationKey,
+			Body: sourceBody,
+			ContentType: sourceContentType,
+		},
+		queueSize: 3,
+		partSize: 1024 * 1024 * 5,
+		leavePartsOnError: false,
+	})
+
+	await upload.done()
+}
+
 export const normalizeAssetUrl = (fileUrl: string) => {
 	const key = getS3ObjectKey(fileUrl)
 
@@ -269,29 +319,27 @@ export const generateSignedAssetUploadUrl = async (
 	const communitySlug = await getCommunitySlug()
 	const key = `${kind === "temporary" ? "temporary/" : ""}${communitySlug}/${userId}/${crypto.randomUUID()}/${fileName}`
 
-	const client = getSignedUploadS3Client()
-
-	const bucket = env.S3_BUCKET_NAME
-	const command = new PutObjectCommand({
-		Bucket: bucket,
-		Key: key,
-	})
-
-	return await getSignedUrl(
-		client,
-		command,
-		kind === "temporary" ? { expiresIn: 3600 } : undefined
-	)
+	return generateSignedUploadUrl(key, kind === "temporary" ? { expiresIn: 3600 } : undefined)
 }
 
-const generateSignedUploadUrl = async (key: string) => {
+const generateSignedUploadUrl = async (
+	key: string,
+	options?: { expiresIn?: number }
+): Promise<SignedUploadTarget> => {
 	const client = getSignedUploadS3Client()
-	const bucket = env.S3_BUCKET_NAME
 	const command = new PutObjectCommand({
-		Bucket: bucket,
+		Bucket: env.S3_BUCKET_NAME,
 		Key: key,
 	})
-	return await getSignedUrl(client, command)
+
+	const signedUrl = options?.expiresIn
+		? await getSignedUrl(client, command, { expiresIn: options.expiresIn })
+		: await getSignedUrl(client, command)
+
+	return {
+		signedUrl,
+		publicUrl: buildS3PublicUrl(key),
+	}
 }
 
 export const generateSignedUserAvatarUploadUrl = async (userId: UsersId, fileName: string) => {
@@ -390,33 +438,73 @@ export const makeFileUploadPermanent = async (
 		copyCommand,
 	})
 
-	await s3Client.send(copyCommand)
+	const [copyErr] = await tryCatch(s3Client.send(copyCommand))
+
+	if (copyErr) {
+		if (!isS3GetObjectPermissionError(copyErr)) {
+			throw copyErr
+		}
+
+		logger.warn({
+			msg: "S3 copy requires get object permission, retrying with public endpoint download",
+			source,
+			newKey,
+		})
+
+		await copyObjectViaPublicEndpoint({
+			sourceKey: source,
+			destinationKey: newKey,
+			s3Client,
+		})
+	}
 
 	logger.info({
 		msg: "Waiting for object to exist",
 		newKey,
 	})
 
-	await waitUntilObjectExists(
-		{
-			client: s3Client,
-			maxWaitTime: 10,
-			minDelay: 1,
-		},
-		{ Bucket: env.S3_BUCKET_NAME, Key: newKey }
+	const [waitErr] = await tryCatch(
+		waitUntilObjectExists(
+			{
+				client: s3Client,
+				maxWaitTime: 10,
+				minDelay: 1,
+			},
+			{ Bucket: env.S3_BUCKET_NAME, Key: newKey }
+		)
 	)
+
+	if (waitErr && !isS3GetObjectPermissionError(waitErr)) {
+		throw waitErr
+	}
 	logger.debug({ msg: "successfully copied temp file to permanent directory", newKey, tempUrl })
 	await trx
 		.updateTable("pub_values")
 		.where("pub_values.pubId", "=", pubId)
-		//@ts-expect-error
-		.where((eb) => eb.ref("value", "->>").at(0).key("fileUploadUrl"), "=", tempUrl)
-		.set((eb) => ({
-			value: eb.fn("jsonb_set", [
-				"value",
-				sql.raw("'{0,fileUploadUrl}'"),
-				eb.val(JSON.stringify(newFileUrl)),
-			]),
+		.where(
+			(eb) =>
+				eb.fn("jsonb_path_exists", [
+					"value",
+					sql.raw("'$[*] ? (@.fileUploadUrl == $url)'"),
+					eb.val(JSON.stringify({ url: tempUrl })),
+				]),
+			"=",
+			true
+		)
+		.set(() => ({
+			value: sql`(
+				select coalesce(
+					jsonb_agg(
+						case
+							when file_entry->>'fileUploadUrl' = ${tempUrl}
+							then jsonb_set(file_entry, '{fileUploadUrl}', to_jsonb(${newFileUrl}::text))
+							else file_entry
+						end
+					),
+					'[]'::jsonb
+				)
+				from jsonb_array_elements(pub_values.value) as file_entry
+			)`,
 			lastModifiedBy: createLastModifiedBy({ userId }),
 		}))
 		.execute()
@@ -448,7 +536,7 @@ export const uploadFileToS3 = async (
 		contentType: string
 		queueSize?: number
 		partSize?: number
-		progressCallback?: (progress: any) => void
+		progressCallback?: (progress: unknown) => void
 	}
 ): Promise<string> => {
 	const client = getS3Client()

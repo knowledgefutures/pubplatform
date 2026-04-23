@@ -18,6 +18,13 @@ import AwsS3Multipart from "@uppy/aws-s3"
 
 const pluginName = "AwsS3Multipart" as const
 
+export type SignedUploadTarget = {
+	signedUrl: string
+	publicUrl: string
+}
+
+export type UploadResponse = string | SignedUploadTarget | { error: string }
+
 export type FormattedFile = {
 	id: string
 	fileName: string
@@ -30,7 +37,7 @@ export type FormattedFile = {
 }
 
 export type FileUploadProps = {
-	upload: (fileName: string) => Promise<string | { error: string }>
+	upload: (fileName: string) => Promise<UploadResponse>
 	onUpdateFiles: (files: FormattedFile[]) => void
 	disabled?: boolean
 	id?: string
@@ -47,6 +54,11 @@ const FileUpload = forwardRef(function FileUpload(props: FileUploadProps, _ref) 
 		const handler = () => {
 			const uploadedFiles = uppy.getFiles()
 			const formattedFiles = uploadedFiles.map((file) => {
+				const publicUploadUrl =
+					typeof file.meta.publicUploadUrl === "string"
+						? file.meta.publicUploadUrl
+						: undefined
+
 				return {
 					id: file.id,
 					fileName: file.name,
@@ -54,7 +66,7 @@ const FileUpload = forwardRef(function FileUpload(props: FileUploadProps, _ref) 
 					fileType: file.type,
 					fileSize: file.size,
 					fileMeta: file.meta,
-					fileUploadUrl: file.response?.uploadURL,
+					fileUploadUrl: publicUploadUrl ?? file.response?.uploadURL,
 					filePreview: file.preview,
 				}
 			}) as FormattedFile[]
@@ -80,22 +92,33 @@ const FileUpload = forwardRef(function FileUpload(props: FileUploadProps, _ref) 
 					throw new Error("File name is required")
 				}
 
-				const signedUrl = await props.upload(file.name)
+				const uploadResponse = await props.upload(file.name)
 
-				if (typeof signedUrl === "object" && "error" in signedUrl) {
-					throw new Error(signedUrl.error)
+				if (typeof uploadResponse === "object" && "error" in uploadResponse) {
+					throw new Error(uploadResponse.error)
+				}
+
+				const uploadTarget =
+					typeof uploadResponse === "string"
+						? { signedUrl: uploadResponse, publicUrl: undefined }
+						: uploadResponse
+
+				if (uploadTarget.publicUrl) {
+					uppy.setFileMeta(file.id, {
+						publicUploadUrl: uploadTarget.publicUrl,
+					})
 				}
 
 				return {
 					method: "PUT",
-					url: signedUrl,
+					url: uploadTarget.signedUrl,
 					headers: {
 						"content-type": file.type,
 					},
 				}
 			},
 		})
-	}, [props.upload, uppy.getPlugin])
+	}, [props.upload, uppy.getPlugin, uppy.setFileMeta])
 
 	return (
 		<Dashboard
