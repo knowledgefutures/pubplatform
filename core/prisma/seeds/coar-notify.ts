@@ -64,6 +64,10 @@ const withBannerAndHead = ({
 	].join(" ")
 }
 
+const BASE_SITE_URL = env.S3_PUBLIC_ENDPOINT?.includes(env.S3_BUCKET_NAME)
+	? `${env.S3_PUBLIC_ENDPOINT?.replace(/\/$/, "")}/sites`
+	: `${env.S3_ENDPOINT?.replace(/\/$/, "")}/${env.S3_BUCKET_NAME}/sites`
+
 /**
  * User Story 1: Repository Author Requests Review
  *
@@ -453,7 +457,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										recipientEmail: "all@pubpub.org",
 										subject:
 											"Site published with new review for: {{ $.pub.title }}",
-										body: "The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: http://localhost:9000/assets.v7.pubpub.org/sites/coar-us1-arcadia/site/index.html",
+										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: /coar-us1-arcadia/site/index.html`,
 									},
 								},
 							],
@@ -489,7 +493,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 		Published: "dddddddd-0002-4ddd-dddd-dddddddddd15" as StagesId,
 	}
 
-	const SITE_BASE = "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site"
+	const SITE_BASE = `${BASE_SITE_URL}/coar-us2-unjournal/site/`
 
 	return seedCommunity(
 		{
@@ -868,8 +872,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 												slug: "$.pub.id",
 												transform: withBannerAndHead({
 													bannerText: "The Unjournal",
-													headExtra:
-														'"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/" & $.pub.id & ".docmap.json />"',
+													headExtra: `"<link rel=describedby type=application/docmap+json href=${SITE_BASE}" & $.pub.id & ".docmap.json />"`,
 													content: [
 														"& '<article>'",
 														"& '<h1>' & $.pub.title & '</h1>'",
@@ -902,15 +905,15 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 													"'{' &",
 													'\'"@context": "https://w3id.org/docmaps/context.jsonld",\' &',
 													'\'"type": "docmap",\' &',
-													"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/' & $.pub.id & '.docmap.json\",' &",
+													`'"id": "${SITE_BASE}" & $.pub.id & '.docmap.json",' &`,
 													'\'"publisher": {"name": "\' & $.community.name & \'"},\' &',
 													'\'"first-step": "_:b0",\' &',
 													'\'"steps": {"_:b0": {"actions": [{"outputs": [{\' &',
 													'\'"type": "review-article",\' &',
 													"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
 													"'\"content\": [' &",
-													'\'{"type": "web-page", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\' & $.pub.id & \'/index.html"},\' &',
-													'\'{"type": "web-content", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us2-unjournal/site/\' & $.pub.id & \'/content/index.html"}\' &',
+													`'{"type": "web-page", "url": "${SITE_BASE}" & $.pub.id & '/index.html"},' &`,
+													`'{"type": "web-content", "url": "${SITE_BASE}" & $.pub.id & '/content/index.html"},' &`,
 													"']' &",
 													"'}]}]}}' &",
 													"'}'",
@@ -962,7 +965,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 		Published: "dddddddd-0003-4ddd-dddd-dddddddddd11" as StagesId,
 	}
 
-	const SITE_BASE = "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site"
+	const SITE_BASE = `${BASE_SITE_URL}/coar-us3-review-group/site/`
 
 	return seedCommunity(
 		{
@@ -1091,8 +1094,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 												slug: "$.pub.id",
 												transform: withBannerAndHead({
 													bannerText: "Review Group",
-													headExtra:
-														'"<link rel=describedby type=application/docmap+json href=http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/" & $.pub.id & ".docmap.json />"',
+													headExtra: `"<link rel=describedby type=application/docmap+json href=${SITE_BASE}" & $.pub.id & ".docmap.json />"`,
 													content: [
 														"& '<article>'",
 														"& '<h1>' & $.pub.title & '</h1>'",
@@ -1125,15 +1127,15 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 													"'{' &",
 													'\'"@context": "https://w3id.org/docmaps/context.jsonld",\' &',
 													'\'"type": "docmap",\' &',
-													"'\"id\": \"http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/' & $.pub.id & '.docmap.json\",' &",
+													`'"id": "${SITE_BASE}" & $.pub.id & '.docmap.json",' &`,
 													'\'"publisher": {"name": "\' & $.community.name & \'"},\' &',
 													'\'"first-step": "_:b0",\' &',
 													'\'"steps": {"_:b0": {"actions": [{"outputs": [{\' &',
 													'\'"type": "review-article",\' &',
 													"'\"as:inReplyTo\": \"' & $.pub.values.SourceURL & '\",' &",
 													"'\"content\": [' &",
-													'\'{"type": "web-page", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\' & $.pub.id & \'/index.html"},\' &',
-													'\'{"type": "web-content", "url": "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us3-review-group/site/\' & $.pub.id & \'/content/index.html"}\' &',
+													`'{"type": "web-page", "url": "${SITE_BASE}" & $.pub.id & '/index.html"},' &`,
+													`'{"type": "web-content", "url": "${SITE_BASE}" & $.pub.id & '/content/index.html"},' &`,
 													"']' &",
 													"'}]}]}}' &",
 													"'}'",
@@ -1189,7 +1191,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 		ReviewCompleted: "dddddddd-0004-4ddd-dddd-dddddddddd14" as StagesId,
 	}
 
-	const SITE_BASE = "http://localhost:9000/assets.v7.pubpub.org/sites/coar-us4-repository/site"
+	const SITE_BASE = `${BASE_SITE_URL}/coar-us4-repository/site/`
 
 	return seedCommunity(
 		{
