@@ -65,7 +65,10 @@ export const getSmtpClient = () => {
 			pool: true,
 			host: env.SMTP_HOST,
 			port: parseInt(env.SMTP_PORT, 10),
-			secure: securityConfig.secure && env.SMTP_HOST !== "localhost" && !env.CI,
+			secure:
+				securityConfig.secure &&
+				(env.SMTP_HOST !== "localhost" || env.SMTP_HOST !== "inbucket") &&
+				!env.CI,
 			auth: {
 				user: env.SMTP_USERNAME,
 				pass: env.SMTP_PASSWORD,
