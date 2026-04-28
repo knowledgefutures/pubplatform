@@ -15,13 +15,39 @@ export const env = createEnv({
 	},
 	server: {
 		SELF_HOSTED: z.string().optional(),
+		DISABLE_TELEMETRY: z.coerce
+			.boolean()
+			.optional()
+			.describe(
+				"Whether or not to disable telemetry. By default Pubstar sends anonymous error and performance data to Honeycomb and Sentry."
+			),
 		API_KEY: z.string(),
-		S3_BUCKET_NAME: z.string(),
-		S3_REGION: z.string(),
-		S3_ACCESS_KEY: z.string(),
-		S3_SECRET_KEY: z.string(),
-		S3_ENDPOINT: z.string().url().optional(),
-		S3_PUBLIC_ENDPOINT: z.string().url().optional(),
+		S3_BUCKET_NAME: z.string().describe("The name of the S3 bucket to use for storing assets."),
+		S3_REGION: z
+			.string()
+			.describe(
+				"The region of the S3 bucket to use for storing assets. If not known, use 'us-east-1'."
+			),
+		S3_ACCESS_KEY: z
+			.string()
+			.describe("The access key for the S3 bucket to use for storing assets."),
+		S3_SECRET_KEY: z
+			.string()
+			.describe("The secret key for the S3 bucket to use for storing assets."),
+		S3_ENDPOINT: z
+			.string()
+			.url()
+			.optional()
+			.describe(
+				"The API endpoint for the S3 bucket to use for storing assets. This can differ from the public endpoint if you are using a private S3 bucket."
+			),
+		S3_PUBLIC_ENDPOINT: z
+			.string()
+			.url()
+			.optional()
+			.describe(
+				"The public endpoint for the S3 bucket to use for storing assets. This is the endpoint that will be used to access the assets from the web, and is what your users will see when they view the assets."
+			),
 		/**
 		 * Whether or not to verbosely log `memoize` cache hits and misses
 		 */
@@ -39,7 +65,6 @@ export const env = createEnv({
 		SMTP_PORT: selfHostedOptional(z.string()),
 		SMTP_FROM: selfHostedOptional(z.string().email()),
 		SMTP_FROM_NAME: selfHostedOptional(z.string()),
-		INSECURE_SENDMAIL: z.string().optional(),
 		SMTP_SECURITY: z.enum(["ssl", "tls", "none"]).optional(),
 		OTEL_SERVICE_NAME: z.string().optional(),
 		HONEYCOMB_API_KEY: z.string().optional(),
