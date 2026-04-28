@@ -28,6 +28,9 @@ ALTER TABLE "action_instances"
 ALTER TABLE "action_config_defaults"
   ALTER COLUMN "action" TYPE "Action_new"
   USING ("action"::text::"Action_new");
+ALTER TABLE "action_runs"
+  ALTER COLUMN "action" TYPE "Action_new"
+  USING ("action"::text::"Action_new");
 ALTER TYPE "Action" RENAME TO "Action_old";
 ALTER TYPE "Action_new" RENAME TO "Action";
 DROP TYPE "Action_old" CASCADE;
