@@ -44,10 +44,10 @@ is not assumed all developers have access to this. To run these commands, set
 **OPTIONS**
 
 - proper_name
-    - flags: -n --proper-name
-    - type: string
-    - desc: proper name of AWS environment (see `./aws` module); e.g. blake
-    - required
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
 
 <!-- A code block defines the script to be executed -->
 
@@ -77,10 +77,10 @@ is not assumed all developers have access to this. To run these commands, set
 **OPTIONS**
 
 - proper_name
-    - flags: -n --proper-name
-    - type: string
-    - desc: proper name of AWS environment (see `./aws` module); e.g. blake
-    - required
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
 
 <!-- A code block defines the script to be executed -->
 
@@ -110,10 +110,10 @@ is not assumed all developers have access to this. To run these commands, set
 **OPTIONS**
 
 - proper_name
-    - flags: -n --proper-name
-    - type: string
-    - desc: proper name of AWS environment (see `./aws` module); e.g. blake
-    - required
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
 
 ```bash
 
@@ -135,19 +135,19 @@ is not assumed all developers have access to this. To run these commands, set
 **OPTIONS**
 
 - image_tag_override
-    - flags: -t --tag
-    - type: string
-    - desc: ECR image tag to use for this deploy (usually a Git SHA; default HEAD)
+  - flags: -t --tag
+  - type: string
+  - desc: ECR image tag to use for this deploy (usually a Git SHA; default HEAD)
 - proper_name
-    - flags: -n --proper-name
-    - type: string
-    - desc: proper name of AWS environment (see `./aws` module); e.g. blake
-    - required
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
 - environment
-    - flags: -e --environment
-    - type: string
-    - desc: environment name of AWS environment (see `./aws` module) e.g. staging
-    - required
+  - flags: -e --environment
+  - type: string
+  - desc: environment name of AWS environment (see `./aws` module) e.g. staging
+  - required
 
 ```bash
 ( cd ..
@@ -180,24 +180,24 @@ is not assumed all developers have access to this. To run these commands, set
 **OPTIONS**
 
 - image_tag_override
-    - flags: -t --tag
-    - type: string
-    - desc: ECR image tag to use for this deploy (usually a Git SHA; default HEAD)
+  - flags: -t --tag
+  - type: string
+  - desc: ECR image tag to use for this deploy (usually a Git SHA; default HEAD)
 - service
-    - flags: -s --service
-    - type: string
-    - desc: service name to update (example: core)
-    - required
+  - flags: -s --service
+  - type: string
+  - desc: service name to update (example: core)
+  - required
 - proper_name
-    - flags: -n --proper-name
-    - type: string
-    - desc: proper name of AWS environment (see `./aws` module); e.g. blake
-    - required
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
 - environment
-    - flags: -e --environment
-    - type: string
-    - desc: environment name of AWS environment (see `./aws` module) e.g. staging
-    - required
+  - flags: -e --environment
+  - type: string
+  - desc: environment name of AWS environment (see `./aws` module) e.g. staging
+  - required
 
 ```bash
 ( cd ..
@@ -255,19 +255,19 @@ No options are required -- the workflow infers them all.
 **OPTIONS**
 
 - region
-    - flags: -r --region
-    - type: string
-    - desc: Which AWS region to use (default us-east-1)
+  - flags: -r --region
+  - type: string
+  - desc: Which AWS region to use (default us-east-1)
 - proper_name
-    - flags: -n --proper-name
-    - type: string
-    - desc: proper name of AWS environment (see `./aws` module); e.g. blake
-    - required
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
 - environment
-    - flags: -e --environment
-    - type: string
-    - desc: environment name of AWS environment (see `./aws` module) e.g. staging
-    - required
+  - flags: -e --environment
+  - type: string
+  - desc: environment name of AWS environment (see `./aws` module) e.g. staging
+  - required
 
 ```bash
 AWS_REGION=${region:-us-east-1}
@@ -318,9 +318,9 @@ docker build \
 **OPTIONS**
 
 - region
-    - flags: -r --region
-    - type: string
-    - desc: Which AWS region to use (default us-east-1)
+  - flags: -r --region
+  - type: string
+  - desc: Which AWS region to use (default us-east-1)
 
 ```bash
 echo "Determining AWS Account ID..."
@@ -349,4 +349,216 @@ docker tag \
 echo "pushing Nginx container..."
 docker push \
   $AWS_REGISTRY/nginx:latest
+```
+
+### ecs db:tunnel
+
+> Opens an SSM port-forwarding tunnel from localhost to the RDS database through the bastion container. Run this in one terminal, then use psql or pg_dump from another.
+
+Requires the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) and a local Postgres client (`brew install libpq`).
+
+**OPTIONS**
+
+- region
+  - flags: -r --region
+  - type: string
+  - desc: Which AWS region to use (default us-east-1)
+- proper_name
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g. blake
+  - required
+- environment
+  - flags: -e --environment
+  - type: string
+  - desc: environment name of AWS environment (see `./aws` module) e.g. staging
+  - required
+- local_port
+  - flags: -p --local-port
+  - type: string
+  - desc: local port to forward (default 15432)
+
+```bash
+AWS_REGION=${region:-us-east-1}
+CLUSTER="${proper_name}-ecs-cluster-${environment}"
+LOCAL_PORT=${local_port:-15432}
+
+echo "fetching bastion task..."
+TASK_ARN=$(
+    aws ecs list-tasks \
+      --region ${AWS_REGION} \
+      --cluster ${CLUSTER} \
+      --service ${proper_name}-bastion \
+      --query 'taskArns[0]' \
+      --output text
+)
+TASK_ID=$(echo $TASK_ARN | cut -d'/' -f 3)
+
+echo "fetching container runtime ID..."
+RUNTIME_ID=$(
+    aws ecs describe-tasks \
+      --region ${AWS_REGION} \
+      --cluster ${CLUSTER} \
+      --tasks ${TASK_ARN} \
+      --query 'tasks[0].containers[?name==`bastion`].runtimeId' \
+      --output text
+)
+
+echo "fetching RDS endpoint..."
+RDS_HOST=$(
+    aws rds describe-db-instances \
+      --region ${AWS_REGION} \
+      --db-instance-identifier ${proper_name}-core-postgres-${environment} \
+      --query 'DBInstances[0].Endpoint.Address' \
+      --output text
+)
+
+TARGET="ecs:${CLUSTER}_${TASK_ID}_${RUNTIME_ID}"
+
+echo ""
+echo "starting port forward: localhost:${LOCAL_PORT} -> ${RDS_HOST}:5432"
+echo ""
+echo "in another terminal, connect with:"
+echo "  psql -h localhost -p ${LOCAL_PORT} -U ${proper_name} -d ${proper_name}_${environment}_core_postgres"
+echo ""
+echo "or dump with:"
+echo "  pg_dump -h localhost -p ${LOCAL_PORT} -U ${proper_name} -d ${proper_name}_${environment}_core_postgres -Fc -f dump.pgdump"
+echo ""
+echo "retrieve the password with:"
+echo "  aws secretsmanager get-secret-value --secret-id rds-db-password-${proper_name}-${environment} --query SecretString --output text --region ${AWS_REGION}"
+echo ""
+
+aws ssm start-session \
+  --region ${AWS_REGION} \
+  --target "${TARGET}" \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters "{\"host\":[\"${RDS_HOST}\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+```
+
+### ecs db:dump
+
+> Runs pg_dump against the RDS database by tunneling through the bastion, saving the result locally. This is a one-command version that manages the tunnel lifecycle automatically.
+
+Requires the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) and a local Postgres client (`brew install libpq`).
+
+**OPTIONS**
+
+- region
+  - flags: -r --region
+  - type: string
+  - desc: Which AWS region to use (default us-east-1)
+- proper_name
+  - flags: -n --proper-name
+  - type: string
+  - desc: proper name of AWS environment (see `./aws` module); e.g.blake
+  - required
+- environment
+  - flags: -e --environment
+  - type: string
+  - desc: environment name of AWS environment (see `./aws` module) e.g. staging
+  - required
+- output
+  - flags: -o --output
+  - type: string
+  - desc: output file path (default dump_NAME_ENV_TIMESTAMP.pgdump)
+
+```bash
+AWS_REGION=${region:-us-east-1}
+CLUSTER="${proper_name}-ecs-cluster-${environment}"
+LOCAL_PORT=15432
+OUTPUT=${output:-"dump_${proper_name}_${environment}_$(date +%Y%m%d_%H%M%S).pgdump"}
+
+echo "fetching bastion task..."
+TASK_ARN=$(
+    aws ecs list-tasks \
+      --region ${AWS_REGION} \
+      --cluster ${CLUSTER} \
+      --service ${proper_name}-bastion \
+      --query 'taskArns[0]' \
+      --output text
+)
+TASK_ID=$(echo $TASK_ARN | cut -d'/' -f 3)
+
+echo "fetching container runtime ID..."
+RUNTIME_ID=$(
+    aws ecs describe-tasks \
+      --region ${AWS_REGION} \
+      --cluster ${CLUSTER} \
+      --tasks ${TASK_ARN} \
+      --query 'tasks[0].containers[?name==`bastion`].runtimeId' \
+      --output text
+)
+
+echo "fetching RDS endpoint..."
+RDS_HOST=$(
+    aws rds describe-db-instances \
+      --region ${AWS_REGION} \
+      --db-instance-identifier ${proper_name}-core-postgres-${environment} \
+      --query 'DBInstances[0].Endpoint.Address' \
+      --output text
+)
+
+echo "fetching database password..."
+PGPASSWORD=$(
+    aws secretsmanager get-secret-value \
+      --region ${AWS_REGION} \
+      --secret-id "rds-db-password-${proper_name}-${environment}" \
+      --query SecretString \
+      --output text
+)
+
+TARGET="ecs:${CLUSTER}_${TASK_ID}_${RUNTIME_ID}"
+
+echo "starting port forward tunnel..."
+aws ssm start-session \
+  --region ${AWS_REGION} \
+  --target "${TARGET}" \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters "{\"host\":[\"${RDS_HOST}\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}" &
+SSM_PID=$!
+
+echo "waiting for tunnel to be ready..."
+READY=0
+for i in $(seq 1 30); do
+    if nc -z localhost ${LOCAL_PORT} 2>/dev/null; then
+        READY=1
+        break
+    fi
+
+    if ! kill -0 $SSM_PID 2>/dev/null; then
+        echo "ERROR: SSM session failed to start"
+        exit 1
+    fi
+
+    sleep 1
+done
+
+if [ $READY -eq 0 ]; then
+    echo "ERROR: tunnel did not become ready within 30 seconds"
+    kill $SSM_PID 2>/dev/null
+    exit 1
+fi
+
+echo "running pg_dump -> ${OUTPUT} ..."
+PGPASSWORD=${PGPASSWORD} pg_dump \
+  -h localhost \
+  -p ${LOCAL_PORT} \
+  -U ${proper_name} \
+  -d "${proper_name}_${environment}_core_postgres" \
+  -Fc \
+  -f "${OUTPUT}"
+DUMP_EXIT=$?
+
+echo "closing tunnel..."
+kill $SSM_PID 2>/dev/null
+wait $SSM_PID 2>/dev/null
+
+if [ $DUMP_EXIT -eq 0 ]; then
+    echo ""
+    echo "dump saved to ${OUTPUT}"
+    echo "restore with: pg_restore -d <target_db> ${OUTPUT}"
+else
+    echo "ERROR: pg_dump failed with exit code $DUMP_EXIT"
+    exit $DUMP_EXIT
+fi
 ```
