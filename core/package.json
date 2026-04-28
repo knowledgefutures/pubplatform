@@ -4,9 +4,9 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"playwright:test:base": "SKIP_VALIDATION=true NODE_OPTIONS='--import #register-loader' dotenv -e .env.local -e .env.development playwright test",
+		"playwright:test:base": "NODE_OPTIONS='--import #register-loader' dotenv -e .env.local -e .env.development playwright test",
 		"playwright:test": "TEST_IGNORE=' ' pnpm playwright:test:base playwright/_first_tests/initialUser.spec.ts && TEST_IGNORE='**/initialUser.spec.ts' pnpm playwright:test:base",
-		"playwright:ui": "dotenv SKIP_VALIDATION=true NODE_OPTIONS='--import #register-loader'  playwright test --ui",
+		"playwright:ui": "dotenv NODE_OPTIONS='--import #register-loader' playwright test --ui",
 		"db:migrate-dev": "pnpm migrate-dev",
 		"db:migrate-deploy": "pnpm migrate-deploy",
 		"db:migrate-diff": "pnpm migrate-diff",
@@ -37,9 +37,9 @@
 		"start:dev": "dotenv -e .env.local -e .env.development pnpm start | pino-pretty",
 		"reset-base": "PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=true dotenv -e .env.local -e .env.development prisma migrate reset -- --preview-feature --force | pino-pretty",
 		"reset": "pnpm reset-base && pnpm clear-cache",
-		"test": "SKIP_VALIDATION=true vitest --logHeapUsage",
-		"test-run": "SKIP_VALIDATION=true vitest run --logHeapUsage",
-		"test-run-no-reset": "SKIP_VALIDATION=true SKIP_RESET=true vitest run",
+		"test": "vitest --logHeapUsage",
+		"test-run": "vitest run --logHeapUsage",
+		"test-run-no-reset": "SKIP_RESET=true vitest run",
 		"test-run-with-jobs": "pnpm exec concurrently \"pnpm --filter jobs dev\" \"pnpm --filter core test-run\" --success=first -k",
 		"type-check": "tsc --noEmit",
 		"type-check:go": "tsgo --noEmit",
@@ -48,7 +48,10 @@
 		"storybook": "SKIP_VALIDATION=true PUBPUB_URL=http://localhost:6006 storybook dev -p 6006 --no-open",
 		"build-storybook": "SKIP_VALIDATION=true storybook build"
 	},
-	"files": [".next", "public"],
+	"files": [
+		".next",
+		"public"
+	],
 	"prisma": {
 		"__comment": "The #register-loader goes to the correct file based on the .imports setting below",
 		"seed": "tsx --import #register-loader prisma/seed.ts"
