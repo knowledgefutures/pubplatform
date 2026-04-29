@@ -107,7 +107,7 @@ jobs:
                     fi
 
                     REPO_NAME="${REPO##*/}"
-                    APP_DIR="/srv/${REPO_NAME}"
+                    APP_DIR="/srv/${STACK_NAME}/${REPO_NAME}"
                     REPO_SSH="git@github.com:${REPO}.git"
 
                     LOCK_DIR="/tmp/deploy-locks"
