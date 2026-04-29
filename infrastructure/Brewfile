@@ -1,7 +1,0 @@
-# infrastructure dependencies
-brew "mask"
-brew "awscli"
-brew "terraform"
-brew "act"
-
-cask "session-manager-plugin"
