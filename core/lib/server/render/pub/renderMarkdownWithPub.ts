@@ -138,14 +138,14 @@ const visitLinkDirective = (node: Directive, context: utils.RenderWithPubContext
 	// All directives are considered parent nodes
 	assert(isParent(node))
 	let href: string
-	// :link{email=all@pubpub.org}
+	// :link{email=all@pubstar.org}
 	if ("email" in attrs) {
 		// The `email` attribute must have a value. For example, :link{email=""}
 		// is invalid.
 		const email = expect(attrs.email, 'Unexpected missing value in ":link{email=?}" directive')
 		href = utils.renderLink(context, { email })
 		// If the email has no label, default to the email address, e.g.
-		// :link{email=all@pubpub.org} -> :link[all@pubpub.org]{email=all@pubpub.org}
+		// :link{email=all@pubstar.org} -> :link[all@pubstar.org]{email=all@pubstar.org}
 		if (node.children.length === 0 && attrs.text === undefined) {
 			node.children.push({ type: "text", value: email })
 		}

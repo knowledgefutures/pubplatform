@@ -59,7 +59,7 @@ services:
             - path: .env
               required: true
         healthcheck:
-            test: ["CMD", "echo", "true"]
+            test: [ "CMD", "echo", "true" ]
             interval: 1m30s
             timeout: 30s
             retries: 5
@@ -86,7 +86,7 @@ services:
         volumes:
             - ../dev.Caddyfile:/etc/caddy/Caddyfile
         environment:
-            - S3_BUCKET_NAME=${S3_BUCKET_NAME:-assets.v7.pubpub.org}
+            - S3_BUCKET_NAME=${S3_BUCKET_NAME:-assets.pubstar.org}
             - S3_REGION=${S3_REGION:-garage}
             - S3_ENDPOINT=garage:3900
         ports:

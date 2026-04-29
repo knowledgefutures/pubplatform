@@ -102,7 +102,7 @@ function createRedisHandler({
 	}
 	const revalidatedTagsKey = keyPrefix + REVALIDATED_TAGS_KEY
 	return {
-		name: "pubpub-redis-strings",
+		name: "pubstar-redis-strings",
 		async get(key, { implicitTags }) {
 			try {
 				assertClientIsReady()

@@ -88,7 +88,7 @@ describe("seedCommunity", () => {
 									config: {
 										body: "hello nerd",
 										subject: "hello nerd",
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 									},
 								},
 							],

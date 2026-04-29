@@ -120,8 +120,8 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 					id: adminId,
 					firstName: "COAR",
 					lastName: "Admin",
-					email: "coar-admin@pubpub.org",
-					password: "pubpub-coar",
+					email: "coar-admin@pubstar.org",
+					password: "pubstar-coar",
 					role: MemberRole.admin,
 				},
 				jillAdmin: {
@@ -133,8 +133,8 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 					id: joeAuthorId,
 					firstName: "Joe",
 					lastName: "Author",
-					email: "joe-author@pubpub.org",
-					password: "pubpub-joe",
+					email: "joe-author@pubstar.org",
+					password: "pubstar-joe",
 					role: MemberRole.contributor,
 				},
 			},
@@ -294,7 +294,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Review offer accepted for: {{ $.pub.title }}",
 										body: "The review offer for **{{ $.pub.title }}** has been accepted.\n\nView the submission: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
@@ -328,7 +328,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Review offer rejected for: {{ $.pub.title }}",
 										body: "The review offer for **{{ $.pub.title }}** has been rejected.\n\nView the submission: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
@@ -454,7 +454,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject:
 											"Site published with new review for: {{ $.pub.title }}",
 										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: /coar-us1-arcadia/site/index.html`,
@@ -574,7 +574,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject:
 											"New review request received: {{ $.json.object.id }}",
 										body: "A new review request has been received.\n\nObject: {{ $.json.object.id }}\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}",
@@ -675,7 +675,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Review request accepted: {{ $.pub.title }}",
 										body: "The review request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
@@ -779,7 +779,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Review request rejected: {{ $.pub.title }}",
 										body: "The review request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
@@ -932,7 +932,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Review published: {{ $.pub.title }}",
 										body: `Review **{{ $.pub.title }}** has been published and announced.\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
 									},
@@ -1154,7 +1154,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject:
 											"Review published and announced: {{ $.pub.title }}",
 										body: `Review **{{ $.pub.title }}** has been published and sent to the aggregator.\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
@@ -1306,7 +1306,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Ingest request accepted: {{ $.pub.title }}",
 										body: "The ingest request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
@@ -1334,7 +1334,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject: "Ingest request rejected: {{ $.pub.title }}",
 										body: "The ingest request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
@@ -1453,7 +1453,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 								{
 									action: Action.email,
 									config: {
-										recipientEmail: "all@pubpub.org",
+										recipientEmail: "all@pubstar.org",
 										subject:
 											"Site published with new review: {{ $.pub.title }}",
 										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,

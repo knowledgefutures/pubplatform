@@ -64,8 +64,6 @@ services:
     # can be removed if you manually set up a reverse proxy like nginx instead
     # useful if you want your assets, platform, and site to be on the same domain
     # but with different paths
-    # note: requires the caddy-sites image built from Dockerfile.caddy
-    # you can build it with: docker build -f Dockerfile.caddy -t ghcr.io/pubpub/caddy-sites:latest .
     caddy:
         image: caddy:latest
         depends_on:

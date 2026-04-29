@@ -1,6 +1,7 @@
 import type { ConditionBlock } from "db/types"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
+
 import { AutomationConditionBlockType } from "db/public"
 
 type ConditionItem = ConditionBlock["items"][number]

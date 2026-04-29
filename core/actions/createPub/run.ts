@@ -4,7 +4,8 @@ import type { Json, JsonValue } from "contracts"
 import type { PubFieldsId, PubsId, PubTypesId, StagesId } from "db/public"
 import type { action } from "./action"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
+
 import { logger } from "logger"
 
 import { db } from "~/kysely/database"

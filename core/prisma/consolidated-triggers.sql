@@ -1029,14 +1029,11 @@ DECLARE
     community_id text;
 BEGIN
 
-    -- Changed the first part of this conditional to return early if the operation is deleting a pub
     IF (NEW."pubId" IS NULL) THEN
         RETURN NEW;
     ELSE
-        -- Strip large JSON columns to avoid exceeding pg_notify's 8000 byte payload limit
         correct_row = to_jsonb(NEW) - 'config' - 'result' - 'json' - 'params';
     END IF;
-
 
     select into community_id "communityId" from "pubs" where "id" = correct_row->>'pubId'::text;
 

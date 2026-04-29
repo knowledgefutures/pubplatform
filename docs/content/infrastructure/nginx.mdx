@@ -8,7 +8,7 @@ This simple container runs nginx, listening on a port (typically 8080), and forw
 all traffic to another host (typically `127.0.0.1:<service port>`). In ECS, all containers
 in the same task are hosted on the same network interface and therefore have the same IP.
 
-The specific reason this container is needed in Pubpub-v7 is that:
+The specific reason this container is needed in PubStar-v7 is that:
 
 1. we have one DNS name that serves the whole application, which is backed by multiple ECS containers.
 2. these containers are routed to based on path prefixes.

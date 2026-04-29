@@ -61,7 +61,7 @@ const pubTriggerTestSeed = async () => {
 							{
 								action: Action.email,
 								config: {
-									recipientEmail: "all@pubpub.org",
+									recipientEmail: "all@pubstar.org",
 									body: "Hello",
 									subject: "Test",
 								},

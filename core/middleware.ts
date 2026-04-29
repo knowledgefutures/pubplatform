@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server"
 
 import { NextResponse } from "next/server"
 
-import { PUBPUB_COMMUNITY_SLUG_HEADER_NAME } from "./lib/server/cache/constants"
+import { PUBSTAR_COMMUNITY_SLUG_HEADER_NAME } from "./lib/server/cache/constants"
 
 const communityRouteRegexp = /^\/c\/([^/]*?)(?:$|\/)|\/api\/v\d\/c\/([^/]*?)\//
 
@@ -27,7 +27,7 @@ const communitySlugMiddleware = async (request: NextRequest) => {
 
 	const response = NextResponse.next()
 
-	response.headers.set(PUBPUB_COMMUNITY_SLUG_HEADER_NAME, communitySlug)
+	response.headers.set(PUBSTAR_COMMUNITY_SLUG_HEADER_NAME, communitySlug)
 
 	return response
 }

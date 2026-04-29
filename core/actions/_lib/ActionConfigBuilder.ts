@@ -336,7 +336,7 @@ export class ActionConfigBuilder<
 
 		try {
 			// to prevent this from being bundled into the main bundle, we import it here
-			const { interpolate } = await import("@pubpub/json-interpolate")
+			const { interpolate } = await import("@pubstar/json-interpolate")
 
 			const interpolateValue = async (value: unknown, data: unknown): Promise<unknown> => {
 				if (typeof value !== "string") {

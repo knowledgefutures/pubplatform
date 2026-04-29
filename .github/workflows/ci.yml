@@ -1,77 +1,77 @@
-name: "CI"
+name: 'CI'
 on:
-    workflow_call:
-        inputs:
-            image-tag-override: # example: latest, 7037e37a18a379d583164441baff9e594cc479f8
-                type: string # use this to force a container version.
-    workflow_dispatch:
+  workflow_call:
+    inputs:
+      image-tag-override: # example: latest, 7037e37a18a379d583164441baff9e594cc479f8
+        type: string # use this to force a container version.
+  workflow_dispatch:
 
 env:
-    CI: true
-    AWS_REGION: us-east-1
+  CI: true
+  AWS_REGION: us-east-1
 
-    ECR_REPOSITORY_PREFIX: pubpub-v7
-    CONTAINER_NAME: core
+  ECR_REPOSITORY_PREFIX: pubstar-v7
+  CONTAINER_NAME: core
 
 jobs:
-    ci:
-        timeout-minutes: 15
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                task:
-                    - lint:ci
-                    - type-check
-                    - test-run
-        env:
-            COMPOSE_FILE: docker-compose.test.yml
-            ENV_FILE: .env.docker-compose.dev
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
+  ci:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        task:
+          - lint:ci
+          - type-check
+          - test-run
+    env:
+      COMPOSE_FILE: docker-compose.test.yml
+      ENV_FILE: .env.docker-compose.dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-            - name: Install Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version: 22.13.1
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.13.1
 
-            - uses: pnpm/action-setup@v5
-              name: Install pnpm
-              with:
-                  run_install: false
+      - uses: pnpm/action-setup@v5
+        name: Install pnpm
+        with:
+          run_install: false
 
-            - name: Get pnpm store directory
-              id: get-store-path
-              shell: bash
-              run: |
-                  echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - name: Get pnpm store directory
+        id: get-store-path
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-            - name: Setup pnpm cache
-              uses: actions/cache@v5
-              with:
-                  path: ${{ steps.get-store-path.outputs.STORE_PATH }}
-                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-store-
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.get-store-path.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-            # to cache p:build, format, lint, type-check and test-run
-            - name: Setup turbo cache
-              uses: actions/cache@v5
-              with:
-                  path: .turbo
-                  key: ${{ runner.os }}-turbo-${{ github.sha }}
-                  restore-keys: |
-                      ${{ runner.os }}-turbo-
+      # to cache p:build, format, lint, type-check and test-run
+      - name: Setup turbo cache
+        uses: actions/cache@v5
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
 
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
 
-            - name: p:build
-              run: pnpm p:build
+      - name: p:build
+        run: pnpm p:build
 
-            - name: Setup test dependencies
-              if: matrix.task == 'test-run'
-              run: pnpm test:setup
+      - name: Setup test dependencies
+        if: matrix.task == 'test-run'
+        run: pnpm test:setup
 
-            - name: Run task
-              run: NODE_ENV=test pnpm ${{ matrix.task }}
+      - name: Run task
+        run: NODE_ENV=test pnpm ${{ matrix.task }}

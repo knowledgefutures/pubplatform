@@ -1,9 +1,9 @@
 import type { CommunitiesId, CommunityMembershipsId, PubsId, PubTypesId, StagesId } from "db/public"
 import type { ExpressionBuilder, ExpressionWrapper } from "kysely"
 
+import { interpolate } from "@pubstar/json-interpolate"
 import { createNextHandler } from "@ts-rest/serverless/next"
 
-import { interpolate } from "@pubpub/json-interpolate"
 import { siteApi, TOTAL_PUBS_COUNT_HEADER } from "contracts"
 import {
 	ApiAccessScope,

@@ -5,9 +5,9 @@ import type { PubsId } from "db/public"
 import type { PubValues } from "~/lib/server"
 import type { action } from "./action"
 
+import { interpolate } from "@pubstar/json-interpolate"
 import { JSONPath } from "jsonpath-plus"
 
-import { interpolate } from "@pubpub/json-interpolate"
 import { logger } from "logger"
 
 import { env } from "~/lib/env/env"

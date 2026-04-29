@@ -3,9 +3,9 @@ import type { CommunitiesId } from "db/public"
 import type { FullAutomation, Json } from "db/types"
 import type { InterpolationContext } from "./interpolationContext"
 
+import { interpolate } from "@pubstar/json-interpolate"
 import jsonata from "jsonata"
 
-import { interpolate } from "@pubpub/json-interpolate"
 import { logger } from "logger"
 import { tryCatch } from "utils/try-catch"
 

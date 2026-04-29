@@ -42,7 +42,7 @@ export const createOpenApiDocument = (communitySlug?: string): OpenAPIObject => 
 			contact: {
 				name: "PubPub",
 				url: "https://help.pubpub.org",
-				email: "hello@pubpub.org",
+				email: "hello@pubstar.org",
 			},
 			license: {
 				name: "GPL v2.0+",

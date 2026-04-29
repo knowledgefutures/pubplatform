@@ -376,9 +376,9 @@ export const seedLegacy = async (communityId?: CommunitiesId) => {
 			},
 			users: {
 				"legacy-user-1": {
-					email: "legacy@pubpub.org",
+					email: "legacy@pubstar.org",
 					role: MemberRole.admin,
-					password: "pubpub-legacy",
+					password: "pubstar-legacy",
 				},
 				...usersExisting,
 			},
