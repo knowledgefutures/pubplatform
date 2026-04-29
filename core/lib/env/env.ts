@@ -48,6 +48,12 @@ export const env = createEnv({
 			.describe(
 				"The public endpoint for the S3 bucket to use for storing assets. This is the endpoint that will be used to access the assets from the web, and is what your users will see when they view the assets."
 			),
+		S3_BACKUP_BUCKET: z.string().optional(),
+		S3_BACKUP_REGION: z.string().optional(),
+		S3_BACKUP_ACCESS_KEY: z.string().optional(),
+		S3_BACKUP_SECRET_KEY: z.string().optional(),
+		S3_BACKUP_ENDPOINT: z.string().url().optional(),
+		S3_BACKUP_KEY_PREFIX: z.string().optional(),
 		/**
 		 * Whether or not to verbosely log `memoize` cache hits and misses
 		 */

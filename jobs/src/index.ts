@@ -6,6 +6,7 @@ import pg from "pg"
 import { logger } from "logger"
 
 import { clients } from "./clients"
+import { createBackup } from "./jobs/createBackup"
 import { emitEvent } from "./jobs/emitEvent"
 
 // must match the lock id used by the platform's migrate.ts
@@ -13,6 +14,7 @@ const ADVISORY_LOCK_ID = 72_398_241
 
 const makeTaskList = (client: typeof clients): TaskList => ({
 	emitEvent: emitEvent(client.internalClient),
+	createBackup,
 })
 
 async function waitForMigrations(connectionString: string, maxAttempts = 60, intervalMs = 3000) {

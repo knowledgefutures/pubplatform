@@ -766,3 +766,37 @@ model InviteForm {
   @@unique([inviteId, formId, type])
   @@map(name: "invite_forms")
 }
+
+enum BackupStatus {
+  pending
+  in_progress
+  completed
+  failed
+}
+
+model BackupRecord {
+  id          String       @id @default(dbgenerated("gen_random_uuid()"))
+  filename    String
+  s3Key       String
+  sizeBytes   BigInt?
+  status      BackupStatus @default(pending)
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  @@index([createdAt])
+  @@map(name: "backup_records")
+}
+
+model BackupConfig {
+  id            String   @id @default(dbgenerated("gen_random_uuid()"))
+  enabled       Boolean  @default(false)
+  intervalHours Int      @default(24)
+  retentionDays Int      @default(14)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@map(name: "backup_config")
+}

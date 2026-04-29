@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { db } from "~/kysely/database"
 import { getPageLoginData } from "~/lib/authentication/loginData"
 import { getMigrationStatus } from "~/lib/server/migrate"
+import { getBackupConfig, getBackups } from "./backup-actions"
 import { SuperadminDashboard } from "./SuperadminDashboard"
 
 export const metadata = {
@@ -20,7 +21,7 @@ export default async function Page() {
 		redirect("/")
 	}
 
-	const [communities, migrationResult] = await Promise.all([
+	const [communities, migrationResult, backups, backupConfig] = await Promise.all([
 		db
 			.selectFrom("communities")
 			.select([
@@ -32,6 +33,8 @@ export default async function Page() {
 			])
 			.execute(),
 		getMigrationStatus(),
+		getBackups(),
+		getBackupConfig(),
 	])
 
 	const tableCommunities = communities.map((c) => ({
@@ -50,6 +53,8 @@ export default async function Page() {
 			communities={tableCommunities}
 			migrations={migrations}
 			migrationError={migrationError}
+			backups={backups}
+			backupConfig={backupConfig}
 		/>
 	)
 }

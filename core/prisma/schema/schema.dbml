@@ -572,6 +572,28 @@ Table invite_forms {
   }
 }
 
+Table backup_records {
+  id String [pk]
+  filename String [not null]
+  s3Key String [not null]
+  sizeBytes BigInt
+  status BackupStatus [not null, default: 'pending']
+  error String
+  startedAt DateTime
+  completedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+}
+
+Table backup_config {
+  id String [pk]
+  enabled Boolean [not null, default: false]
+  intervalHours Int [not null, default: 24]
+  retentionDays Int [not null, default: 14]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+}
+
 Table MemberGroupToUser {
   usersId String [ref: > users.id]
   membergroupsId String [ref: > member_groups.id]
@@ -766,6 +788,13 @@ Enum InviteStatus {
   completed
   rejected
   revoked
+}
+
+Enum BackupStatus {
+  pending
+  in_progress
+  completed
+  failed
 }
 
 Ref: member_groups.communityId > communities.id [delete: Cascade]

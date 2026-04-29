@@ -23,7 +23,7 @@ ARG PNPM_VERSION
 
 
 # Instll dependencies we need at the end
-RUN apk add ca-certificates curl postgresql
+RUN apk add ca-certificates curl postgresql@17
 
 # Setup RDS CA Certificates
 RUN curl -L \

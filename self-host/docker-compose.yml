@@ -17,6 +17,9 @@ services:
         env_file: .env
         environment:
             DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+            S3_BACKUP_REGION: ${S3_BACKUP_REGION:-us-east-1}
+            S3_BACKUP_ENDPOINT: ${S3_BACKUP_ENDPOINT:-http://minio:9000}
+            S3_BACKUP_KEY_PREFIX: ${S3_BACKUP_KEY_PREFIX:-pg-backups}
         ports:
             - "3000:3000"
         networks:
@@ -35,6 +38,9 @@ services:
             DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
             # change this if you change the platform port
             PUBSTAR_URL: http://platform:3000
+            S3_BACKUP_REGION: ${S3_BACKUP_REGION:-us-east-1}
+            S3_BACKUP_ENDPOINT: ${S3_BACKUP_ENDPOINT:-http://minio:9000}
+            S3_BACKUP_KEY_PREFIX: ${S3_BACKUP_KEY_PREFIX:-pg-backups}
         networks:
             - app-network
 

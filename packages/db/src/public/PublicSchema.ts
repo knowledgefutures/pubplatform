@@ -13,6 +13,8 @@ import type { AutomationConditionsTable } from "./AutomationConditions"
 import type { AutomationRunsTable } from "./AutomationRuns"
 import type { AutomationsTable } from "./Automations"
 import type { AutomationTriggersTable } from "./AutomationTriggers"
+import type { BackupConfigTable } from "./BackupConfig"
+import type { BackupRecordsTable } from "./BackupRecords"
 import type { CommunitiesTable } from "./Communities"
 import type { CommunityMembershipsTable } from "./CommunityMemberships"
 import type { FormElementsTable } from "./FormElements"
@@ -76,6 +78,10 @@ export interface PublicSchema {
 	automation_triggers: AutomationTriggersTable
 
 	automations: AutomationsTable
+
+	backup_config: BackupConfigTable
+
+	backup_records: BackupRecordsTable
 
 	communities: CommunitiesTable
 
