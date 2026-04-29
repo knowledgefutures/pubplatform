@@ -50,7 +50,7 @@ services:
     # can be removed if you manually set the DATABASE_URL environment variable in .env
     # to another postgres database you have access to
     db:
-        image: postgres:15
+        image: postgres:17
         restart: always
         env_file: .env
         volumes:
@@ -90,13 +90,7 @@ services:
         image: minio/minio:latest
         env_file: .env
         healthcheck:
-            test:
-                [
-                    "CMD",
-                    "curl",
-                    "-f",
-                    "http://localhost:9000/minio/health/ready",
-                ]
+            test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]
             interval: 1m30s
             timeout: 30s
             retries: 5
@@ -119,7 +113,7 @@ services:
                 condition: service_healthy
         image: minio/mc:latest
         env_file: .env
-        entrypoint: ["/bin/sh", "/minio-init.sh"]
+        entrypoint: [ "/bin/sh", "/minio-init.sh" ]
         volumes:
             - ./minio-init.sh:/minio-init.sh
         networks:

@@ -1,7 +1,7 @@
 services:
   proxy:
     image: caddy:2.11.2-alpine
-    env_file: [".env.${STACK_NAME}"]
+    env_file: ['.env.${STACK_NAME}']
     ports:
       - target: 80
         published: 80
@@ -23,7 +23,7 @@ services:
 
   platform:
     image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
-    env_file: [".env.${STACK_NAME}"]
+    env_file: ['.env.${STACK_NAME}']
     environment:
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
@@ -58,7 +58,7 @@ services:
 
   platform-jobs:
     image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
-    env_file: [".env.${STACK_NAME}"]
+    env_file: ['.env.${STACK_NAME}']
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
@@ -76,7 +76,7 @@ services:
 
   site-builder:
     image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
-    env_file: [".env.${STACK_NAME}"]
+    env_file: ['.env.${STACK_NAME}']
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
@@ -95,10 +95,10 @@ services:
         condition: on-failure
 
   db:
-    image: postgres:15
+    image: postgres:17
     tmpfs:
       - /dev/shm:size=2147483648
-    env_file: [".env.${STACK_NAME}"]
+    env_file: ['.env.${STACK_NAME}']
     command: >
       -c shared_buffers=2GB
       -c effective_cache_size=6GB

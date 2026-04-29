@@ -76,7 +76,7 @@ services:
         condition: on-failure
 
   db:
-    image: postgres:15
+    image: postgres:17
     env_file: ['.env.${STACK_NAME}']
     volumes:
       - pgdata:/var/lib/postgresql/data
