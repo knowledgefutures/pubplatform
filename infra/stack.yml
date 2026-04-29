@@ -62,7 +62,7 @@ services:
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
-      PUBPUB_URL: http://platform:3000
+      PUBSTAR_URL: http://platform:3000
     networks: [appnet]
     deploy:
       replicas: 1
@@ -80,7 +80,7 @@ services:
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
-      PUBPUB_URL: http://platform:3000
+      PUBSTAR_URL: http://platform:3000
       PORT: '4000'
       S3_PUBLIC_ENDPOINT: https://assets.pubstar.org
     networks: [appnet]

@@ -93,7 +93,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 				id: communityId,
 				name: "US1: Arcadia Science",
 				slug: "coar-us1-arcadia",
-				avatar: `${env.PUBPUB_URL}/demo/croc.png`,
+				avatar: `${env.PUBSTAR_URL}/demo/croc.png`,
 			},
 			pubFields: {
 				Title: { schemaName: CoreSchemaType.String },
@@ -248,12 +248,12 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 											"type": ["Offer", "coar-notify:ReviewAction"],
 											"id": "urn:uuid:" & $.pub.id,
 											"actor": {
-												"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
+												"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug,
 												"type": "Service",
 												"name": $.community.name
 											},
 											"object": {
-												"id": $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/" & $.pub.id,
+												"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pub/" & $.pub.id,
 												"type": ["Page", "sorg:AboutPage"]
 											},
 											"target": {
@@ -262,8 +262,8 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 												"type": "Service"
 											},
 											"origin": {
-												"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
-												"inbox": $.env.PUBPUB_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
+												"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug,
+												"inbox": $.env.PUBSTAR_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
 												"type": "Service"
 											}
 										} >>>`,
@@ -296,7 +296,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Review offer accepted for: {{ $.pub.title }}",
-										body: "The review offer for **{{ $.pub.title }}** has been accepted.\n\nView the submission: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										body: "The review offer for **{{ $.pub.title }}** has been accepted.\n\nView the submission: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
 								{
@@ -330,7 +330,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Review offer rejected for: {{ $.pub.title }}",
-										body: "The review offer for **{{ $.pub.title }}** has been rejected.\n\nView the submission: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										body: "The review offer for **{{ $.pub.title }}** has been rejected.\n\nView the submission: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
 								{
@@ -364,7 +364,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 								],
 							},
 							resolver:
-								'$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
+								'$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 							actions: [
 								{
 									action: Action.createPub,
@@ -457,7 +457,7 @@ export async function seedCoarUS1(communityId?: CommunitiesId) {
 										recipientEmail: "all@pubpub.org",
 										subject:
 											"Site published with new review for: {{ $.pub.title }}",
-										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: /coar-us1-arcadia/site/index.html`,
+										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: /coar-us1-arcadia/site/index.html`,
 									},
 								},
 							],
@@ -501,7 +501,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 				id: communityId,
 				name: "US2: The Unjournal",
 				slug: "coar-us2-unjournal",
-				avatar: `${env.PUBPUB_URL}/demo/croc.png`,
+				avatar: `${env.PUBSTAR_URL}/demo/croc.png`,
 			},
 			pubFields: {
 				Title: { schemaName: CoreSchemaType.String },
@@ -577,7 +577,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 										recipientEmail: "all@pubpub.org",
 										subject:
 											"New review request received: {{ $.json.object.id }}",
-										body: "A new review request has been received.\n\nObject: {{ $.json.object.id }}\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}",
+										body: "A new review request has been received.\n\nObject: {{ $.json.object.id }}\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}",
 									},
 								},
 							],
@@ -656,15 +656,15 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 												"type": "Accept",
 												"id": "urn:uuid:" & $.pub.id & ":accept",
 												"actor": {
-													"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
+													"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug,
 													"type": "Service",
 													"name": $.community.name
 												},
 												"inReplyTo": $payload.id,
 												"object": $payload.object,
 												"origin": {
-													"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
-													"inbox": $.env.PUBPUB_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
+													"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug,
+													"inbox": $.env.PUBSTAR_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
 													"type": "Service"
 												},
 												"target": $payload.actor
@@ -677,7 +677,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Review request accepted: {{ $.pub.title }}",
-										body: "The review request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										body: "The review request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
 							],
@@ -759,15 +759,15 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 												"type": "Reject",
 												"id": "urn:uuid:" & $.pub.id & ":reject",
 												"actor": {
-													"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
+													"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug,
 													"type": "Service",
 													"name": $.community.name
 												},
 												"inReplyTo": $payload.id,
 												"object": $payload.object,
 												"origin": {
-													"id": $.env.PUBPUB_URL & "/c/" & $.community.slug,
-													"inbox": $.env.PUBPUB_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
+													"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug,
+													"inbox": $.env.PUBSTAR_URL & "/api/v0/c/" & $.community.slug & "/site/webhook/${WEBHOOK_PATH}",
 													"type": "Service"
 												},
 												"target": $payload.actor,
@@ -781,7 +781,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Review request rejected: {{ $.pub.title }}",
-										body: "The review request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										body: "The review request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
 							],
@@ -934,7 +934,7 @@ export async function seedCoarUS2(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Review published: {{ $.pub.title }}",
-										body: `Review **{{ $.pub.title }}** has been published and announced.\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
+										body: `Review **{{ $.pub.title }}** has been published and announced.\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
 									},
 								},
 							],
@@ -973,7 +973,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 				id: communityId,
 				name: "US3: Review Group",
 				slug: "coar-us3-review-group",
-				avatar: `${env.PUBPUB_URL}/demo/croc.png`,
+				avatar: `${env.PUBSTAR_URL}/demo/croc.png`,
 			},
 			pubFields: {
 				Title: { schemaName: CoreSchemaType.String },
@@ -1157,7 +1157,7 @@ export async function seedCoarUS3(communityId?: CommunitiesId) {
 										recipientEmail: "all@pubpub.org",
 										subject:
 											"Review published and announced: {{ $.pub.title }}",
-										body: `Review **{{ $.pub.title }}** has been published and sent to the aggregator.\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
+										body: `Review **{{ $.pub.title }}** has been published and sent to the aggregator.\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
 									},
 								},
 							],
@@ -1199,7 +1199,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 				id: communityId,
 				name: "US4: Arcadia Science",
 				slug: "coar-us4-repository",
-				avatar: `${env.PUBPUB_URL}/demo/croc.png`,
+				avatar: `${env.PUBSTAR_URL}/demo/croc.png`,
 			},
 			pubFields: {
 				Title: { schemaName: CoreSchemaType.String },
@@ -1308,7 +1308,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Ingest request accepted: {{ $.pub.title }}",
-										body: "The ingest request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										body: "The ingest request **{{ $.pub.title }}** has been accepted.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
 								{
@@ -1336,7 +1336,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 									config: {
 										recipientEmail: "all@pubpub.org",
 										subject: "Ingest request rejected: {{ $.pub.title }}",
-										body: "The ingest request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										body: "The ingest request **{{ $.pub.title }}** has been rejected.\n\nView: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 									},
 								},
 								{
@@ -1370,7 +1370,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 								],
 							},
 							resolver:
-								'$.pub.id = {{ $replace($replace($eval($.pub.values.Payload).object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
+								'$.pub.id = {{ $replace($replace($eval($.pub.values.Payload).object.`as:inReplyTo`, $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 							actions: [
 								{
 									action: Action.createPub,
@@ -1456,7 +1456,7 @@ export async function seedCoarUS4(communityId?: CommunitiesId) {
 										recipientEmail: "all@pubpub.org",
 										subject:
 											"Site published with new review: {{ $.pub.title }}",
-										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
+										body: `The community site has been updated with a new review.\n\nReview: **{{ $.pub.title }}**\n\nView the pub: {{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}\n\nView the site: ${SITE_BASE}/index.html`,
 									},
 								},
 							],

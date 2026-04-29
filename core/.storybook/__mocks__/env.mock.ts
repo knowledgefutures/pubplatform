@@ -1,5 +1,5 @@
 import type { env as envOriginal } from "~/lib/env/env"
 
 export const env = {
-	PUBPUB_URL: "http://localhost:6006",
+	PUBSTAR_URL: "http://localhost:6006",
 } satisfies Partial<typeof envOriginal>

@@ -120,12 +120,12 @@ const us1Seed = createSeed({
 									type: ["Offer", "coar-notify:ReviewAction"],
 									id: "urn:uuid:{{ $.pub.id }}",
 									actor: {
-										id: "{{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}",
+										id: "{{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}",
 										type: "Service",
 										name: "{{ $.community.name }}",
 									},
 									object: {
-										id: "{{ $.env.PUBPUB_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
+										id: "{{ $.env.PUBSTAR_URL }}/c/{{ $.community.slug }}/pub/{{ $.pub.id }}",
 										type: ["Page", "sorg:AboutPage"],
 									},
 									target: {
@@ -157,7 +157,7 @@ const us1Seed = createSeed({
 						],
 					},
 					resolver:
-						'$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pub/", "") }}',
+						'$.pub.id = {{ $replace($replace($.json.object.`as:inReplyTo`, $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pubs/", ""), $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pub/", "") }}',
 					actions: [
 						{
 							action: Action.createPub,
@@ -396,7 +396,7 @@ const us2Seed = createSeed({
 									"type": ["Announce", "coar-notify:ReviewAction"],
 									"id": "urn:uuid:" & $.pub.id,
 									"object": {
-										"id": $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/" & $.pub.id,
+										"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pubs/" & $.pub.id,
 										"type": ["Page", "sorg:Review"],
 										"as:inReplyTo": $.pub.values.sourceurl
 									},
@@ -502,7 +502,7 @@ const us3Seed = createSeed({
 									"type": ["Announce", "coar-notify:ReviewAction"],
 									"id": "urn:uuid:" & $.pub.id,
 									"object": {
-										"id": $.env.PUBPUB_URL & "/c/" & $.community.slug & "/pubs/" & $.pub.id,
+										"id": $.env.PUBSTAR_URL & "/c/" & $.community.slug & "/pubs/" & $.pub.id,
 										"type": ["Page", "sorg:Review"],
 										"as:inReplyTo": $.pub.values.sourceurl
 									},

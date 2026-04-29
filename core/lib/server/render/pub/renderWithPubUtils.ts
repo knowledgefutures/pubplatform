@@ -256,7 +256,7 @@ export const renderLink = (context: RenderWithPubContext, options: LinkOptions) 
 	} else if (isLinkFieldOptions(options)) {
 		href = getPubValue(context, options.field, options.rel).value as string
 	} else if (isLinkPageOptions(options)) {
-		const baseUrl = `${env.PUBPUB_URL}/c/${context.communitySlug}`
+		const baseUrl = `${env.PUBSTAR_URL}/c/${context.communitySlug}`
 
 		let tempHref = baseUrl
 

@@ -124,7 +124,7 @@ export const run = defineRun<typeof action>(
 					communityId,
 					communityName: community.name,
 					subpath: config.subpath,
-					siteUrl: env.PUBPUB_URL,
+					siteUrl: env.PUBSTAR_URL,
 					pageGroups,
 				},
 				headers: {

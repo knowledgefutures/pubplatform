@@ -56,7 +56,7 @@ export const createOpenApiDocument = (communitySlug?: string): OpenAPIObject => 
 				description: "The development API server",
 			},
 			{
-				url: env.PUBPUB_URL,
+				url: env.PUBSTAR_URL,
 				description: "The production API server",
 			},
 		],

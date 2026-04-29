@@ -147,7 +147,7 @@ export function ActionFieldJsonataTestPanel(props: {
 			},
 			stage,
 			env: {
-				PUBPUB_URL: typeof window !== "undefined" ? window.location.origin : "",
+				PUBSTAR_URL: typeof window !== "undefined" ? window.location.origin : "",
 			},
 			useDummyValues: true,
 			...pubOrJson,

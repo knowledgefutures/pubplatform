@@ -710,7 +710,7 @@ export namespace InviteService {
 		searchParams.set("invite", inviteToken)
 		searchParams.set("redirectTo", options.redirectTo)
 
-		return `${options?.absolute === false ? "" : env.PUBPUB_URL}/c/${communitySlug}/public/invite?${searchParams.toString()}`
+		return `${options?.absolute === false ? "" : env.PUBSTAR_URL}/c/${communitySlug}/public/invite?${searchParams.toString()}`
 	}
 
 	export function createInviteToken(invite: Invite) {

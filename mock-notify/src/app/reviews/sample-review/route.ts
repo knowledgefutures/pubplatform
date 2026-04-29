@@ -1,5 +1,5 @@
 const basePath = process.env.BASE_PATH || ""
-const pubpubUrl = process.env.PUBPUB_URL || "http://localhost:4001"
+const pubpubUrl = process.env.PUBSTAR_URL || "http://localhost:4001"
 
 const selfUrl = basePath ? `${pubpubUrl}${basePath}` : pubpubUrl
 const REVIEW_URL = `${selfUrl}/reviews/sample-review`

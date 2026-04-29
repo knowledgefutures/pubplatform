@@ -29,7 +29,7 @@ export async function seedStarter(communityId?: CommunitiesId) {
 				id: communityId,
 				name: "Starter",
 				slug: "starter",
-				avatar: `${env.PUBPUB_URL}/demo/croc.png`,
+				avatar: `${env.PUBSTAR_URL}/demo/croc.png`,
 			},
 			pubFields: {
 				Title: { schemaName: CoreSchemaType.String },

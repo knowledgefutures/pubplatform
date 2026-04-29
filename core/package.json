@@ -45,7 +45,7 @@
 		"type-check:go": "tsgo --noEmit",
 		"type-check-watch": "tsc --watch",
 		"start-standalone": "node server.js",
-		"storybook": "SKIP_VALIDATION=true PUBPUB_URL=http://localhost:6006 storybook dev -p 6006 --no-open",
+		"storybook": "SKIP_VALIDATION=true PUBSTAR_URL=http://localhost:6006 storybook dev -p 6006 --no-open",
 		"build-storybook": "SKIP_VALIDATION=true storybook build"
 	},
 	"files": [".next", "public"],

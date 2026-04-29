@@ -3,7 +3,7 @@
     debug
 }
 
-{$PUBPUB_HOSTNAME} {
+{$PUBSTAR_HOSTNAME} {
     encode gzip
 
     handle_path /site-builder* {

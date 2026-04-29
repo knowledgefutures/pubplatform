@@ -327,7 +327,7 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 	}
 
 	const client = initClient(siteApi, {
-		baseUrl: SERVER_ENV.PUBPUB_URL,
+		baseUrl: SERVER_ENV.PUBSTAR_URL,
 		baseHeaders: {
 			Authorization: authHeader,
 		},
@@ -474,7 +474,7 @@ const renderPageGroup = async (
 		const context: Record<string, unknown> = {
 			pubs: pubProxies,
 			community: communityContext,
-			env: { PUBPUB_URL: opts.siteUrl },
+			env: { PUBSTAR_URL: opts.siteUrl },
 		}
 		const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, context))
 		const interpolatedSlug = (slugErr ? "index" : slug) as string
@@ -501,7 +501,7 @@ const renderPageGroup = async (
 			const context: Record<string, unknown> = {
 				pub: pubProxy,
 				community: communityContext,
-				env: { PUBPUB_URL: opts.siteUrl },
+				env: { PUBSTAR_URL: opts.siteUrl },
 			}
 			const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, context))
 			if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })

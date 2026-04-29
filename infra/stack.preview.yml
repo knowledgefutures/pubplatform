@@ -9,8 +9,8 @@ services:
       NODE_ENV: production
       PORT: '3000'
       DEPLOY_VERSION: ${IMAGE_TAG}
-      PUBPUB_URL: https://${DEPLOY_HOST}
-      PUBPUB_HOSTNAME: ${DEPLOY_HOST}
+      PUBSTAR_URL: https://${DEPLOY_HOST}
+      PUBSTAR_HOSTNAME: ${DEPLOY_HOST}
       SITE_BUILDER_ENDPOINT: http://site-builder:4000
       S3_ENDPOINT: https://${ASSETS_HOST}
       S3_PUBLIC_ENDPOINT: https://${ASSETS_HOST}
@@ -46,7 +46,7 @@ services:
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
-      PUBPUB_URL: http://platform:3000
+      PUBSTAR_URL: http://platform:3000
     networks: [appnet]
     deploy:
       replicas: 1
@@ -59,7 +59,7 @@ services:
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
-      PUBPUB_URL: http://platform:3000
+      PUBSTAR_URL: http://platform:3000
       PORT: '4000'
       SITES_BASE_URL: https://${DEPLOY_HOST}/sites
       S3_ENDPOINT: https://${ASSETS_HOST}
@@ -152,7 +152,7 @@ services:
     image: ghcr.io/knowledgefutures/mock-coar-notify-server:${IMAGE_TAG}
     networks: [appnet]
     environment:
-      PUBPUB_URL: https://${DEPLOY_HOST}
+      PUBSTAR_URL: https://${DEPLOY_HOST}
     ports:
       - target: 3000
         published: ${MOCK_NOTIFY_PORT}

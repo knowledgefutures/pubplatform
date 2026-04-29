@@ -237,7 +237,7 @@ const handler = createNextHandler(
 								const pubContext = buildInterpolationContext({
 									community,
 									pub,
-									env: { PUBPUB_URL: env.PUBPUB_URL },
+									env: { PUBSTAR_URL: env.PUBSTAR_URL },
 									useDummyValues: true,
 								})
 

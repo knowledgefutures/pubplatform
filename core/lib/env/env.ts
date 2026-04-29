@@ -68,7 +68,7 @@ export const env = createEnv({
 		SMTP_SECURITY: z.enum(["ssl", "tls", "none"]).optional(),
 		OTEL_SERVICE_NAME: z.string().optional(),
 		HONEYCOMB_API_KEY: z.string().optional(),
-		PUBPUB_URL: z.string().url(),
+		PUBSTAR_URL: z.string().url(),
 		INBUCKET_URL: z.string().url().optional(),
 		CI: z.string().or(z.boolean()).optional(),
 		GCLOUD_KEY_FILE: selfHostedOptional(z.string()),

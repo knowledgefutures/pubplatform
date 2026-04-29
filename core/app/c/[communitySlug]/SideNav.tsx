@@ -209,7 +209,7 @@ const adminLinks: LinkGroupDefinition = {
 }
 
 const getEnvironmentToolLinks = (): EnvironmentToolLink[] => {
-	const pubpubUrl = new URL(env.PUBPUB_URL)
+	const pubpubUrl = new URL(env.PUBSTAR_URL)
 
 	const flags = env.FLAGS?.get("show-test-only-tools")
 	if (!flags) {
