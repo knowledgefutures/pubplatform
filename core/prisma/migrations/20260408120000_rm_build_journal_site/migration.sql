@@ -10,6 +10,9 @@ WHERE "action" = 'buildJournalSite';
 DELETE FROM "action_config_defaults"
 WHERE "action" = 'buildJournalSite';
 
+DELETE FROM "action_runs"
+WHERE "action" = 'buildJournalSite';
+
 -- AlterEnum
 BEGIN;
 CREATE TYPE "Action_new" AS ENUM(
