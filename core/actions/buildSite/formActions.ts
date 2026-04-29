@@ -1,7 +1,6 @@
 "use server"
 
 import { interpolate } from "@pubstar/json-interpolate"
-
 import { logger } from "logger"
 
 import { getLoginData } from "~/lib/authentication/loginData"
