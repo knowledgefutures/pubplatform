@@ -13,9 +13,9 @@ services:
       PUBSTAR_HOSTNAME: ${DEPLOY_HOST}
       SITE_BUILDER_ENDPOINT: http://site-builder:4000
       S3_ENDPOINT: https://${ASSETS_HOST}
+      S3_BACKUP_ENDPOINT: https://${ASSETS_HOST}
       S3_PUBLIC_ENDPOINT: https://${ASSETS_HOST}
       S3_BACKUP_REGION: us-east-1
-      S3_BACKUP_ENDPOINT: http://minio:9000
       S3_BACKUP_KEY_PREFIX: pg-backups
       FLAGS: 'uploads:on,invites:on,disabled-actions:http,http-allowed-domains:localhost+127.0.0.1+.pubstar.org,show-test-only-tools:on'
       DB_RESET: 'true'
@@ -51,7 +51,7 @@ services:
       DEPLOY_VERSION: ${IMAGE_TAG}
       PUBSTAR_URL: http://platform:3000
       S3_BACKUP_REGION: us-east-1
-      S3_BACKUP_ENDPOINT: http://minio:9000
+      S3_BACKUP_ENDPOINT: https://${ASSETS_HOST}
       S3_BACKUP_KEY_PREFIX: pg-backups
     networks: [appnet]
     deploy:
