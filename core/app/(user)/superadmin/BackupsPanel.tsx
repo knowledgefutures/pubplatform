@@ -5,22 +5,27 @@ import type { BackupRecordsId, BackupStatus } from "db/public"
 
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
 
 import { Badge } from "ui/badge"
 import { Button } from "ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "ui/card"
 import { RefreshCw, XCircle } from "ui/icon"
 import { Input } from "ui/input"
+import { FormSubmitButton } from "ui/submit-button"
 import { Switch } from "ui/switch"
+import { toast } from "ui/use-toast"
 import { cn } from "utils"
 
 import { DataTable } from "~/app/components/DataTable/v2/DataTable"
+import { didSucceed, useServerAction } from "~/lib/serverActions"
 import { deleteBackup, triggerBackup, updateBackupConfig } from "./backup-actions"
 
 type BackupConfig = {
 	enabled: boolean
 	intervalHours: number
 	retentionDays: number
+	notificationEmail: string | null
 }
 
 export type BackupRow = {
@@ -82,10 +87,11 @@ export const BackupsPanel = ({
 	config: BackupConfig
 }) => {
 	const router = useRouter()
+	const triggerBackupAction = useServerAction(triggerBackup)
 	const [isPending, startTransition] = useTransition()
 	const [enabled, setEnabled] = useState(config.enabled)
-	const [intervalHours, setIntervalHours] = useState(String(config.intervalHours))
-	const [retentionDays, setRetentionDays] = useState(String(config.retentionDays))
+	const [_intervalHours, _setIntervalHours] = useState(String(config.intervalHours))
+	const [_retentionDays, _setRetentionDays] = useState(String(config.retentionDays))
 
 	const columns = useMemo(
 		() =>
@@ -143,27 +149,49 @@ export const BackupsPanel = ({
 			] as const satisfies ColumnDef<BackupRow, unknown>[],
 		[isPending, router]
 	)
+	const backupConfigAction = useServerAction(updateBackupConfig)
 
-	const handleSave = () => {
-		startTransition(async () => {
-			await updateBackupConfig({
-				enabled,
-				intervalHours: Number(intervalHours) || 24,
-				retentionDays: Number(retentionDays) || 14,
-			})
-
-			router.refresh()
+	const handleSave = async (data: {
+		intervalHours: number
+		retentionDays: number
+		notificationEmail: string
+	}) => {
+		const result = await backupConfigAction({
+			enabled,
+			intervalHours: data.intervalHours,
+			retentionDays: data.retentionDays,
+			notificationEmail: data.notificationEmail.trim() || null,
 		})
+
+		if (didSucceed(result)) {
+			toast.success("Backup configuration saved successfully")
+		}
+
+		router.refresh()
 	}
 
-	const handleCreateNow = () => {
-		startTransition(async () => {
-			await triggerBackup()
-			router.refresh()
-		})
+	const handleCreateNow = async () => {
+		const result = await triggerBackupAction()
+		if (didSucceed(result)) {
+			toast.success("Backup created successfully")
+		}
+
+		router.refresh()
 	}
 
 	const hasFailedBackup = backups.some((backup) => backup.status === "failed")
+
+	const backupIntervalForm = useForm<{
+		intervalHours: number
+		retentionDays: number
+		notificationEmail: string
+	}>({
+		defaultValues: {
+			intervalHours: config.intervalHours,
+			retentionDays: config.retentionDays,
+			notificationEmail: config.notificationEmail ?? "",
+		},
+	})
 
 	return (
 		<div className="space-y-6 pt-4">
@@ -190,27 +218,45 @@ export const BackupsPanel = ({
 						<span className="text-sm">Enable scheduled backups</span>
 					</div>
 
-					<div className="grid grid-cols-2 gap-4">
-						<div className="space-y-1">
-							<p className="text-sm">Interval (hours)</p>
-							<Input
-								value={intervalHours}
-								onChange={(event) => setIntervalHours(event.target.value)}
-							/>
+					<form
+						onSubmit={backupIntervalForm.handleSubmit(handleSave)}
+						className="space-y-4"
+					>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="space-y-1">
+								<p className="text-sm">Interval (hours)</p>
+								<Input
+									{...backupIntervalForm.register("intervalHours")}
+									type="number"
+								/>
+							</div>
+
+							<div className="space-y-1">
+								<p className="text-sm">Retention (days)</p>
+								<Input
+									{...backupIntervalForm.register("retentionDays")}
+									type="number"
+								/>
+							</div>
 						</div>
 
 						<div className="space-y-1">
-							<p className="text-sm">Retention (days)</p>
+							<p className="text-sm">Notification email</p>
 							<Input
-								value={retentionDays}
-								onChange={(event) => setRetentionDays(event.target.value)}
+								{...backupIntervalForm.register("notificationEmail")}
+								type="email"
+								placeholder="admin@example.com"
 							/>
+							<p className="text-muted-foreground text-xs">
+								Receives an email when a backup fails. Leave empty to disable.
+							</p>
 						</div>
-					</div>
 
-					<Button disabled={isPending} variant="outline" onClick={handleSave}>
-						Save configuration
-					</Button>
+						<FormSubmitButton
+							formState={backupIntervalForm.formState}
+							idleText="Save configuration"
+						/>
+					</form>
 				</CardContent>
 			</Card>
 

@@ -2,15 +2,15 @@
 
 import { revalidatePath } from "next/cache"
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3"
-import { sql } from "kysely"
+
+import { type BackupConfigId, type BackupRecordsId, BackupStatus } from "db/public"
 
 import { db } from "~/kysely/database"
 import { getLoginData } from "~/lib/authentication/loginData"
 import { env } from "~/lib/env/env"
 import { defineServerAction } from "~/lib/server/defineServerAction"
 import { getJobsClient } from "~/lib/server/jobs"
-
-const BACKUP_SCHEDULER_JOB_KEY = "database-backup-scheduler"
+import { maybeWithTrx } from "~/lib/server/maybeWithTrx"
 
 const getErrorMessage = (error: unknown, fallback: string) => {
 	if (error instanceof Error) {
@@ -59,13 +59,15 @@ export const triggerBackup = defineServerAction(async function triggerBackup() {
 		return { title: "Unauthorized", error: "Must be a superadmin" }
 	}
 
-	const insertedBackup = await sql<{
-		id: string
-	}>`insert into backup_records (filename, "s3Key", status)
-		values (${`queued-${Date.now()}.dump`}, ${"queued"}, 'pending'::"BackupStatus")
-		returning id`
-		.execute(db)
-		.then((result) => result.rows[0])
+	const insertedBackup = await db
+		.insertInto("backup_records")
+		.values({
+			filename: `queued-${Date.now()}.dump`,
+			s3Key: "queued",
+			status: BackupStatus.pending,
+		})
+		.returning("id")
+		.executeTakeFirst()
 
 	if (!insertedBackup) {
 		return { title: "Backup failed", error: "Failed to create backup record" }
@@ -96,27 +98,32 @@ export const deleteBackup = defineServerAction(async function deleteBackup({
 		return { title: "Unauthorized", error: "Must be a superadmin" }
 	}
 
-	const backupRecord = await sql<{ id: string; s3Key: string }>`
-		select id, "s3Key" from backup_records where id = ${backupId}::uuid
-	`
-		.execute(db)
-		.then((result) => result.rows[0])
+	await maybeWithTrx(db, async (trx) => {
+		const backupRecord = await trx
+			.selectFrom("backup_records")
+			.selectAll()
+			.where("id", "=", backupId as BackupRecordsId)
+			.executeTakeFirst()
 
-	if (!backupRecord) {
-		return { title: "Not found", error: "Backup record not found" }
-	}
+		if (!backupRecord) {
+			return { title: "Not found", error: "Backup record not found" }
+		}
 
-	await sql`delete from backup_records where id = ${backupId}::uuid`.execute(db)
+		await trx
+			.deleteFrom("backup_records")
+			.where("id", "=", backupId as BackupRecordsId)
+			.execute()
 
-	const s3Client = getBackupS3Client()
-	if (s3Client && env.S3_BACKUP_BUCKET && backupRecord.s3Key !== "queued") {
-		await s3Client.send(
-			new DeleteObjectCommand({
-				Bucket: env.S3_BACKUP_BUCKET,
-				Key: backupRecord.s3Key,
-			})
-		)
-	}
+		const s3Client = getBackupS3Client()
+		if (s3Client && env.S3_BACKUP_BUCKET && backupRecord.s3Key !== "queued") {
+			await s3Client.send(
+				new DeleteObjectCommand({
+					Bucket: env.S3_BACKUP_BUCKET,
+					Key: backupRecord.s3Key,
+				})
+			)
+		}
+	})
 
 	revalidatePath("/superadmin")
 })
@@ -125,47 +132,31 @@ export const updateBackupConfig = defineServerAction(async function updateBackup
 	enabled,
 	intervalHours,
 	retentionDays,
+	notificationEmail,
 }: {
 	enabled: boolean
 	intervalHours: number
 	retentionDays: number
+	notificationEmail: string | null
 }) {
 	const user = await ensureSuperAdmin()
 	if (!user) {
 		return { title: "Unauthorized", error: "Must be a superadmin" }
 	}
 
-	await sql`
-		with updated as (
-			update backup_config
-			set enabled = ${enabled},
-				"intervalHours" = ${intervalHours},
-				"retentionDays" = ${retentionDays}
-			returning id
-		)
-		insert into backup_config (enabled, "intervalHours", "retentionDays")
-		select ${enabled}, ${intervalHours}, ${retentionDays}
-		where not exists (select 1 from updated)
-	`.execute(db)
+	const existingConfig = await db.selectFrom("backup_config").select("id").executeTakeFirst()
 
-	const jobsClient = await getJobsClient()
-
-	if (enabled) {
-		const scheduleResult = await jobsClient.scheduleBackup({
-			runAt: new Date(Date.now() + intervalHours * 60 * 60 * 1000),
-			jobKey: BACKUP_SCHEDULER_JOB_KEY,
-		})
-
-		if ("error" in scheduleResult) {
-			return {
-				title: "Schedule failed",
-				error: getErrorMessage(scheduleResult.error, "Failed to update backup schedule"),
-			}
-		}
-	}
-
-	if (!enabled) {
-		await jobsClient.unscheduleJob(BACKUP_SCHEDULER_JOB_KEY)
+	if (existingConfig) {
+		await db
+			.updateTable("backup_config")
+			.set({ enabled, intervalHours, retentionDays, notificationEmail })
+			.where("id", "=", existingConfig.id)
+			.execute()
+	} else {
+		await db
+			.insertInto("backup_config")
+			.values({ enabled, intervalHours, retentionDays, notificationEmail })
+			.execute()
 	}
 
 	revalidatePath("/superadmin")
@@ -188,10 +179,11 @@ export const getBackupConfig = async () => {
 	}
 
 	return {
-		id: "00000000-0000-0000-0000-000000000000",
+		id: "00000000-0000-0000-0000-000000000000" as BackupConfigId,
 		enabled: false,
 		intervalHours: 24,
 		retentionDays: 14,
+		notificationEmail: null as string | null,
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	}

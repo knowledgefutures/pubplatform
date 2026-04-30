@@ -28,6 +28,7 @@ export const SuperadminDashboard = ({
 		enabled: boolean
 		intervalHours: number
 		retentionDays: number
+		notificationEmail: string | null
 	}
 }) => {
 	const [activeTab, setActiveTab] = useQueryState("tab", parseAsString.withDefault("communities"))

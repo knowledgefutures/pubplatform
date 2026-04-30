@@ -9,7 +9,6 @@ import { clients } from "./clients"
 import { createBackup } from "./jobs/createBackup"
 import { emitEvent } from "./jobs/emitEvent"
 
-// must match the lock id used by the platform's migrate.ts
 const ADVISORY_LOCK_ID = 72_398_241
 
 const makeTaskList = (client: typeof clients): TaskList => ({
@@ -26,8 +25,6 @@ async function waitForMigrations(connectionString: string, maxAttempts = 60, int
 				const client = await pool.connect()
 
 				try {
-					// try to acquire the same lock the migrator holds. if we get it,
-					// migrations are done. release immediately.
 					await client.query(`SELECT pg_advisory_lock(${ADVISORY_LOCK_ID})`)
 					await client.query(`SELECT pg_advisory_unlock(${ADVISORY_LOCK_ID})`)
 					logger.info("migration lock is free, proceeding with worker startup")
@@ -58,6 +55,11 @@ const main = async () => {
 
 	logger.info("Starting graphile worker...")
 
+	// fires createBackup every hour on the hour. the job itself reads
+	// backup_config to decide whether enough time has elapsed since the
+	// last successful backup before actually running.
+	const backupCrontab = `* * * * * createBackup ?id=scheduled-backup&fill=2h`
+
 	try {
 		const runner = await run({
 			connectionString,
@@ -65,6 +67,7 @@ const main = async () => {
 			noHandleSignals: false,
 			pollInterval: 1000,
 			taskList: makeTaskList(clients),
+			crontab: backupCrontab,
 		})
 
 		logger.info({ msg: `Successfully started graphile worker`, runner })

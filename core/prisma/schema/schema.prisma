@@ -791,12 +791,13 @@ model BackupRecord {
 }
 
 model BackupConfig {
-  id            String   @id @default(dbgenerated("gen_random_uuid()"))
-  enabled       Boolean  @default(false)
-  intervalHours Int      @default(24)
-  retentionDays Int      @default(14)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  id                String   @id @default(dbgenerated("gen_random_uuid()"))
+  enabled           Boolean  @default(false)
+  intervalHours     Int      @default(24)
+  retentionDays     Int      @default(14)
+  notificationEmail String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
 
   @@map(name: "backup_config")
 }

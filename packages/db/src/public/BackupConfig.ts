@@ -18,6 +18,8 @@ export interface BackupConfigTable {
 
 	retentionDays: ColumnType<number, number | undefined, number>
 
+	notificationEmail: ColumnType<string | null, string | null, string | null>
+
 	createdAt: ColumnType<Date, Date | string | undefined, Date | string>
 
 	updatedAt: ColumnType<Date, Date | string | undefined, Date | string>
@@ -36,6 +38,7 @@ export const backupConfigSchema = z.object({
 	enabled: z.boolean(),
 	intervalHours: z.number(),
 	retentionDays: z.number(),
+	notificationEmail: z.string().nullable(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 })
@@ -45,6 +48,7 @@ export const backupConfigInitializerSchema = z.object({
 	enabled: z.boolean().optional(),
 	intervalHours: z.number().optional(),
 	retentionDays: z.number().optional(),
+	notificationEmail: z.string().optional().nullable(),
 	createdAt: z.date().optional(),
 	updatedAt: z.date().optional(),
 })
@@ -54,6 +58,7 @@ export const backupConfigMutatorSchema = z.object({
 	enabled: z.boolean().optional(),
 	intervalHours: z.number().optional(),
 	retentionDays: z.number().optional(),
+	notificationEmail: z.string().optional().nullable(),
 	createdAt: z.date().optional(),
 	updatedAt: z.date().optional(),
 })

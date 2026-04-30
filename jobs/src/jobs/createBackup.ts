@@ -1,4 +1,5 @@
 import type { JobHelpers } from "graphile-worker"
+import type { BackupDatabase } from "../database"
 
 import { execFile } from "node:child_process"
 import { createReadStream } from "node:fs"
@@ -9,9 +10,12 @@ import { promisify } from "node:util"
 import { DeleteObjectsCommand, type ObjectIdentifier, S3Client } from "@aws-sdk/client-s3"
 import { Upload } from "@aws-sdk/lib-storage"
 import * as Sentry from "@sentry/node"
-import pg from "pg"
+import nodemailer from "nodemailer"
 
+import { type BackupRecordsId, BackupStatus } from "db/public"
 import { logger } from "logger"
+
+import { createBackupDatabase } from "../database"
 
 const execFileAsync = promisify(execFile)
 
@@ -30,12 +34,6 @@ type BackupS3Config = {
 	secretKey: string
 	endpoint?: string
 	keyPrefix: string
-}
-
-type BackupConfigRow = {
-	enabled: boolean
-	intervalHours: number
-	retentionDays: number
 }
 
 const ensureSentryInitialized = () => {
@@ -71,57 +69,54 @@ const getBackupS3Config = (): BackupS3Config => {
 	}
 }
 
-const getBackupConfig = async (pool: pg.Pool): Promise<BackupConfigRow> => {
-	const result = await pool.query<BackupConfigRow>(
-		`select enabled, "intervalHours", "retentionDays"
-		 from backup_config
-		 order by "updatedAt" desc
-		 limit 1`
-	)
+const getBackupConfig = async (db: import("kysely").Kysely<BackupDatabase>) => {
+	const config = await db
+		.selectFrom("backup_config")
+		.selectAll()
+		.orderBy("updatedAt", "desc")
+		.limit(1)
+		.executeTakeFirst()
 
-	if (!result.rows[0]) {
-		return {
-			enabled: false,
-			intervalHours: DEFAULT_BACKUP_INTERVAL_HOURS,
-			retentionDays: DEFAULT_BACKUP_RETENTION_DAYS,
-		}
+	if (config) {
+		return config
 	}
 
-	return result.rows[0]
+	return {
+		enabled: false,
+		intervalHours: DEFAULT_BACKUP_INTERVAL_HOURS,
+		retentionDays: DEFAULT_BACKUP_RETENTION_DAYS,
+		notificationEmail: null as string | null,
+	}
 }
 
-const updateBackupRecord = async (
-	pool: pg.Pool,
-	backupId: string,
-	{
-		status,
-		error,
-		sizeBytes,
-		startedAt,
-		completedAt,
-	}: {
-		status: "pending" | "in_progress" | "completed" | "failed"
-		error?: string | null
-		sizeBytes?: string
-		startedAt?: Date
-		completedAt?: Date
+const shouldRunScheduledBackup = async (db: import("kysely").Kysely<BackupDatabase>) => {
+	const config = await getBackupConfig(db)
+
+	if (!config.enabled) {
+		return { shouldRun: false, reason: "backup is disabled", config } as const
 	}
-) => {
-	await pool.query(
-		`update backup_records
-		 set
-			status = $2::"BackupStatus",
-			error = coalesce($3::text, error),
-			"sizeBytes" = coalesce($4::bigint, "sizeBytes"),
-			"startedAt" = coalesce($5::timestamptz, "startedAt"),
-			"completedAt" = coalesce($6::timestamptz, "completedAt")
-		 where id = $1`,
-		[backupId, status, error ?? null, sizeBytes ?? null, startedAt ?? null, completedAt ?? null]
-	)
+
+	const lastCompleted = await db
+		.selectFrom("backup_records")
+		.select("completedAt")
+		.where("status", "=", BackupStatus.completed)
+		.orderBy("completedAt", "desc")
+		.limit(1)
+		.executeTakeFirst()
+
+	if (!lastCompleted?.completedAt) {
+		return { shouldRun: true, config } as const
+	}
+
+	const intervalMs = config.intervalHours * 60 * 60 * 1000
+	const elapsed = Date.now() - new Date(lastCompleted.completedAt).getTime()
+
+	const shouldRun = elapsed >= intervalMs
+	return { shouldRun, config, reason: shouldRun ? "backup is due" : "backup is not due" } as const
 }
 
 const upsertBackupRecordForRun = async (
-	pool: pg.Pool,
+	db: import("kysely").Kysely<BackupDatabase>,
 	{
 		backupId,
 		filename,
@@ -133,81 +128,87 @@ const upsertBackupRecordForRun = async (
 	}
 ) => {
 	if (!backupId) {
-		const insertResult = await pool.query<{ id: string }>(
-			`insert into backup_records (filename, "s3Key", status)
-			 values ($1, $2, 'pending'::"BackupStatus")
-			 returning id`,
-			[filename, s3Key]
-		)
+		const inserted = await db
+			.insertInto("backup_records")
+			.values({ filename, s3Key, status: BackupStatus.pending })
+			.returning("id")
+			.executeTakeFirstOrThrow()
 
-		return insertResult.rows[0].id
+		return inserted.id
 	}
 
-	await pool.query(
-		`update backup_records
-		 set filename = $2,
-			"s3Key" = $3
-		 where id = $1`,
-		[backupId, filename, s3Key]
-	)
+	await db
+		.updateTable("backup_records")
+		.set({ filename, s3Key })
+		.where("id", "=", backupId as BackupRecordsId)
+		.execute()
 
 	return backupId
 }
 
+const updateBackupRecord = async (
+	db: import("kysely").Kysely<BackupDatabase>,
+	backupId: string,
+	update: {
+		status: BackupStatus
+		error?: string | null
+		sizeBytes?: string | null
+		startedAt?: Date | null
+		completedAt?: Date | null
+	}
+) => {
+	await db
+		.updateTable("backup_records")
+		.set({
+			status: update.status,
+			...(update.error !== undefined ? { error: update.error } : {}),
+			...(update.sizeBytes !== undefined ? { sizeBytes: update.sizeBytes } : {}),
+			...(update.startedAt !== undefined ? { startedAt: update.startedAt } : {}),
+			...(update.completedAt !== undefined ? { completedAt: update.completedAt } : {}),
+		})
+		.where("id", "=", backupId as BackupRecordsId)
+		.execute()
+}
+
 const cleanupExpiredBackups = async (
-	pool: pg.Pool,
+	db: import("kysely").Kysely<BackupDatabase>,
 	s3Client: S3Client,
 	backupS3Config: BackupS3Config,
 	retentionDays: number
 ) => {
-	const expiredBackups = await pool.query<{ id: string; s3Key: string }>(
-		`select id, "s3Key"
-		 from backup_records
-		 where status = 'completed'::"BackupStatus"
-		 and "completedAt" is not null
-		 and "completedAt" < now() - ($1::integer * interval '1 day')`,
-		[retentionDays]
-	)
+	const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
 
-	if (expiredBackups.rows.length === 0) {
+	const expiredBackups = await db
+		.selectFrom("backup_records")
+		.select(["id", "s3Key"])
+		.where("status", "=", BackupStatus.completed)
+		.where("completedAt", "is not", null)
+		.where("completedAt", "<", cutoff)
+		.execute()
+
+	if (expiredBackups.length === 0) {
 		return
 	}
 
-	const objects = expiredBackups.rows.map((backup) => ({
+	const objects = expiredBackups.map((backup) => ({
 		Key: backup.s3Key,
 	})) satisfies ObjectIdentifier[]
 
 	await s3Client.send(
 		new DeleteObjectsCommand({
 			Bucket: backupS3Config.bucket,
-			Delete: {
-				Objects: objects,
-				Quiet: true,
-			},
+			Delete: { Objects: objects, Quiet: true },
 		})
 	)
 
-	await pool.query(`delete from backup_records where id = any($1)`, [
-		expiredBackups.rows.map((backup) => backup.id),
-	])
-}
-
-const scheduleNextBackup = async (helpers: JobHelpers, backupConfig: BackupConfigRow) => {
-	if (!backupConfig.enabled) {
-		return
-	}
-
-	const runAt = new Date(Date.now() + backupConfig.intervalHours * 60 * 60 * 1000)
-
-	await helpers.addJob(
-		"createBackup",
-		{},
-		{
-			runAt,
-			jobKey: "database-backup-scheduler",
-			jobKeyMode: "replace",
-		}
-	)
+	await db
+		.deleteFrom("backup_records")
+		.where(
+			"id",
+			"in",
+			expiredBackups.map((b) => b.id)
+		)
+		.execute()
 }
 
 const getBackupFileData = (databaseUrl: string, keyPrefix: string) => {
@@ -218,17 +219,77 @@ const getBackupFileData = (databaseUrl: string, keyPrefix: string) => {
 	const normalizedPrefix = keyPrefix.replace(/\/+$/, "")
 	const s3Key = `${normalizedPrefix}/${filename}`
 
-	return {
-		filename,
-		localPath,
-		s3Key,
+	return { filename, localPath, s3Key }
+}
+
+const sendFailureNotification = async (
+	notificationEmail: string,
+	errorMessage: string,
+	filename: string
+) => {
+	const smtpHost = process.env.SMTP_HOST
+	const smtpPort = process.env.SMTP_PORT
+	const smtpUser = process.env.SMTP_USERNAME
+	const smtpPass = process.env.SMTP_PASSWORD
+	const smtpFrom = process.env.SMTP_FROM
+
+	const isMissingSmtpConfig = !smtpHost || !smtpPort || !smtpUser || !smtpPass || !smtpFrom
+	if (isMissingSmtpConfig) {
+		logger.warn({
+			msg: "cannot send backup failure notification, missing SMTP configuration",
+		})
+		return
+	}
+
+	try {
+		const transporter = nodemailer.createTransport({
+			host: smtpHost,
+			port: parseInt(smtpPort, 10),
+			auth: { user: smtpUser, pass: smtpPass },
+		})
+
+		await transporter.sendMail({
+			from: smtpFrom,
+			to: notificationEmail,
+			subject: `Database backup failed: ${filename}`,
+			text: [
+				`A scheduled database backup has failed.`,
+				``,
+				`Filename: ${filename}`,
+				`Error: ${errorMessage}`,
+				`Time: ${new Date().toISOString()}`,
+				``,
+				`Check the superadmin dashboard for more details.`,
+			].join("\n"),
+		})
+
+		logger.info({ msg: "sent backup failure notification email", to: notificationEmail })
+	} catch (err) {
+		logger.warn({
+			msg: "error sending backup failure notification email",
+			error: err instanceof Error ? err.message : String(err),
+		})
 	}
 }
 
-export const createBackup = async (payload: CreateBackupPayload, helpers: JobHelpers) => {
+export const createBackup = async (payload: CreateBackupPayload, _helpers: JobHelpers) => {
 	const databaseUrl = process.env.DATABASE_URL
 	if (!databaseUrl) {
 		throw new Error("Missing DATABASE_URL")
+	}
+
+	const { db, pool } = createBackupDatabase(databaseUrl)
+
+	// for cron-triggered runs (no backupId), check whether we actually need to run
+	const isScheduledRun = !payload.backupId
+	if (isScheduledRun) {
+		const { shouldRun, reason } = await shouldRunScheduledBackup(db)
+
+		if (!shouldRun) {
+			logger.info({ msg: "skipping scheduled backup", reason })
+			await pool.end()
+			return
+		}
 	}
 
 	const backupS3Config = getBackupS3Config()
@@ -242,23 +303,15 @@ export const createBackup = async (payload: CreateBackupPayload, helpers: JobHel
 		},
 		forcePathStyle: true,
 	})
-	const pool = new pg.Pool({
-		connectionString: databaseUrl,
-		max: 2,
-	})
 
 	const startedAt = new Date()
 	const { backupId } = payload
 	const { filename, localPath, s3Key } = getBackupFileData(databaseUrl, backupS3Config.keyPrefix)
-	const recordId = await upsertBackupRecordForRun(pool, {
-		backupId,
-		filename,
-		s3Key,
-	})
+	const recordId = await upsertBackupRecordForRun(db, { backupId, filename, s3Key })
 
 	try {
-		await updateBackupRecord(pool, recordId, {
-			status: "in_progress",
+		await updateBackupRecord(db, recordId, {
+			status: BackupStatus.in_progress,
 			startedAt,
 		})
 
@@ -288,15 +341,14 @@ export const createBackup = async (payload: CreateBackupPayload, helpers: JobHel
 
 		await upload.done()
 
-		await updateBackupRecord(pool, recordId, {
-			status: "completed",
+		await updateBackupRecord(db, recordId, {
+			status: BackupStatus.completed,
 			sizeBytes: String(fileStats.size),
 			completedAt: new Date(),
 		})
 
-		const backupConfig = await getBackupConfig(pool)
-		await cleanupExpiredBackups(pool, s3Client, backupS3Config, backupConfig.retentionDays)
-		await scheduleNextBackup(helpers, backupConfig)
+		const backupConfig = await getBackupConfig(db)
+		await cleanupExpiredBackups(db, s3Client, backupS3Config, backupConfig.retentionDays)
 
 		logger.info({
 			msg: "database backup completed",
@@ -308,8 +360,8 @@ export const createBackup = async (payload: CreateBackupPayload, helpers: JobHel
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error)
 
-		await updateBackupRecord(pool, recordId, {
-			status: "failed",
+		await updateBackupRecord(db, recordId, {
+			status: BackupStatus.failed,
 			error: errorMessage,
 			completedAt: new Date(),
 		})
@@ -319,6 +371,11 @@ export const createBackup = async (payload: CreateBackupPayload, helpers: JobHel
 			backupId: recordId,
 			error: errorMessage,
 		})
+
+		const backupConfig = await getBackupConfig(db)
+		if (backupConfig.notificationEmail) {
+			await sendFailureNotification(backupConfig.notificationEmail, errorMessage, filename)
+		}
 
 		if (sentryEnabled && error instanceof Error) {
 			Sentry.captureException(error)

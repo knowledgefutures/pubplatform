@@ -20,7 +20,9 @@
 		"contracts": "workspace:*",
 		"db": "workspace:*",
 		"graphile-worker": "^0.16.6",
+		"kysely": "^0.27.6",
 		"logger": "workspace:*",
+		"nodemailer": "^6.10.1",
 		"pg": "^8.16.3",
 		"react": "catalog:react19",
 		"tsx": "catalog:",
@@ -28,6 +30,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "catalog:",
+		"@types/nodemailer": "^6.4.18",
 		"@types/pg": "^8.15.5",
 		"@typescript/native-preview": "catalog:",
 		"dotenv-cli": "^7.4.4",
