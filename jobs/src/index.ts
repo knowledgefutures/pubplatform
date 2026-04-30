@@ -58,7 +58,7 @@ const main = async () => {
 	// fires createBackup every hour on the hour. the job itself reads
 	// backup_config to decide whether enough time has elapsed since the
 	// last successful backup before actually running.
-	const backupCrontab = `* * * * * createBackup ?id=scheduled-backup&fill=2h`
+	const backupCrontab = `0 * * * * createBackup ?id=scheduled-backup&fill=2h`
 
 	try {
 		const runner = await run({
