@@ -138,7 +138,7 @@ services:
       /usr/bin/mc admin policy attach myminio readwrite --user "$${S3_BACKUP_ACCESS_KEY}";
       fi;
       echo "clearing assets and backup buckets for clean preview state...";
-      /usr/bin/mc rm --recursive --force myminio/"$${S3_BUCKET_NAME}"/ || true;'
+      /usr/bin/mc rm --recursive --force myminio/"$${S3_BUCKET_NAME}"/ || true;
       /usr/bin/mc rm --recursive --force myminio/"$${S3_BACKUP_BUCKET}"/ || true;'
     networks: [appnet]
     deploy:
