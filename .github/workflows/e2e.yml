@@ -137,7 +137,7 @@ jobs:
 
             - name: Upload core playwright snapshots artifact
               if: failure() && matrix.package == 'core'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: playwright-snapshots
                   path: core/test-results
@@ -145,7 +145,7 @@ jobs:
 
             - name: Upload context-editor playwright snapshots artifact
               if: failure() && matrix.package == 'context-editor'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: playwright-snapshots
                   path: packages/context-editor/test-results
