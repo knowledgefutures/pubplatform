@@ -18,30 +18,28 @@ const makeTaskList = (client: typeof clients): TaskList => ({
 
 async function waitForMigrations(connectionString: string, maxAttempts = 60, intervalMs = 3000) {
 	const pool = new pg.Pool({ connectionString, max: 1 })
+	const stack = new AsyncDisposableStack()
+	stack.defer(async () => pool.end())
 
-	try {
-		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		try {
+			const client = await pool.connect()
+
 			try {
-				const client = await pool.connect()
-
-				try {
-					await client.query(`SELECT pg_advisory_lock(${ADVISORY_LOCK_ID})`)
-					await client.query(`SELECT pg_advisory_unlock(${ADVISORY_LOCK_ID})`)
-					logger.info("migration lock is free, proceeding with worker startup")
-					return
-				} finally {
-					client.release()
-				}
-			} catch {
-				logger.info(`waiting for migrations to complete (${attempt}/${maxAttempts})...`)
-				await new Promise((r) => setTimeout(r, intervalMs))
+				await client.query(`SELECT pg_advisory_lock(${ADVISORY_LOCK_ID})`)
+				await client.query(`SELECT pg_advisory_unlock(${ADVISORY_LOCK_ID})`)
+				logger.info("migration lock is free, proceeding with worker startup")
+				return
+			} finally {
+				client.release()
 			}
+		} catch {
+			logger.info(`waiting for migrations to complete (${attempt}/${maxAttempts})...`)
+			await new Promise((r) => setTimeout(r, intervalMs))
 		}
-
-		logger.warn("timed out waiting for migration lock, starting anyway")
-	} finally {
-		await pool.end()
 	}
+
+	logger.warn("timed out waiting for migration lock, starting anyway")
 }
 
 const main = async () => {
