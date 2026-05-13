@@ -3,7 +3,7 @@ import { initClient } from "@ts-rest/core"
 import { api } from "contracts"
 
 export const internalClient = initClient(api.internal, {
-	baseUrl: `${process.env.PUBPUB_URL}`,
+	baseUrl: `${process.env.PUBSTAR_URL}`,
 	baseHeaders: { authorization: `Bearer ${process.env.API_KEY}` },
 	jsonQuery: true,
 })

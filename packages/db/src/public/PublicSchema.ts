@@ -13,6 +13,8 @@ import type { AutomationConditionsTable } from "./AutomationConditions"
 import type { AutomationRunsTable } from "./AutomationRuns"
 import type { AutomationsTable } from "./Automations"
 import type { AutomationTriggersTable } from "./AutomationTriggers"
+import type { BackupConfigTable } from "./BackupConfig"
+import type { BackupRecordsTable } from "./BackupRecords"
 import type { CommunitiesTable } from "./Communities"
 import type { CommunityMembershipsTable } from "./CommunityMemberships"
 import type { FormElementsTable } from "./FormElements"
@@ -43,77 +45,81 @@ import type { UsersTable } from "./Users"
 export interface PublicSchema {
 	PubFieldSchema: PubFieldSchemaTable
 
-	automation_runs: AutomationRunsTable
-
-	membership_capabilities: MembershipCapabilitiesTable
-
-	sessions: SessionsTable
-
-	move_constraint: MoveConstraintTable
-
-	pub_values_history: PubValuesHistoryTable
-
-	api_access_tokens: ApiAccessTokensTable
-
-	_MemberGroupToUser: MemberGroupToUserTable
+	PubsInStages: PubsInStagesTable
 
 	_FormElementToPubType: FormElementToPubTypeTable
 
-	PubsInStages: PubsInStagesTable
-
-	stage_memberships: StageMembershipsTable
-
-	_prisma_migrations: PrismaMigrationsTable
-
-	auth_tokens: AuthTokensTable
-
-	api_access_permissions: ApiAccessPermissionsTable
-
-	api_access_logs: ApiAccessLogsTable
-
-	pub_types: PubTypesTable
-
-	automation_conditions: AutomationConditionsTable
-
-	pub_fields: PubFieldsTable
-
-	invites_history: InvitesHistoryTable
-
-	communities: CommunitiesTable
-
-	automation_triggers: AutomationTriggersTable
-
-	users: UsersTable
+	_MemberGroupToUser: MemberGroupToUserTable
 
 	_PubFieldToPubType: PubFieldToPubTypeTable
 
-	pub_values: PubValuesTable
-
-	action_runs: ActionRunsTable
-
-	invites: InvitesTable
-
-	pubs: PubsTable
+	_prisma_migrations: PrismaMigrationsTable
 
 	action_config_defaults: ActionConfigDefaultsTable
 
 	action_instances: ActionInstancesTable
 
-	community_memberships: CommunityMembershipsTable
+	action_runs: ActionRunsTable
 
-	member_groups: MemberGroupsTable
+	api_access_logs: ApiAccessLogsTable
 
-	pub_memberships: PubMembershipsTable
+	api_access_permissions: ApiAccessPermissionsTable
 
-	stages: StagesTable
+	api_access_tokens: ApiAccessTokensTable
+
+	auth_tokens: AuthTokensTable
 
 	automation_condition_blocks: AutomationConditionBlocksTable
+
+	automation_conditions: AutomationConditionsTable
+
+	automation_runs: AutomationRunsTable
+
+	automation_triggers: AutomationTriggersTable
+
+	automations: AutomationsTable
+
+	backup_config: BackupConfigTable
+
+	backup_records: BackupRecordsTable
+
+	communities: CommunitiesTable
+
+	community_memberships: CommunityMembershipsTable
 
 	form_elements: FormElementsTable
 
 	forms: FormsTable
 
-	automations: AutomationsTable
-
 	invite_forms: InviteFormsTable
+
+	invites: InvitesTable
+
+	invites_history: InvitesHistoryTable
+
+	member_groups: MemberGroupsTable
+
+	membership_capabilities: MembershipCapabilitiesTable
+
+	move_constraint: MoveConstraintTable
+
+	pub_fields: PubFieldsTable
+
+	pub_memberships: PubMembershipsTable
+
+	pub_types: PubTypesTable
+
+	pub_values: PubValuesTable
+
+	pub_values_history: PubValuesHistoryTable
+
+	pubs: PubsTable
+
+	sessions: SessionsTable
+
+	stage_memberships: StageMembershipsTable
+
+	stages: StagesTable
+
+	users: UsersTable
 }

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@import "@pubpub/tailwind/style.css";
+@import "@pubstar/tailwind/style.css";
 
 @source "../../packages/ui/src/**/*.{ts,tsx}";
 

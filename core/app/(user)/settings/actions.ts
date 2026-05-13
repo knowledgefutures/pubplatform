@@ -11,7 +11,12 @@ import { logger } from "logger"
 import { db } from "~/kysely/database"
 import { getLoginData } from "~/lib/authentication/loginData"
 import { env } from "~/lib/env/env"
-import { ApiError, deleteFileFromS3, generateSignedUserAvatarUploadUrl } from "~/lib/server"
+import {
+	ApiError,
+	deleteFileFromS3,
+	generateSignedUserAvatarUploadUrl,
+	normalizeAssetUrl,
+} from "~/lib/server"
 import { defineServerAction } from "~/lib/server/defineServerAction"
 import { maybeWithTrx } from "~/lib/server/maybeWithTrx"
 import { updateUser } from "~/lib/server/user"
@@ -91,11 +96,14 @@ export const updateUserAvatar = defineServerAction(async function updateUserAvat
 	try {
 		await maybeWithTrx(db, async (trx) => {
 			const currentAvatar = user.avatar
+
+			const normalizedAvatar = fileName ? normalizeAssetUrl(fileName) : null
+
 			if (fileName) {
 				await updateUser(
 					{
 						id: userId,
-						avatar: fileName,
+						avatar: normalizedAvatar,
 					},
 					trx
 				)
@@ -111,7 +119,7 @@ export const updateUserAvatar = defineServerAction(async function updateUserAvat
 
 			// make sure user cannot secretely delete any other image
 			const doesAvatarContainUserId = currentAvatar?.includes(`/avatars/${userId}/`)
-			if (currentAvatar && currentAvatar !== fileName && doesAvatarContainUserId) {
+			if (currentAvatar && currentAvatar !== normalizedAvatar && doesAvatarContainUserId) {
 				await deleteFileFromS3(currentAvatar)
 			}
 		})

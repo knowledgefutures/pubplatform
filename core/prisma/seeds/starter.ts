@@ -29,7 +29,7 @@ export async function seedStarter(communityId?: CommunitiesId) {
 				id: communityId,
 				name: "Starter",
 				slug: "starter",
-				avatar: `${env.PUBPUB_URL}/demo/croc.png`,
+				avatar: `${env.PUBSTAR_URL}/demo/croc.png`,
 			},
 			pubFields: {
 				Title: { schemaName: CoreSchemaType.String },
@@ -84,9 +84,9 @@ export async function seedStarter(communityId?: CommunitiesId) {
 				new: {
 					id: memberId,
 					firstName: "Croc",
-					email: "new@pubpub.org",
+					email: "new@pubstar.org",
 					lastName: "Croc",
-					password: "pubpub-new",
+					password: "pubstar-new",
 					role: MemberRole.admin,
 				},
 				...usersNew,
@@ -97,7 +97,7 @@ export async function seedStarter(communityId?: CommunitiesId) {
 					values: {
 						Title: "Ancient Giants: Unpacking the Evolutionary History of Crocodiles from Prehistoric to Present",
 						Content: defaultMarkdownParser.parse(faker.lorem.paragraph(1)).toJSON(),
-						Email: "new@pubpub.org",
+						Email: "new@pubstar.org",
 						URL: "https://pubpub.org",
 						MemberID: memberId,
 						"ok?": true,
@@ -126,7 +126,7 @@ export async function seedStarter(communityId?: CommunitiesId) {
 					values: {
 						Title: "Snap! The Crocodilian Chronicles: A Scaly Tale of Survival and Swamp Supremacy",
 						Content: defaultMarkdownParser.parse(faker.lorem.paragraph(1)).toJSON(),
-						Email: "new@pubpub.org",
+						Email: "new@pubstar.org",
 						URL: "https://pubpub.org",
 						MemberID: memberId,
 						"ok?": true,

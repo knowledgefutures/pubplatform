@@ -15,7 +15,7 @@ import { db } from "~/kysely/database"
 import { getLoginData } from "~/lib/authentication/loginData"
 import { userCan } from "~/lib/authorization/capabilities"
 import { env } from "~/lib/env/env"
-import { ApiError, deleteFileFromS3 } from "~/lib/server"
+import { ApiError, deleteFileFromS3, normalizeAssetUrl } from "~/lib/server"
 import { generateSignedCommunityAvatarUploadUrl } from "~/lib/server/assets"
 import { getCommunitySlug } from "~/lib/server/cache/getCommunitySlug"
 import { updateCommunity } from "~/lib/server/community"
@@ -118,12 +118,13 @@ export const updateCommunityAvatar = defineServerAction(async function updateCom
 			.executeTakeFirst()
 
 		const currentAvatar = community?.avatar
+		const normalizedAvatar = fileName ? normalizeAssetUrl(fileName) : null
 
 		if (fileName) {
 			await updateCommunity(
 				{
 					id: communityId,
-					avatar: fileName,
+					avatar: normalizedAvatar,
 				},
 				trx
 			)
@@ -140,7 +141,7 @@ export const updateCommunityAvatar = defineServerAction(async function updateCom
 		const doesAvatarContainCommunityId = currentAvatar?.includes(
 			`/avatars/communities/${communityId}/`
 		)
-		if (currentAvatar && currentAvatar !== fileName && doesAvatarContainCommunityId) {
+		if (currentAvatar && currentAvatar !== normalizedAvatar && doesAvatarContainCommunityId) {
 			await deleteFileFromS3(currentAvatar)
 		}
 	})

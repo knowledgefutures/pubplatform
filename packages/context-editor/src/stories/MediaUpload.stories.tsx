@@ -26,7 +26,7 @@ const attrs = {
 	id: "",
 	class: null,
 	alt: "cat.jpeg",
-	src: "http://localhost:9000/assets.v7.pubpub.org/a85b4157-4a7f-40d8-bb40-d9c17a6c7a70/cat.jpeg",
+	src: "http://localhost:9000/assets.pubpub.org/a85b4157-4a7f-40d8-bb40-d9c17a6c7a70/cat.jpeg",
 	linkTo: "",
 	width: 100,
 	align: "center",

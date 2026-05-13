@@ -12,7 +12,7 @@ services:
             - S3_ACCESS_KEY=${S3_ACCESS_KEY}
             - S3_SECRET_KEY=${S3_SECRET_KEY}
             - S3_BUCKET_NAME=${S3_BUCKET_NAME:-site-builder}
-            - S3_PUBLIC_URL=${S3_PUBLIC_URL:-http://localhost:9000}
+            - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
         depends_on:
             minio:
                 condition: service_healthy

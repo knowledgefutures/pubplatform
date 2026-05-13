@@ -92,11 +92,11 @@ The hosted version of Platfrom uses AWS S3 to host files. When self-hosting, you
 If you want to use your own S3-compatible storage service, you will need to set the following environment variables:
 
 ```sh
-ASSETS_BUCKET_NAME="your-bucket-name"
-ASSETS_UPLOAD_KEY="your-access-key"
-ASSETS_UPLOAD_SECRET_KEY="your-secret-key"
-ASSETS_REGION="your-region"
-ASSETS_STORAGE_ENDPOINT="your-storage-endpoint" # only necessary if you are using non-AWS S3-compatible storage service
+S3_BUCKET_NAME="your-bucket-name"
+S3_ACCESS_KEY="your-access-key"
+S3_SECRET_KEY="your-secret-key"
+S3_REGION="your-region"
+S3_ENDPOINT="your-storage-endpoint" # only necessary if you are using non-AWS S3-compatible storage service
 ```
 
 You should also remove the `minio` and `minio-init` services from the `docker-compose.yml` file.
@@ -123,7 +123,7 @@ openssl rand -base64 32
 [System.Web.Security.Membership]::GeneratePassword(32,8)
 ```
 
-Run one of these commands twice, and use one for `MINIO_ROOT_PASSWORD` and one for `ASSETS_UPLOAD_SECRET_KEY`.
+Run one of these commands twice, and use one for `MINIO_ROOT_PASSWORD` and one for `S3_SECRET_KEY`.
 
 ```sh
 # not needed if you're using a remote file server like AWS S3
@@ -131,10 +131,10 @@ MINIO_ROOT_USER= # change this! this is the username for your file server!
 MINIO_ROOT_PASSWORD= # change this! this is the password for your file server!
 
 # these are either the values of an existing S3-compatible storage service, or the values that will be used to create a new MinIO service
-ASSETS_BUCKET_NAME= # example: assets
-ASSETS_UPLOAD_KEY= # example: asset-user
-ASSETS_UPLOAD_SECRET_KEY= # example: a strong secure password
-ASSETS_REGION=us-east-1 # leave this unchanged, unless you are hosting files on a different region on actual AWS
+S3_BUCKET_NAME= # example: assets
+S3_ACCESS_KEY= # example: asset-user
+S3_SECRET_KEY= # example: a strong secure password
+S3_REGION=us-east-1 # leave this unchanged, unless you are hosting files on a different region on actual AWS
 ```
 
 Then, after running `docker compose up -d`, you should be able to visit the MinIO console at `http://localhost:9001`.
@@ -163,12 +163,12 @@ Other providers may likely work as well, but are not tested.
 To use Mailgun, you will need to create an account on [Mailgun](https://www.mailgun.com/) and set the following environment variables:
 
 ```sh
-MAILGUN_SMTP_HOST="smtp.mailgun.org"
-MAILGUN_SMTP_PORT=587
-MAILGUN_SMTP_USERNAME="postmaster@your-mailgun-domain.mailgun.org"
-MAILGUN_SMTP_PASSWORD="your-mailgun-password"
-MAILGUN_SMTP_FROM="email@your-mailgun-domain.mailgun.org"
-MAILGUN_SMTP_FROM_NAME="Your Organization"
+SMTP_HOST="smtp.mailgun.org"
+SMTP_PORT=587
+SMTP_USERNAME="postmaster@your-mailgun-domain.mailgun.org"
+SMTP_PASSWORD="your-mailgun-password"
+SMTP_FROM="email@your-mailgun-domain.mailgun.org"
+SMTP_FROM_NAME="Your Organization"
 ```
 
 ##### Gmail
@@ -178,24 +178,24 @@ To use Gmail to relay emails through PubPub, you will need to create an [app pas
 You will be limited to 2000 emails per day by default this way.
 
 ```sh
-MAILGUN_SMTP_HOST="smtp.gmail.com"
-MAILGUN_SMTP_PORT=587 # or 465 for SSL
-MAILGUN_SMTP_USERNAME="email@gmail.com"
-MAILGUN_SMTP_PASSWORD="your app password" # this will be a 16 character string
-MAILGUN_SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
-MAILGUN_SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587 # or 465 for SSL
+SMTP_USERNAME="email@gmail.com"
+SMTP_PASSWORD="your app password" # this will be a 16 character string
+SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
+SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
 ```
 
 If you need a higher limit of 10,000 emails, you can use the SMTP relay service. This will require extra configuration however:
 https://support.google.com/a/answer/176600?hl=en
 
 ```sh
-MAILGUN_SMTP_HOST="smtp-relay.gmail.com"
-MAILGUN_SMTP_PORT=587 # or 465 for SSL
-MAILGUN_SMTP_USERNAME="email@gmail.com"
-MAILGUN_SMTP_PASSWORD="your app password" # this will be a 16 character string
-MAILGUN_SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
-MAILGUN_SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
+SMTP_HOST="smtp-relay.gmail.com"
+SMTP_PORT=587 # or 465 for SSL
+SMTP_USERNAME="email@gmail.com"
+SMTP_PASSWORD="your app password" # this will be a 16 character string
+SMTP_FROM="email@gmail.com" # technically optional, but you will almost definitely need to set this.
+SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
 ```
 
 ##### Office 365
@@ -205,12 +205,12 @@ You can (for now) send emails through Office 365 Outlook/Exchange through SMTP, 
 You cannot send emails through shared mailboxes, you will need to an existing Microsoft account with a valid Office 365 subscription.
 
 ```sh
-MAILGUN_SMTP_HOST="smtp.office365.com"
-MAILGUN_SMTP_PORT=587
-MAILGUN_SMTP_USERNAME="email@outlook.com"
-MAILGUN_SMTP_PASSWORD="your-password"
-MAILGUN_SMTP_FROM="email@outlook.com" # technically optional, but you will almost definitely need to set this, as it will use `hello@pubpub.org` by default.
-MAILGUN_SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
+SMTP_HOST="smtp.office365.com"
+SMTP_PORT=587
+SMTP_USERNAME="email@outlook.com"
+SMTP_PASSWORD="your-password"
+SMTP_FROM="email@outlook.com" # technically optional, but you will almost definitely need to set this, as it will use `hello@pubpub.org` by default.
+SMTP_FROM_NAME="Your Organization" # Optional, will default to "PubPub Team"
 ```
 
 ##### No email
@@ -235,16 +235,16 @@ You may want to use your own postgres database instead, in which case you can di
 
 ```yml
 db:
-    condition: service_started
+  condition: service_started
 ```
 
 from the `depends_on` section of the `platform` service.
 
 ```yml
 platform:
-    depends_on:
-        db:
-            condition: service_started
+  depends_on:
+    db:
+      condition: service_started
 ```
 
 #### MinIO

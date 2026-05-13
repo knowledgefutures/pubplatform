@@ -20,8 +20,8 @@ const contributorBase = {
 export const usersNew = {
 	admin: {
 		...adminBase,
-		email: "all@pubpub.org",
-		password: "pubpub-all",
+		email: "all@pubstar.org",
+		password: "pubstar-all",
 		slug: "all",
 		firstName: "Jill",
 		lastName: "Admin",
@@ -32,8 +32,8 @@ export const usersNew = {
 	},
 	editor: {
 		...editorBase,
-		email: "some@pubpub.org",
-		password: "pubpub-some",
+		email: "some@pubstar.org",
+		password: "pubstar-some",
 		slug: "some",
 		firstName: "Jack",
 		lastName: "Editor",
@@ -43,8 +43,8 @@ export const usersNew = {
 	},
 	contributor: {
 		...contributorBase,
-		email: "none@pubpub.org",
-		password: "pubpub-none",
+		email: "none@pubstar.org",
+		password: "pubstar-none",
 		slug: "none",
 		firstName: "Jenna",
 		lastName: "Contributor",

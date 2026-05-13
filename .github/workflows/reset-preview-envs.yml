@@ -1,0 +1,88 @@
+# this workflow redeploys the sandbox and preview environments every 6 hours
+# to ensure that the environments are always in a clean state
+name: Reset preview environments
+
+on:
+  schedule:
+    # every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+  pull-requests: write
+
+concurrency:
+  group: reset-preview-envs
+  cancel-in-progress: false
+
+jobs:
+  reset-sandbox:
+    uses: ./.github/workflows/deploy-stack.yml
+    with:
+      action: deploy
+      image_tag: latest
+      stack_name: sandbox
+      hostname: sandbox.pubstar.org
+      env_file: .env.sandbox.enc
+      stack_file: stack.preview.yml
+      uses_gateway: true
+      ssh_host_secret: SSH_HOST_PREVIEW
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
+      GHCR_USER: ${{ secrets.GHCR_USER }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+  find-active-previews:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.find.outputs.matrix }}
+      has_previews: ${{ steps.find.outputs.has_previews }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Find open PRs with preview label
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          previews=$(gh pr list --label preview --state open --json number,headRefOid --jq '[.[] | {number: .number, sha: .headRefOid}]')
+          count=$(echo "$previews" | jq length)
+
+          echo "found $count active preview(s)"
+
+          if [ "$count" -eq 0 ]; then
+              echo "has_previews=false" >> "$GITHUB_OUTPUT"
+              echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+          else
+              echo "has_previews=true" >> "$GITHUB_OUTPUT"
+              matrix=$(echo "$previews" | jq -c '{include: [.[] | {pr_number: .number, sha: .headRefOid}]}')
+              echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          fi
+
+  reset-previews:
+    needs: find-active-previews
+    if: needs.find-active-previews.outputs.has_previews == 'true'
+    strategy:
+      matrix: ${{ fromJson(needs.find-active-previews.outputs.matrix) }}
+      fail-fast: false
+    uses: ./.github/workflows/deploy-stack.yml
+    with:
+      action: deploy
+      image_tag: ${{ matrix.sha }}
+      stack_name: preview-pr-${{ matrix.pr_number }}
+      hostname: pr-${{ matrix.pr_number }}.pubstar.org
+      env_file: .env.preview.enc
+      stack_file: stack.preview.yml
+      uses_gateway: true
+      ssh_host_secret: SSH_HOST_PREVIEW
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
+      GHCR_USER: ${{ secrets.GHCR_USER }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}

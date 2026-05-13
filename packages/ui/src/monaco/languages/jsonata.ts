@@ -196,7 +196,7 @@ export const createJsonataLanguageDefinition = (): languages.IMonarchLanguage =>
 })
 
 export const defineJsonataThemes = (monaco: Monaco) => {
-	monaco.editor.defineTheme("pubpub-light", {
+	monaco.editor.defineTheme("pubstar-light", {
 		base: "vs",
 		inherit: true,
 		rules: [
@@ -213,7 +213,7 @@ export const defineJsonataThemes = (monaco: Monaco) => {
 		colors: {},
 	})
 
-	monaco.editor.defineTheme("pubpub-dark", {
+	monaco.editor.defineTheme("pubstar-dark", {
 		base: "vs-dark",
 		inherit: true,
 		rules: [

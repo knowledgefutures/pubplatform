@@ -1,0 +1,20 @@
+{
+    admin :2019
+    debug
+}
+
+{$PUBSTAR_HOSTNAME} {
+    encode gzip
+
+    handle_path /site-builder* {
+        reverse_proxy site-builder:4000
+    }
+
+    handle {
+        reverse_proxy platform:3000
+    }
+}
+
+:80 {
+    respond "OK" 200
+}

@@ -5,7 +5,7 @@ import { siteApi } from "contracts"
 import { env } from "./env/env"
 
 export const client = initTsrReactQuery(siteApi, {
-	baseUrl: typeof window === "undefined" ? env.PUBPUB_URL : window.location.origin,
+	baseUrl: typeof window === "undefined" ? env.PUBSTAR_URL : window.location.origin,
 })
 
 export const RETRY_COUNT = 3

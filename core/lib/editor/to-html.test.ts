@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-// @ts-expect-error
-import ponies from "../../prisma/seeds/ponies.snippet.html?raw"
+import { poniesText } from "../../prisma/seeds/ponies.snippet"
 import { processEditorHTML } from "./process-editor-html"
 import { htmlToProsemirrorServer, prosemirrorToHTMLServer } from "./serialize-server"
 
 describe("renderNodeToHTML", () => {
 	it("should be able to round trip a node and not lose any information", async () => {
-		const html = ponies
+		const html = poniesText
 
 		expect(html).toBeDefined()
 

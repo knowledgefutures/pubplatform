@@ -3,9 +3,9 @@
 }
 
 example.com {
-    # keep this if you want your files to be accessible at example.com/a*
+    # keep this if you want your files to be accessible at example.com/assets*
     # this should instead be a subdomain, like assets.example.com
-    handle_path /a* {
+    handle_path /assets* {
         reverse_proxy minio:9000
     }
 
@@ -18,16 +18,25 @@ example.com {
     }
 
     # serve static sites from s3/minio
-    # requires caddy built with s3fs module (see Dockerfile.caddy)
+    # rewrite maps to minio path-style: /{bucket}/sites/{community}/{subpath}/...
     handle_path /sites/* {
-        root * /sites
-        file_server {
-            fs s3 {
-                bucket {$ASSETS_BUCKET_NAME:assets}
-                region {$S3_REGION:us-east-1}
-                endpoint {$S3_ENDPOINT:http://minio:9000}
-                access_key {$ASSETS_UPLOAD_KEY}
-                secret_key {$ASSETS_UPLOAD_SECRET_KEY}
+        @pathWithSlash path_regexp dir (.+)/$
+        handle @pathWithSlash {
+            redir {re.dir.1} permanent
+        }
+
+        rewrite * /{$S3_BUCKET_NAME:pubstar-assets}/sites{uri}
+
+        reverse_proxy minio:9000 {
+            @error status 403 404
+            handle_response @error {
+                rewrite * {uri}/index.html
+                reverse_proxy minio:9000 {
+                    @nestedError status 404
+                    handle_response @nestedError {
+                        respond "Not found" 404
+                    }
+                }
             }
         }
     }
@@ -40,7 +49,7 @@ example.com {
 
 # if you want to use a different domain for your files, you can do so here
 # for instance, now all your files will be accessible at assets.example.com
-# if you go this route, be sure to update your ASSETS_STORAGE_ENDPOINT in .env and restart your services
+# if you go this route, be sure to update your S3_ENDPOINT in .env and restart your services
 # assets.example.com {
 #     reverse_proxy minio:9000
 # }

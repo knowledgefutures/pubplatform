@@ -14,7 +14,7 @@ import { fetchRequestHandler, tsr } from "@ts-rest/serverless/fetch"
 import archiver from "archiver"
 import { Hono } from "hono"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
 import { createPubProxy, siteApi } from "contracts"
 import { siteBuilderApi } from "contracts/resources/site-builder-2"
 import { logger } from "logger"
@@ -30,6 +30,49 @@ interface ArchiverError extends Error {
 }
 
 let s3Client: S3Client
+
+const trimSlashes = (value: string) => value.replace(/^\/+|\/+$/g, "")
+
+const trimLeadingSlashes = (value: string) => value.replace(/^\/+/, "")
+
+const isBucketHost = (hostname: string) =>
+	hostname === SERVER_ENV.S3_BUCKET_NAME || hostname.startsWith(`${SERVER_ENV.S3_BUCKET_NAME}.`)
+
+const shouldIncludeBucketInPath = (baseUrl: URL) => {
+	const basePath = trimSlashes(baseUrl.pathname)
+	const basePathIncludesBucket =
+		basePath === SERVER_ENV.S3_BUCKET_NAME ||
+		basePath.startsWith(`${SERVER_ENV.S3_BUCKET_NAME}/`)
+
+	if (basePathIncludesBucket) {
+		return false
+	}
+
+	return !isBucketHost(baseUrl.hostname)
+}
+
+const buildS3PublicUrl = (key: string) => {
+	const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
+	const normalizedKey = trimLeadingSlashes(key)
+
+	if (!publicEndpoint) {
+		return `https://${SERVER_ENV.S3_BUCKET_NAME}.s3.${SERVER_ENV.S3_REGION}.amazonaws.com/${normalizedKey}`
+	}
+
+	const baseUrl = new URL(publicEndpoint)
+	const basePath = trimSlashes(baseUrl.pathname)
+	const shouldIncludeBucket = shouldIncludeBucketInPath(baseUrl)
+
+	const pathSegments = [
+		basePath,
+		shouldIncludeBucket ? SERVER_ENV.S3_BUCKET_NAME : null,
+		normalizedKey,
+	].filter(Boolean)
+
+	baseUrl.pathname = `/${pathSegments.join("/")}`
+
+	return baseUrl.toString()
+}
 
 export const getS3Client = () => {
 	if (s3Client) {
@@ -96,8 +139,9 @@ export const uploadFileToS3 = async (
 			})
 	)
 
-	const result = await parallelUploads3.done()
-	return result.Location!
+	await parallelUploads3.done()
+
+	return buildS3PublicUrl(key)
 }
 
 const createZipAndUploadToS3 = async (
@@ -272,12 +316,7 @@ const uploadDirectoryToS3 = async (
 	await uploadRecursive(sourceDir, s3Prefix)
 
 	const s3FolderPath = s3Prefix
-	let s3FolderUrl: string
-	if (SERVER_ENV.S3_ENDPOINT) {
-		s3FolderUrl = `${SERVER_ENV.S3_ENDPOINT}/${bucket}/${s3Prefix}`
-	} else {
-		s3FolderUrl = `https://${bucket}.s3.${SERVER_ENV.S3_REGION}.amazonaws.com/${s3Prefix}`
-	}
+	const s3FolderUrl = buildS3PublicUrl(s3Prefix)
 
 	return { uploadedFiles, s3FolderPath, s3FolderUrl }
 }
@@ -288,7 +327,7 @@ const verifySiteBuilderToken = async (authHeader: string, communitySlug: string)
 	}
 
 	const client = initClient(siteApi, {
-		baseUrl: SERVER_ENV.PUBPUB_URL,
+		baseUrl: SERVER_ENV.PUBSTAR_URL,
 		baseHeaders: {
 			Authorization: authHeader,
 		},
@@ -435,7 +474,7 @@ const renderPageGroup = async (
 		const context: Record<string, unknown> = {
 			pubs: pubProxies,
 			community: communityContext,
-			env: { PUBPUB_URL: opts.siteUrl },
+			env: { PUBSTAR_URL: opts.siteUrl },
 		}
 		const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, context))
 		const interpolatedSlug = (slugErr ? "index" : slug) as string
@@ -462,7 +501,7 @@ const renderPageGroup = async (
 			const context: Record<string, unknown> = {
 				pub: pubProxy,
 				community: communityContext,
-				env: { PUBPUB_URL: opts.siteUrl },
+				env: { PUBSTAR_URL: opts.siteUrl },
 			}
 			const [slugErr, slug] = await tryCatch(interpolate(group.slugTemplate, context))
 			if (slugErr) logger.error({ msg: "Error interpolating slug", err: slugErr })
@@ -580,26 +619,29 @@ const router = tsr.router(siteBuilderApi, {
 				// Find the first rendered page for the URL
 				const firstPage = renderedGroups.flatMap((g) => g.pages)[0]
 
-				let zipUploadResult: string
-				let folderUploadResult: {
-					uploadedFiles: number
-					s3FolderPath: string
-					s3FolderUrl: string
-				}
-
 				const zipFileName = `site-${timestamp}.zip`
 				const zipUploadId = "site-archives"
-				zipUploadResult = await createZipAndUploadToS3(distDir, zipUploadId, zipFileName)
+				const zipInternalUrl = await createZipAndUploadToS3(
+					distDir,
+					zipUploadId,
+					zipFileName
+				)
 
 				const subpath = body.subpath ?? body.automationRunId
 				const s3Prefix = `sites/${communitySlug}/${subpath}`
-				folderUploadResult = await uploadDirectoryToS3(distDir, s3Prefix)
+				const folderUploadResult = await uploadDirectoryToS3(distDir, s3Prefix)
+
+				const publicEndpoint = SERVER_ENV.S3_PUBLIC_ENDPOINT || SERVER_ENV.S3_ENDPOINT
+				const zipKey = `${zipUploadId}/${zipFileName}`
+				const zipUrl = publicEndpoint ? buildS3PublicUrl(zipKey) : zipInternalUrl
 
 				let publicSiteUrl: string | undefined
 				let firstPageUrl: string | undefined
+
 				if (SERVER_ENV.SITES_BASE_URL) {
 					const baseUrl = SERVER_ENV.SITES_BASE_URL.replace(/\/$/, "")
 					publicSiteUrl = `${baseUrl}/${communitySlug}/${subpath}/`
+
 					if (firstPage) {
 						const pageSlug = firstPage.slug || firstPage.id
 						firstPageUrl = `${publicSiteUrl}${pageSlug}`
@@ -613,7 +655,7 @@ const router = tsr.router(siteBuilderApi, {
 					body: {
 						success: true,
 						message: "Site built and uploaded successfully",
-						url: zipUploadResult,
+						url: zipUrl,
 						timestamp,
 						s3FolderPath: folderUploadResult.s3FolderPath,
 						s3FolderUrl: folderUploadResult.s3FolderUrl,

@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/swarmlibs/dockerstack-schema/main/schema/dockerstack-spec.json
+
+services:
+
+    proxy:
+        image: caddy:latest
+        volumes:
+            - ./Caddyfile.gateway:/etc/caddy/Caddyfile:ro
+            - caddy_data:/data
+            - caddy_config:/config
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        ports:
+            - target: 80
+              published: 80
+              protocol: tcp
+              mode: host
+            - target: 443
+              published: 443
+              protocol: tcp
+              mode: host
+        deploy:
+            replicas: 1
+            restart_policy:
+                condition: any
+
+volumes:
+    caddy_data:
+    caddy_config:

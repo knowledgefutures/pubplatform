@@ -149,12 +149,12 @@ test.describe("Auth with lucia", () => {
 		await page.waitForURL("/reset")
 		// if it timesout here, the token is wrong
 		await page.getByRole("textbox").click({ timeout: 1000 })
-		await page.getByRole("textbox").fill("pubpub-some")
+		await page.getByRole("textbox").fill("pubstar-some")
 		await page.getByRole("button", { name: "Set new password" }).click()
 		await page.getByPlaceholder("name@example.com").click()
 		await page.getByPlaceholder("name@example.com").fill(community.users.user3.email)
 		await page.getByPlaceholder("name@example.com").press("Tab")
-		await page.getByLabel("Password").fill("pubpub-some")
+		await page.getByLabel("Password").fill("pubstar-some")
 		await page.getByRole("button", { name: "Sign in" }).click()
 
 		await page.waitForURL(/\/c\/.*\/stages/)

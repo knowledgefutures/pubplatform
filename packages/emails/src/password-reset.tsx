@@ -28,7 +28,7 @@ export const PasswordReset = ({
 	resetPasswordLink,
 	previewText = `Reset your PubPub password`,
 }: ForgotPasswordProps) => {
-	const baseUrl = process.env.PUBPUB_URL ? process.env.PUBPUB_URL : ""
+	const baseUrl = process.env.PUBSTAR_URL ? process.env.PUBSTAR_URL : ""
 
 	return (
 		<Html>

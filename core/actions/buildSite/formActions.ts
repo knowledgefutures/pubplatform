@@ -1,6 +1,6 @@
 "use server"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
 import { logger } from "logger"
 
 import { getLoginData } from "~/lib/authentication/loginData"
@@ -59,7 +59,7 @@ export const previewResult = defineServerAction(async function previewResult({
 				const pubContext = buildInterpolationContext({
 					community,
 					pub,
-					env: { PUBPUB_URL: env.PUBPUB_URL },
+					env: { PUBSTAR_URL: env.PUBSTAR_URL },
 					useDummyValues: true,
 				})
 				const _interpolatedSlug = await interpolate(slug, pubContext)

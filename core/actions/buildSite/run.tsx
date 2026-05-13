@@ -9,7 +9,7 @@ import type { action } from "./action"
 import { initClient } from "@ts-rest/core"
 import { JSONPath } from "jsonpath-plus"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
 import { siteBuilderApi } from "contracts/resources/site-builder-2"
 import { logger } from "logger"
 import { tryCatch } from "utils/try-catch"
@@ -124,7 +124,7 @@ export const run = defineRun<typeof action>(
 					communityId,
 					communityName: community.name,
 					subpath: config.subpath,
-					siteUrl: env.PUBPUB_URL,
+					siteUrl: env.PUBSTAR_URL,
 					pageGroups,
 				},
 				headers: {

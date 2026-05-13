@@ -11,22 +11,30 @@
 	},
 	"files": ["src"],
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1038.0",
+		"@aws-sdk/lib-storage": "^3.1038.0",
 		"@honeycombio/opentelemetry-node": "catalog:",
 		"@opentelemetry/auto-instrumentations-node": "catalog:",
+		"@sentry/node": "^10.50.0",
 		"@ts-rest/core": "catalog:",
 		"contracts": "workspace:*",
 		"db": "workspace:*",
 		"graphile-worker": "^0.16.6",
+		"kysely": "^0.27.6",
 		"logger": "workspace:*",
+		"nodemailer": "^6.10.1",
+		"pg": "^8.16.3",
 		"react": "catalog:react19",
 		"tsx": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/node": "catalog:",
+		"@types/nodemailer": "^6.4.18",
+		"@types/pg": "^8.15.5",
+		"@typescript/native-preview": "catalog:",
 		"dotenv-cli": "^7.4.4",
 		"tsconfig": "workspace:*",
-		"typescript": "catalog:",
-		"@typescript/native-preview": "catalog:"
+		"typescript": "catalog:"
 	}
 }

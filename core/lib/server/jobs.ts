@@ -31,6 +31,7 @@ export const getScheduledAutomationJobKey = ({
 
 export type JobsClient = {
 	unscheduleJob(jobKey: string): Promise<void>
+	scheduleBackup(options?: { backupId?: string }): Promise<Job | ClientExceptionOptions>
 	scheduleDelayedAutomation(options: {
 		automationId: AutomationsId
 		stageId: StagesId
@@ -65,6 +66,33 @@ export const makeJobsClient = async (): Promise<JobsClient> => {
 				msg: `Successfully unscheduled job with key: ${jobKey}`,
 				job: { key: jobKey },
 			})
+		},
+		async scheduleBackup(options) {
+			const backupId = options?.backupId
+
+			try {
+				const job = await workerUtils.addJob("createBackup", {
+					...(backupId ? { backupId } : {}),
+				})
+
+				logger.info({
+					msg: "Successfully scheduled backup job",
+					backupId,
+					jobId: job.id,
+				})
+
+				return job
+			} catch (err) {
+				logger.error({
+					msg: "Error scheduling backup job",
+					backupId,
+					err: err instanceof Error ? err.message : String(err),
+				})
+
+				return {
+					error: err,
+				} as ClientException
+			}
 		},
 		async scheduleDelayedAutomation({
 			automationId,

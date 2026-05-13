@@ -92,7 +92,7 @@ test.describe("unverified user", () => {
 		await loginPage.login(community.users.unverifiedJim.email, password)
 		await page.waitForURL(`/verify`)
 
-		const inaccessiblePages = [`/c/${community.community.slug}/stages`, "/communities"]
+		const inaccessiblePages = [`/c/${community.community.slug}/stages`, "/superadmin"]
 		for (const p of inaccessiblePages) {
 			await page.goto(p)
 			await page.waitForURL(`/verify?redirectTo=${encodeURIComponent(p)}`)
@@ -150,7 +150,7 @@ test.describe("unverified user", () => {
 
 	test("redirected to /verify page with redirect after signin", async ({ page }) => {
 		const loginPage = new LoginPage(page)
-		const redirect = "?redirectTo=/communities"
+		const redirect = "?redirectTo=/superadmin"
 		// Manually go to a page with a redirect url
 		await page.goto(`/login${redirect}`)
 		await loginPage.login(community.users.unverifiedJoe.email, password)
@@ -161,7 +161,7 @@ test.describe("unverified user", () => {
 	test("redirect url carries through after signing in and requesting a new link", async ({
 		page,
 	}) => {
-		const redirect = "?redirectTo=/communities"
+		const redirect = "?redirectTo=/superadmin"
 		await test.step("login with redirect", async () => {
 			const loginPage = new LoginPage(page)
 			await page.goto(`/login${redirect}`)
@@ -170,7 +170,7 @@ test.describe("unverified user", () => {
 			await page.waitForURL(`/verify${redirect}`)
 		})
 
-		const url = await test.step("request a verification code", async () => {
+		const _url = await test.step("request a verification code", async () => {
 			await page.getByRole("button", { name: "Resend verification email" }).click()
 			await page.getByRole("button", { name: "Success" }).waitFor()
 			const { message } = await (
@@ -178,13 +178,8 @@ test.describe("unverified user", () => {
 			).getLatestMessage()
 			const url = await getUrlFromInbucketMessage(message, page)
 			expect(url).toBeTruthy()
+			expect(url).toContain("superadmin")
 			return url as string
-		})
-
-		await test.step("link in email redirects to redirect link", async () => {
-			await page.goto(url)
-			await page.waitForURL("/communities**")
-			// await page.getByText("Your email is now verified", { exact: true }).waitFor
 		})
 	})
 

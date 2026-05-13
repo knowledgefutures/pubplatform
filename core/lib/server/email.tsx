@@ -23,8 +23,8 @@ type RequiredOptions = Required<Pick<SendMailOptions, "to" | "subject">> &
 	XOR<{ html: string }, { text: string }>
 
 export const DEFAULT_OPTIONS = {
-	from: env.MAILGUN_SMTP_FROM ?? "hello@pubpub.org",
-	name: env.MAILGUN_SMTP_FROM_NAME ?? "PubPub Team",
+	from: env.SMTP_FROM,
+	name: env.SMTP_FROM_NAME,
 } as const
 
 function buildSend(emailPromise: () => Promise<RequiredOptions>) {

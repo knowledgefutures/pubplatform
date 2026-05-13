@@ -210,7 +210,7 @@ async function evaluateAutomationConditions(args: {
 	const input = buildInterpolationContext({
 		useDummyValues: false,
 		env: {
-			PUBPUB_URL: env.PUBPUB_URL,
+			PUBSTAR_URL: env.PUBSTAR_URL,
 		},
 		community: args.community,
 		stage,
@@ -411,7 +411,7 @@ const runActionInstance = async (args: RunActionInstanceArgs): Promise<ActionIns
 
 	const interpolationData = buildInterpolationContext({
 		env: {
-			PUBPUB_URL: env.PUBPUB_URL,
+			PUBSTAR_URL: env.PUBSTAR_URL,
 		},
 		community: args.community,
 		stage: args.stage,
@@ -589,7 +589,7 @@ export async function runAutomation(
 	if (hasResolver(automation)) {
 		const resolverContext = buildInterpolationContext({
 			useDummyValues: false,
-			env: { PUBPUB_URL: env.PUBPUB_URL },
+			env: { PUBSTAR_URL: env.PUBSTAR_URL },
 			community,
 			stage,
 			automation,

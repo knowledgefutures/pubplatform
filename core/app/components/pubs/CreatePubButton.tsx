@@ -3,8 +3,7 @@ import type { ButtonProps } from "ui/button"
 import type { PubTypeWithForm } from "~/lib/authorization/capabilities"
 
 import { Suspense } from "react"
-
-import { Plus } from "ui/icon"
+import { Star } from "lucide-react"
 
 import { getLoginData } from "~/lib/authentication/loginData"
 import { getCreatablePubTypes } from "~/lib/authorization/capabilities"
@@ -109,7 +108,7 @@ export const CreatePubButton = async (props: Props) => {
 			buttonText={props.text ?? "Create"}
 			buttonVariant={props.variant}
 			className={props.className}
-			icon={<Plus size="12" className="mb-0.5" />}
+			icon={<Star size="12" className="mb-0.5" />}
 			id={id}
 			param="create-pub-form"
 			title="Create Pub"

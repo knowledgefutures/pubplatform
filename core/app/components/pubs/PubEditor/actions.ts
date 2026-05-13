@@ -14,7 +14,12 @@ import { getLoginData } from "~/lib/authentication/loginData"
 import { userCan, userCanCreatePub, userCanEditPub } from "~/lib/authorization/capabilities"
 import { parseRichTextForPubFieldsAndRelatedPubs } from "~/lib/fields/richText"
 import { createLastModifiedBy } from "~/lib/lastModifiedBy"
-import { ApiError, createPubRecursiveNew, makeFileUploadPermanent } from "~/lib/server"
+import {
+	ApiError,
+	createPubRecursiveNew,
+	makeFileUploadPermanent,
+	normalizeAssetUrl,
+} from "~/lib/server"
 import { findCommunityBySlug } from "~/lib/server/community"
 import { defineServerAction } from "~/lib/server/defineServerAction"
 import { getForm, grantFormAccess } from "~/lib/server/form"
@@ -93,29 +98,45 @@ export const createPubRecursive = defineServerAction(async function createPubRec
 		userId: user.id as UsersId,
 	})
 
-	const fileUploads: { fileName: string; tempUrl: string }[] = []
+	const fileUploadsByTempUrl = new Map<string, { fileName: string; tempUrl: string }>()
 	const fileUploadSchema = getJsonSchemaByCoreSchemaType(CoreSchemaType.FileUpload)
 	const filteredValues = values
 		? Object.fromEntries(
-				Object.entries(values).filter(([slug, value]) => {
+				Object.entries(values).flatMap(([slug, value]) => {
 					const element = form.elements.find((element) => element.slug === slug)
 					if (!element) {
-						return false
+						return []
 					}
+
 					if (
-						element.schemaName === CoreSchemaType.FileUpload &&
-						Value.Check(fileUploadSchema, value) &&
-						value.length > 0
+						element.schemaName !== CoreSchemaType.FileUpload ||
+						!Value.Check(fileUploadSchema, value)
 					) {
-						fileUploads.push({
-							tempUrl: value[0].fileUploadUrl,
-							fileName: value[0].fileName,
-						})
+						return [[slug, value]]
 					}
-					return true
+
+					const normalizedFiles = value.map((file) => {
+						const normalizedUrl = normalizeAssetUrl(file.fileUploadUrl)
+						const isTemporaryUpload = normalizedUrl.includes("/temporary/")
+
+						if (isTemporaryUpload && !fileUploadsByTempUrl.has(normalizedUrl)) {
+							fileUploadsByTempUrl.set(normalizedUrl, {
+								tempUrl: normalizedUrl,
+								fileName: file.fileName,
+							})
+						}
+
+						return {
+							...file,
+							fileUploadUrl: normalizedUrl,
+						}
+					})
+
+					return [[slug, normalizedFiles]]
 				})
 			)
 		: {}
+	const fileUploads = Array.from(fileUploadsByTempUrl.values())
 	logger.debug({ msg: "creating pub", filteredValues, fileUploads })
 	try {
 		// need this in order to test it properly
@@ -205,10 +226,6 @@ export const updatePub = defineServerAction(async function updatePub({
 		return ApiError.NOT_LOGGED_IN
 	}
 
-	if (!community) {
-		return ApiError.COMMUNITY_NOT_FOUND
-	}
-
 	if (!formSlug) {
 		return ApiError.UNAUTHORIZED
 	}
@@ -244,7 +261,7 @@ export const updatePub = defineServerAction(async function updatePub({
 			})
 
 		const normalizedValues = normalizePubValues(processedVals)
-		const fileUploads: { fileName: string; tempUrl: string }[] = []
+		const fileUploadsByTempUrl = new Map<string, { fileName: string; tempUrl: string }>()
 		const fileUploadSchema = getJsonSchemaByCoreSchemaType(CoreSchemaType.FileUpload)
 
 		for (const { slug, value, relatedPubId } of normalizedValues) {
@@ -253,44 +270,59 @@ export const updatePub = defineServerAction(async function updatePub({
 				continue
 			}
 
+			let valueToPersist = value
 			if (
 				element.schemaName === CoreSchemaType.FileUpload &&
-				Value.Check(fileUploadSchema, value) &&
-				value.length > 0 &&
-				// otherwise it will try to make permanent already-permanent files
-				// FIXME: better check than this
-				value[0].fileUploadUrl.includes("temporary")
+				Value.Check(fileUploadSchema, value)
 			) {
-				fileUploads.push({
-					tempUrl: value[0].fileUploadUrl,
-					fileName: value[0].fileName,
+				const normalizedFiles = value.map((file) => {
+					const normalizedUrl = normalizeAssetUrl(file.fileUploadUrl)
+					const isTemporaryUpload = normalizedUrl.includes("/temporary/")
+
+					if (isTemporaryUpload && !fileUploadsByTempUrl.has(normalizedUrl)) {
+						fileUploadsByTempUrl.set(normalizedUrl, {
+							tempUrl: normalizedUrl,
+							fileName: file.fileName,
+						})
+					}
+
+					return {
+						...file,
+						fileUploadUrl: normalizedUrl,
+					}
 				})
+
+				valueToPersist = normalizedFiles as typeof value
 			}
 
 			if (relatedPubId) {
-				updateQuery.relate(slug, value, relatedPubId, {
+				updateQuery.relate(slug, valueToPersist, relatedPubId, {
 					replaceExisting: false,
 				})
 			} else {
-				updateQuery.set(slug, value)
+				updateQuery.set(slug, valueToPersist)
 			}
 		}
+
+		const fileUploads = Array.from(fileUploadsByTempUrl.values())
 
 		for (const { slug, relatedPubId } of deleted) {
 			updateQuery.unrelate(slug, relatedPubId)
 		}
 
-		const [pub] = await Promise.all([
-			updateQuery.executeAndReturnPub(),
-			...fileUploads.map(({ fileName, tempUrl }) =>
+		const pub = await updateQuery.executeAndReturnPub()
+
+		await Promise.all(
+			fileUploads.map(({ fileName, tempUrl }) =>
 				makeFileUploadPermanent({
 					pubId,
 					tempUrl,
 					fileName,
 					userId: loginData.user.id,
 				})
-			),
-		])
+			)
+		)
+
 		return pub
 	} catch (error) {
 		logger.error(error)

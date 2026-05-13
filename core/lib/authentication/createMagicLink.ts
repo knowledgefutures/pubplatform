@@ -25,5 +25,5 @@ export const createMagicLink = async (options: NativeMagicLinkOptions, trx = db)
 }
 
 export const constructMagicLink = (token: string, path: `/${string}`) => {
-	return `${env.PUBPUB_URL}/magic-link?token=${token}&redirectTo=${encodeURIComponent(path)}`
+	return `${env.PUBSTAR_URL}/magic-link?token=${token}&redirectTo=${encodeURIComponent(path)}`
 }

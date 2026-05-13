@@ -8,7 +8,7 @@ import { skipToken } from "@tanstack/react-query"
 import { AlertCircle, CheckCircle2, Loader2, Play, Zap, ZapOff } from "lucide-react"
 import { useWatch } from "react-hook-form"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
 import { Alert, AlertDescription } from "ui/alert"
 import { Button } from "ui/button"
 import { Label } from "ui/label"
@@ -147,7 +147,7 @@ export function ActionFieldJsonataTestPanel(props: {
 			},
 			stage,
 			env: {
-				PUBPUB_URL: typeof window !== "undefined" ? window.location.origin : "",
+				PUBSTAR_URL: typeof window !== "undefined" ? window.location.origin : "",
 			},
 			useDummyValues: true,
 			...pubOrJson,

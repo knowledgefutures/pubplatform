@@ -44,7 +44,7 @@ type InterpolationAction = Pick<ActionInstances, "id" | "action" | "config">
 type InterpolationUser = Pick<Users, "id" | "firstName" | "lastName" | "email">
 
 type InterpolationEnv = {
-	PUBPUB_URL: string
+	PUBSTAR_URL: string
 }
 
 type BuildInterpolationContextArgsBase = {
@@ -95,7 +95,7 @@ export function buildInterpolationContext(
 ): InterpolationContext {
 	const baseContext: Omit<InterpolationContext, "json" | "pub" | "site"> = {
 		env: {
-			PUBPUB_URL: args.env.PUBPUB_URL,
+			PUBSTAR_URL: args.env.PUBSTAR_URL,
 		},
 		community: {
 			id: args.community.id,

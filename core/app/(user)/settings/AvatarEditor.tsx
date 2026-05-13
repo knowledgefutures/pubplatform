@@ -1,3 +1,5 @@
+import type { FileUploadProps } from "ui/customRenderers/fileUpload/fileUpload"
+
 import { useState } from "react"
 import dynamic from "next/dynamic"
 import { ImagePlus, XIcon } from "lucide-react"
@@ -28,7 +30,7 @@ export const AvatarEditor = ({
 	initials: string
 	avatar: string | null
 	onEdit: (avatar: string | null) => void
-	upload: (fileName: string) => Promise<string | { error: string }>
+	upload: FileUploadProps["upload"]
 	allowedFileTypes?: string[]
 	showDeleteButton?: boolean
 	label?: string

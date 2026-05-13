@@ -4,11 +4,13 @@ import type { AutoRevalidateOptions, DirectAutoOutput, ExecuteFn, QB } from "./t
 import { revalidatePath, revalidateTag } from "next/cache"
 
 import { logger } from "logger"
+import { tryCatch } from "utils/try-catch"
 
 import { env } from "~/lib/env/env"
 import { getCommunitySlug } from "./getCommunitySlug"
 import { revalidateTagsForCommunity } from "./revalidate"
 import { cachedFindTables, directAutoOutput } from "./sharedAuto"
+import { shouldSkipCache as shouldSkipCacheStore } from "./skipCacheStore"
 import { setTransactionStore } from "./transactionStorage"
 
 const executeWithRevalidate = <
@@ -20,11 +22,28 @@ const executeWithRevalidate = <
 	options?: AutoRevalidateOptions
 ) => {
 	const executeFn = async (...args: Parameters<Q[M]>) => {
-		const communitySlug = options?.communitySlug ?? (await getCommunitySlug())
+		const compiledQuery = qb.compile()
+
+		const willSkipCacheStore = shouldSkipCacheStore("invalidate")
+
+		if (willSkipCacheStore) {
+			logger.debug(
+				`Skipping revalidation for query ${compiledQuery.sql} because of skipCacheStore`
+			)
+			return qb[method](...args) as ReturnType<Q[M]>
+		}
+
+		const [error, communitySlug] = options?.communitySlug
+			? [null, options.communitySlug]
+			: await tryCatch(getCommunitySlug())
+
+		if (error) {
+			logger.error(`Error getting community slug: ${error.message}`)
+			logger.error(compiledQuery.sql)
+			throw error
+		}
 
 		const communitySlugs = Array.isArray(communitySlug) ? communitySlug : [communitySlug]
-
-		const compiledQuery = qb.compile()
 
 		const tables = await cachedFindTables(compiledQuery, "mutation")
 

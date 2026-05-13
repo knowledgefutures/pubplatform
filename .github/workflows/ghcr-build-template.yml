@@ -1,0 +1,100 @@
+name: ghcr build template
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        type: string
+      runner:
+        type: string
+        default: ubuntu-latest
+      target:
+        type: string
+      ghcr_image_name:
+        type: string
+        required: true
+      publish_latest:
+        type: boolean
+        default: false
+      image_tag:
+        type: string
+        description: "Override the image tag (e.g. v1.2.3). Falls back to git describe."
+      base_path:
+        type: string
+        default: ""
+        description: "Base path for Next.js apps (e.g. /mock-notify). Baked into the build."
+    outputs:
+      image-sha:
+        description: 'Full GHCR image ref with SHA tag'
+        value: ${{ jobs.build.outputs.image-sha }}
+    secrets:
+      SENTRY_AUTH_TOKEN:
+        required: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-sha: ${{ steps.label.outputs.label }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Compute image tags
+        id: label
+        run: |
+          sha_short="${{ inputs.image_tag || '' }}"
+          if [[ -z "$sha_short" ]]; then
+            sha_short=$(git describe --always --abbrev=40 --dirty)
+          fi
+
+          if [[ -z "${{ inputs.package }}" ]]; then
+              echo "target=monorepo" >> $GITHUB_OUTPUT
+          else
+              echo "target=${{ inputs.target || format('next-app-{0}', inputs.package) }}" >> $GITHUB_OUTPUT
+          fi
+
+          echo "label=ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:$sha_short" >> $GITHUB_OUTPUT
+
+          TAGS="ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:$sha_short"
+          if [[ "${{ inputs.publish_latest }}" == "true" ]]; then
+              TAGS="$TAGS,ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:latest"
+          fi
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          cache-from: type=registry,ref=ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/knowledgefutures/${{ inputs.ghcr_image_name }}:buildcache,mode=max
+          build-args: |
+            PACKAGE=${{ inputs.package }}
+            CI=true
+            BASE_PATH=${{ inputs.base_path }}
+          secrets: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+          target: ${{ steps.label.outputs.target }}
+          tags: ${{ steps.label.outputs.tags }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          sbom: false

@@ -20,7 +20,7 @@
 		"@ts-rest/core": "catalog:",
 		"@ts-rest/serverless": "^3.52.1",
 		"archiver": "^6.0.2",
-		"@pubpub/json-interpolate": "workspace:",
+		"@pubstar/json-interpolate": "workspace:",
 		"contracts": "workspace:",
 		"dotenv": "^16.4.5",
 		"hono": "^4.9.7",

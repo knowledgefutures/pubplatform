@@ -31,7 +31,7 @@ const config: StorybookConfig = {
 			...env,
 			// these options are not propogated to the client i think
 			SKIP_VALIDATION: "true",
-			PUBPUB_URL: "http://localhost:6006",
+			PUBSTAR_URL: "http://localhost:6006",
 		}
 	},
 	// this causes and error: `expected expression, got reserved word 'enum'`

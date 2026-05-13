@@ -91,7 +91,7 @@ const defaultPreviewText = (props: SignupInviteProps) => {
 }
 
 export const Invite = (props: SignupInviteProps) => {
-	const baseUrl = process.env.PUBPUB_URL ?? ""
+	const baseUrl = process.env.PUBSTAR_URL ?? ""
 
 	const community = props.community ?? {
 		name: "CrocCroc",

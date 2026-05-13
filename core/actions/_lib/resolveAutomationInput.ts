@@ -5,7 +5,7 @@ import type { InterpolationContext } from "./interpolationContext"
 
 import jsonata from "jsonata"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
 import { logger } from "logger"
 import { tryCatch } from "utils/try-catch"
 

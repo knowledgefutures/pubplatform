@@ -111,7 +111,7 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
 		React.useEffect(() => {
 			if (!monaco || !containerRef.current || editorRef.current) return
 
-			const monacoTheme = themeRef.current === "light" ? "pubpub-light" : "pubpub-dark"
+			const monacoTheme = themeRef.current === "light" ? "pubstar-light" : "pubstar-dark"
 
 			const newEditor = monaco.editor.create(containerRef.current, {
 				value: valueRef.current,
@@ -172,7 +172,7 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
 		// update theme when it changes
 		React.useEffect(() => {
 			if (!monaco || !editorRef.current) return
-			const monacoTheme = currentTheme === "light" ? "pubpub-light" : "pubpub-dark"
+			const monacoTheme = currentTheme === "light" ? "pubstar-light" : "pubstar-dark"
 			monaco.editor.setTheme(monacoTheme)
 		}, [monaco, currentTheme])
 

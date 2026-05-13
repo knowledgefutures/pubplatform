@@ -26,7 +26,7 @@ export const VerifyEmail = ({
 	verifyEmailLink,
 	previewText = `Verify your email`,
 }: VerifyEmailprops) => {
-	const baseUrl = process.env.PUBPUB_URL ? process.env.PUBPUB_URL : ""
+	const baseUrl = process.env.PUBSTAR_URL ? process.env.PUBSTAR_URL : ""
 
 	return (
 		<Html>

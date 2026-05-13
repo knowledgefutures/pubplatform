@@ -3,7 +3,7 @@ import type { ExpressionBuilder, ExpressionWrapper } from "kysely"
 
 import { createNextHandler } from "@ts-rest/serverless/next"
 
-import { interpolate } from "@pubpub/json-interpolate"
+import { interpolate } from "@pubstar/json-interpolate"
 import { siteApi, TOTAL_PUBS_COUNT_HEADER } from "contracts"
 import {
 	ApiAccessScope,
@@ -237,7 +237,7 @@ const handler = createNextHandler(
 								const pubContext = buildInterpolationContext({
 									community,
 									pub,
-									env: { PUBPUB_URL: env.PUBPUB_URL },
+									env: { PUBSTAR_URL: env.PUBSTAR_URL },
 									useDummyValues: true,
 								})
 

@@ -2,7 +2,7 @@ import { cache } from "react"
 import { headers } from "next/headers"
 import { getParams } from "@nimpl/getters/get-params"
 
-import { PUBPUB_COMMUNITY_SLUG_HEADER_NAME } from "./constants"
+import { PUBSTAR_COMMUNITY_SLUG_HEADER_NAME } from "./constants"
 
 /**
  * Experimental and likely unstable way to get the community slug.
@@ -33,7 +33,7 @@ export class NotInCommunityError extends Error {
  */
 export const getCommunitySlug = cache(async () => {
 	const header = await headers()
-	const communitySlugHeader = header.get(PUBPUB_COMMUNITY_SLUG_HEADER_NAME)
+	const communitySlugHeader = header.get(PUBSTAR_COMMUNITY_SLUG_HEADER_NAME)
 	if (!communitySlugHeader) {
 		throw new NotInCommunityError()
 	}

@@ -11,8 +11,8 @@ export const createRedirectUrl = (redirectTo: string, searchParams?: Record<stri
 		return url
 	}
 
-	if (URL.canParse(redirectTo, env.PUBPUB_URL)) {
-		const url = new URL(redirectTo, env.PUBPUB_URL)
+	if (URL.canParse(redirectTo, env.PUBSTAR_URL)) {
+		const url = new URL(redirectTo, env.PUBSTAR_URL)
 
 		Object.entries(searchParams ?? {}).forEach(([key, value]) => {
 			url.searchParams.append(key, value)
@@ -22,5 +22,5 @@ export const createRedirectUrl = (redirectTo: string, searchParams?: Record<stri
 	}
 
 	// invalid redirectTo, redirect to not-found
-	return new URL(`/not-found?from=${encodeURIComponent(redirectTo)}`, env.PUBPUB_URL)
+	return new URL(`/not-found?from=${encodeURIComponent(redirectTo)}`, env.PUBSTAR_URL)
 }

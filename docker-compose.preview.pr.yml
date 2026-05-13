@@ -1,7 +1,0 @@
-services:
-    platform:
-        environment:
-            PUBPUB_URL: ${PULLPREVIEW_URL}
-    caddy:
-        environment:
-            PUBLIC_URL: ${PULLPREVIEW_PUBLIC_DNS}

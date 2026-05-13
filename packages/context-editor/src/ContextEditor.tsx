@@ -12,6 +12,7 @@ import "katex/dist/katex.min.css"
 
 import type { Node } from "prosemirror-model"
 import type { ForwardRefExoticComponent, RefAttributes, RefObject } from "react"
+import type { FileUploadProps } from "ui/customRenderers/fileUpload/fileUpload"
 
 import { useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { ProseMirror, ProseMirrorDoc, reactKeys } from "@handlewithcare/react-prosemirror"
@@ -53,7 +54,7 @@ export interface ContextEditorProps {
 		NodeViewComponentProps & RefAttributes<any>
 	> /* A react component that is given the ContextAtom pubtype and renders it accordingly */
 	hideMenu?: boolean
-	upload: (fileName: string) => Promise<string | { error: string }>
+	upload: FileUploadProps["upload"]
 
 	/**
 	 * Ref to the context editor getter

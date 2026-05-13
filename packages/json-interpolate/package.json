@@ -1,9 +1,9 @@
 {
-	"name": "@pubpub/json-interpolate",
+	"name": "@pubstar/json-interpolate",
 	"type": "module",
 	"version": "0.0.1",
 	"exports": {
-		".": "./dist/pubpub-json-interpolate.js",
+		".": "./dist/pubstar-json-interpolate.js",
 		"./package.json": "./package.json"
 	},
 	"scripts": {

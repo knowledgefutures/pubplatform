@@ -55,7 +55,7 @@ continual linking. I propose we lean away from that, into a more
 explicit 'include' model. More like a package-lock file than a 
 dynamic transclusion model.
 
-Should this use @pubpub/prosemirror-reactive?
+Should this use @pubstar/prosemirror-reactive?
 It seems like the core function is similar, we want to
 include an up-to-date value of a field based on some stored 
 permanent id. Maybe we don't? Maybe we want to snapshot the 
