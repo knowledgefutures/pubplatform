@@ -113,7 +113,9 @@ jobs:
             image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
 
     deploy-preview:
+        # disabled: preview environments are switched off. remove `false &&` to re-enable
         if: >-
+            false &&
             always() &&
             contains(github.event.pull_request.labels.*.name, 'preview') &&
             github.event.action != 'closed' &&

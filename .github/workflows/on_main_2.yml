@@ -38,6 +38,8 @@ jobs:
         uses: ./.github/workflows/e2e.yml
 
     deploy-sandbox:
+        # disabled: sandbox is switched off. remove to re-enable
+        if: false
         needs: build-all
         permissions:
             contents: read
