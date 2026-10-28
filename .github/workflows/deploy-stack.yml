@@ -160,7 +160,12 @@ jobs:
 
                     cd "${APP_DIR}"
                     git fetch --prune --tags origin
-                    git checkout --detach "origin/${BRANCH}"
+                    # tag deploys pass the tag name, which has no origin/ ref
+                    if git rev-parse --verify -q "origin/${BRANCH}" >/dev/null; then
+                      git checkout --detach "origin/${BRANCH}"
+                    else
+                      git checkout --detach "refs/tags/${BRANCH}"
+                    fi
 
                     cd infra
                     umask 077

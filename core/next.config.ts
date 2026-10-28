@@ -30,21 +30,12 @@ const nextConfig: NextConfig = {
 	 */
 	cacheHandler: new URL("./cache-handler.mjs", import.meta.url).pathname,
 	cacheMaxMemorySize: 0,
+	/**
+	 * We don't use next/image. Turning optimization off makes /_next/image
+	 * 404 instead of exposing the optimizer (and sharp) to the internet.
+	 */
 	images: {
-		remotePatterns: [
-			{
-				protocol: "https",
-				hostname: "avatars.githubusercontent.com",
-				port: "",
-				pathname: "/u/**",
-			},
-			{
-				protocol: "https",
-				hostname: "cloudflare-ipfs.com",
-				port: "",
-				pathname: "/ipfs/**",
-			},
-		],
+		unoptimized: true,
 	},
 	turbopack: {
 		root: new URL("./..", import.meta.url).pathname,

@@ -104,7 +104,17 @@ jobs:
                   MINIMAL_SEED: true
                   SKIP_VALIDATION: true
 
-            - run: pnpm --filter core exec playwright install --with-deps
+            # the runner's apt mirror list tries azure.archive.ubuntu.com first, which sometimes
+            # times out on every request before falling back. skip straight to the fallback.
+            - name: Skip azure apt mirror
+              run: |
+                  if [ -f /etc/apt/apt-mirrors.txt ] && grep -v azure.archive.ubuntu.com /etc/apt/apt-mirrors.txt | grep -q .; then
+                      sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+                  fi
+                  cat /etc/apt/apt-mirrors.txt || true
+
+            # core only runs chromium; add firefox here if context-editor is re-enabled
+            - run: pnpm --filter core exec playwright install --with-deps chromium
 
             - name: Start up core etc
               run: pnpm integration:setup

@@ -4,8 +4,8 @@
 # If you need more help, visit the Dockerfile reference guide at
 # https://docs.docker.com/go/dockerfile-reference/
 
-ARG NODE_VERSION=24.15.0
-ARG ALPINE_VERSION=3.22
+ARG NODE_VERSION=24.22.1
+ARG ALPINE_VERSION=3.23
 
 ARG PACKAGE
 ARG PORT=3000

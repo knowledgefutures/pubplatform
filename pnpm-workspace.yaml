@@ -10,7 +10,7 @@ packages:
 
 # A catalog is used to line up the package versions across workspaces
 catalog:
-    next: ^15.5.18
+    next: ^15.5.28
     katex: ^0.16.18
     tailwindcss: 4.1.17
     tailwind-merge: ^3.4.0

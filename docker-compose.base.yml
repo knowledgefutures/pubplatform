@@ -1,6 +1,7 @@
 services:
     minio:
-        image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+        # minio/minio is gone from docker hub and quay; pgsty/minio is the maintained community fork
+        image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
         healthcheck:
             test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]
             interval: 1m30s
@@ -16,7 +17,7 @@ services:
             - "9001:9001" # Console
 
     minio-init:
-        image: minio/mc:latest
+        image: pgsty/mc:RELEASE.2026-10-18T00-00-00Z
         # basically what this does:
         # - create the public assets bucket
         # - allow public downloads for said bucket

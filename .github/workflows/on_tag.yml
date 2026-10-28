@@ -82,7 +82,7 @@ jobs:
             action: deploy
             image_tag: ${{ github.ref_name }}
             stack_name: pubstar
-            hostname: ${{ vars.PROD_HOSTNAME }}
+            hostname: app.pubstar.org
             env_file: .env.enc
             stack_file: stack.yml
             uses_gateway: false
