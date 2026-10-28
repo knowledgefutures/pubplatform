@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pubstar-sandbox
+
+resources:
+  - ../../base
+  - resources/inbucket.yaml
+  - resources/mock-notify.yaml
+  - resources/caddy.yaml
+  - resources/ingress.yaml
+
+patches:
+  - path: patches/core-env.yaml
+    target:
+      kind: Deployment
+      name: core
+  - path: patches/jobs-env.yaml
+    target:
+      kind: Deployment
+      name: jobs
+  - path: patches/site-builder-env.yaml
+    target:
+      kind: Deployment
+      name: site-builder
+  - path: patches/minio-env.yaml
+    target:
+      kind: StatefulSet
+      name: minio
+
+images:
+  - name: ghcr.io/knowledgefutures/platform
+    newTag: IMAGE_TAG
+  - name: ghcr.io/knowledgefutures/platform-jobs
+    newTag: IMAGE_TAG
+  - name: ghcr.io/knowledgefutures/platform-site-builder
+    newTag: IMAGE_TAG
+  - name: ghcr.io/knowledgefutures/mock-coar-notify-server
+    newTag: IMAGE_TAG

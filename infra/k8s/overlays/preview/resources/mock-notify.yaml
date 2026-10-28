@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-notify
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: mock-notify
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: mock-notify
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pubstar
+        app.kubernetes.io/component: mock-notify
+    spec:
+      imagePullSecrets:
+        - name: ghcr
+      containers:
+        - name: mock-notify
+          image: ghcr.io/knowledgefutures/mock-coar-notify-server:IMAGE_TAG
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PUBSTAR_URL
+              value: https://pr-__PR_NUMBER__.k3s.pubstar.org
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-notify
+spec:
+  selector:
+    app.kubernetes.io/component: mock-notify
+  ports:
+    - port: 3000
+      targetPort: 3000

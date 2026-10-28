@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inbucket
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: inbucket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: inbucket
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pubstar
+        app.kubernetes.io/component: inbucket
+    spec:
+      containers:
+        - name: inbucket
+          image: inbucket/inbucket:latest
+          ports:
+            - containerPort: 9000
+              name: web
+            - containerPort: 2500
+              name: smtp
+          env:
+            - name: INBUCKET_WEB_BASEPATH
+              value: /emails
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inbucket
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: inbucket
+spec:
+  selector:
+    app.kubernetes.io/component: inbucket
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: web
+    - port: 2500
+      targetPort: 2500
+      name: smtp

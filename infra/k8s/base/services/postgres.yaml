@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: db
+spec:
+  selector:
+    app.kubernetes.io/component: db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None

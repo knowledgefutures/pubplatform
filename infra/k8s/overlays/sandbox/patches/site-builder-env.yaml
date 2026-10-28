@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-builder
+spec:
+  template:
+    spec:
+      containers:
+        - name: site-builder
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "4000"
+            - name: PUBSTAR_URL
+              value: http://core:3000
+            - name: SITES_BASE_URL
+              value: https://sandbox.k3s.pubstar.org/sites
+            - name: S3_ENDPOINT
+              value: https://sandbox-assets.k3s.pubstar.org
+            - name: S3_PUBLIC_ENDPOINT
+              value: https://sandbox-assets.k3s.pubstar.org

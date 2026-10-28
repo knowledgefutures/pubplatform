@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core
+spec:
+  template:
+    spec:
+      containers:
+        - name: core
+          env:
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: SITE_BUILDER_ENDPOINT
+              value: http://site-builder:4000
+            - name: VALKEY_HOST
+              value: valkey
+            - name: VALKEY_PORT
+              value: "6379"
+            - name: PUBSTAR_URL
+              value: https://pr-__PR_NUMBER__.k3s.pubstar.org
+            - name: PUBSTAR_HOSTNAME
+              value: pr-__PR_NUMBER__.k3s.pubstar.org
+            - name: S3_ENDPOINT
+              value: https://pr-__PR_NUMBER__-assets.k3s.pubstar.org
+            - name: S3_BACKUP_ENDPOINT
+              value: https://pr-__PR_NUMBER__-assets.k3s.pubstar.org
+            - name: S3_PUBLIC_ENDPOINT
+              value: https://pr-__PR_NUMBER__-assets.k3s.pubstar.org
+            - name: S3_BACKUP_REGION
+              value: us-east-1
+            - name: S3_BACKUP_KEY_PREFIX
+              value: pg-backups
+            - name: DB_RESET
+              value: "true"
+            - name: DB_SEED
+              value: "true"
+            - name: MOCK_NOTIFY_INBOX_URL
+              value: http://mock-notify:3000/mock-notify/api/inbox
+            - name: FLAGS
+              value: "uploads:on,invites:on,disabled-actions:http,http-allowed-domains:localhost+127.0.0.1+.pubstar.org+.k3s.pubstar.org,show-test-only-tools:on"

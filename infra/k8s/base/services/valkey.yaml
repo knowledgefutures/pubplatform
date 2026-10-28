@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: valkey
+spec:
+  selector:
+    app.kubernetes.io/component: valkey
+  ports:
+    - port: 6379
+      targetPort: 6379
+  clusterIP: None

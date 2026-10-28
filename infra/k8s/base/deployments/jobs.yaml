@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobs
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: jobs
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: jobs
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pubstar
+        app.kubernetes.io/component: jobs
+    spec:
+      imagePullSecrets:
+        - name: ghcr
+      initContainers:
+        - name: wait-for-db
+          image: postgres:17-alpine
+          command: ["sh", "-c", "until pg_isready -h db -p 5432; do sleep 2; done"]
+      containers:
+        - name: jobs
+          image: ghcr.io/knowledgefutures/platform-jobs:IMAGE_TAG
+          envFrom:
+            - secretRef:
+                name: pubstar-env
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PUBSTAR_URL
+              value: http://core:3000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi

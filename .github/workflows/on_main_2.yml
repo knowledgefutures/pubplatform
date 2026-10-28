@@ -61,6 +61,25 @@ jobs:
             GHCR_USER: ${{ secrets.GHCR_USER }}
             GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
+    deploy-sandbox-k3s:
+        needs: build-all
+        permissions:
+            contents: read
+        uses: ./.github/workflows/deploy-k8s.yml
+        with:
+            action: deploy
+            image_tag: ${{ github.sha }}
+            namespace: pubstar-sandbox
+            hostname: sandbox.k3s.pubstar.org
+            env_file: .env.sandbox.enc
+            overlay: sandbox
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_K3S }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
     deploy-docs:
         permissions:
             contents: write

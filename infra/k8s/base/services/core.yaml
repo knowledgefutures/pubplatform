@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: core
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: core
+spec:
+  selector:
+    app.kubernetes.io/component: core
+  ports:
+    - port: 3000
+      targetPort: 3000

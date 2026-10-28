@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: caddy-config
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: caddy
+data:
+  Caddyfile: |
+    {
+        admin off
+    }
+
+    :80 {
+        encode gzip
+
+        @assetsHost header_regexp assets Host ^(?:pr-\d+-assets|sandbox-assets)\.
+        handle @assetsHost {
+            reverse_proxy minio:9000
+        }
+
+        handle_path /assets* {
+            reverse_proxy minio:9000
+        }
+
+        handle_path /assets-ui* {
+            reverse_proxy minio:9001
+        }
+
+        handle_path /site-builder* {
+            reverse_proxy site-builder:4000
+        }
+
+        handle_path /sites/* {
+            @pathWithSlash path_regexp dir (.+)/$
+            handle @pathWithSlash {
+                redir {re.dir.1} permanent
+            }
+
+            rewrite * /pubstar-assets/sites{uri}
+
+            reverse_proxy minio:9000 {
+                @error status 403 404
+                handle_response @error {
+                    rewrite * {uri}/index.html
+                    reverse_proxy minio:9000 {
+                        @nestedError status 404
+                        handle_response @nestedError {
+                            respond "Not found" 404
+                        }
+                    }
+                }
+            }
+        }
+
+        handle /emails* {
+            reverse_proxy inbucket:9000
+        }
+
+        handle /mock-notify* {
+            reverse_proxy mock-notify:3000
+        }
+
+        handle {
+            reverse_proxy core:3000
+        }
+    }

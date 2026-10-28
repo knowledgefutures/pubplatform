@@ -1,0 +1,203 @@
+name: Deploy to K3s
+
+on:
+    workflow_call:
+        inputs:
+            action:
+                required: true
+                type: string
+                description: "'deploy' or 'teardown'"
+            image_tag:
+                required: false
+                type: string
+                description: "image tag to deploy"
+            namespace:
+                required: true
+                type: string
+                description: "k8s namespace (e.g. pubstar-sandbox, preview-pr-42)"
+            hostname:
+                required: true
+                type: string
+                description: "public hostname for this deployment"
+            env_file:
+                required: true
+                type: string
+                description: "sops-encrypted env file to decrypt (relative to infra/)"
+            overlay:
+                required: true
+                type: string
+                description: "kustomize overlay to use (sandbox or preview)"
+            pr_number:
+                required: false
+                type: string
+                description: "PR number (only for preview deployments)"
+        secrets:
+            SSH_PRIVATE_KEY:
+                required: true
+            SSH_USER:
+                required: true
+            SSH_HOST:
+                required: true
+            GHCR_USER:
+                required: true
+            GHCR_TOKEN:
+                required: true
+
+permissions:
+    contents: read
+
+jobs:
+    deploy:
+        if: inputs.action == 'deploy'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Start SSH agent
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Add known hosts
+              run: |
+                  mkdir -p ~/.ssh
+                  ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Deploy to K3s
+              env:
+                  SSH_USER: ${{ secrets.SSH_USER }}
+                  SSH_HOST: ${{ secrets.SSH_HOST }}
+                  REPO: ${{ github.repository }}
+                  BRANCH: ${{ github.head_ref || github.ref_name }}
+                  GHCR_USER: ${{ secrets.GHCR_USER }}
+                  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+                  IMAGE_TAG: ${{ inputs.image_tag }}
+                  NAMESPACE: ${{ inputs.namespace }}
+                  DEPLOY_HOST: ${{ inputs.hostname }}
+                  ENV_FILE: ${{ inputs.env_file }}
+                  OVERLAY: ${{ inputs.overlay }}
+                  PR_NUMBER: ${{ inputs.pr_number }}
+              run: |
+                  ssh "${SSH_USER}@${SSH_HOST}" \
+                    "env GHCR_USER='${GHCR_USER}' GHCR_TOKEN='${GHCR_TOKEN}' IMAGE_TAG='${IMAGE_TAG}' NAMESPACE='${NAMESPACE}' ENV_FILE='${ENV_FILE}' OVERLAY='${OVERLAY}' PR_NUMBER='${PR_NUMBER}' bash -s -- '${REPO}' '${BRANCH}'" <<'EOS'
+                    set -euo pipefail
+                    export KUBECONFIG="${HOME}/.kube/config"
+
+                    REPO="${1:?missing repo}"
+                    BRANCH="${2:-main}"
+
+                    : "${IMAGE_TAG:?missing IMAGE_TAG}"
+                    : "${GHCR_USER:?missing GHCR_USER}"
+                    : "${GHCR_TOKEN:?missing GHCR_TOKEN}"
+                    : "${NAMESPACE:?missing NAMESPACE}"
+                    : "${ENV_FILE:?missing ENV_FILE}"
+                    : "${OVERLAY:?missing OVERLAY}"
+
+                    REPO_NAME="${REPO##*/}"
+                    APP_DIR="/srv/k3s/${REPO_NAME}"
+                    REPO_SSH="git@github.com:${REPO}.git"
+
+                    ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
+                    chmod 600 ~/.ssh/known_hosts
+
+                    if [[ ! -d "/home/deploy/.kube/config" ]]; then
+                      sudo mkdir -p /home/deploy/.kube
+                      sudo cp /etc/rancher/k3s/k3s.yaml /home/deploy/.kube/config
+                      sudo chown -R deploy:deploy /home/deploy/.kube
+                      sudo chmod 600 /home/deploy/.kube/config
+                    fi
+
+
+                    if [[ ! -d "${APP_DIR}/.git" ]]; then
+                      sudo mkdir -p "${APP_DIR}"
+                      sudo chown -R "$USER:$USER" "${APP_DIR}"
+                      git clone --branch "${BRANCH}" "${REPO_SSH}" "${APP_DIR}"
+                    fi
+
+                    cd "${APP_DIR}"
+                    git fetch --prune --tags origin
+                    git checkout --detach "origin/${BRANCH}"
+
+                    cd infra
+                    umask 077
+                    sops -d --input-type dotenv --output-type dotenv "$ENV_FILE" > ".env.k8s"
+
+                    # create namespace
+                    kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+                    # label previews for cleanup tracking
+                    if [[ -n "${PR_NUMBER:-}" ]]; then
+                      kubectl label namespace "$NAMESPACE" \
+                        pubstar.io/preview=true \
+                        pubstar.io/pr-number="$PR_NUMBER" \
+                        --overwrite
+                    fi
+
+                    # GHCR pull secret
+                    kubectl create secret docker-registry ghcr \
+                      --docker-server=ghcr.io \
+                      --docker-username="$GHCR_USER" \
+                      --docker-password="$GHCR_TOKEN" \
+                      --namespace="$NAMESPACE" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+
+                    # app secrets from decrypted env
+                    kubectl create secret generic pubstar-env \
+                      --from-env-file=".env.k8s" \
+                      --namespace="$NAMESPACE" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+
+                    rm -f ".env.k8s"
+
+                    # build and apply manifests
+                    cd k8s/overlays/"$OVERLAY"
+
+                    kubectl kustomize . \
+                      | sed "s/__PR_NUMBER__/${PR_NUMBER:-0}/g" \
+                      | sed "s/:IMAGE_TAG/:${IMAGE_TAG}/g" \
+                      | kubectl apply -n "$NAMESPACE" -f -
+
+                    echo "waiting for core deployment rollout..."
+                    kubectl rollout status deployment/core -n "$NAMESPACE" --timeout=600s
+
+                    echo ""
+                    kubectl get all -n "$NAMESPACE"
+                  EOS
+
+    teardown:
+        if: inputs.action == 'teardown'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Start SSH agent
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Add known hosts
+              run: |
+                  mkdir -p ~/.ssh
+                  ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Teardown namespace
+              env:
+                  SSH_USER: ${{ secrets.SSH_USER }}
+                  SSH_HOST: ${{ secrets.SSH_HOST }}
+                  NAMESPACE: ${{ inputs.namespace }}
+              run: |
+                  ssh "${SSH_USER}@${SSH_HOST}" \
+                    "env NAMESPACE='${NAMESPACE}' bash -s" <<'EOS'
+                    set -euo pipefail
+                    export KUBECONFIG="${HOME}/.kube/config"
+                    : "${NAMESPACE:?missing NAMESPACE}"
+
+                    echo "tearing down namespace $NAMESPACE"
+
+                    if kubectl get namespace "$NAMESPACE" &>/dev/null; then
+                      kubectl delete namespace "$NAMESPACE"
+                      echo "namespace $NAMESPACE deleted"
+                    else
+                      echo "namespace $NAMESPACE not found, nothing to tear down"
+                    fi
+                  EOS

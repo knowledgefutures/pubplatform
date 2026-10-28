@@ -167,6 +167,55 @@ jobs:
             GHCR_USER: ${{ secrets.GHCR_USER }}
             GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
+    deploy-preview-k3s:
+        if: >-
+            always() &&
+            contains(github.event.pull_request.labels.*.name, 'preview') &&
+            github.event.action != 'closed' &&
+            github.event.action != 'unlabeled' &&
+            needs.skip_build_sha.result == 'success' &&
+            (needs.build-all.result == 'success' ||
+              (needs.build-all.result == 'skipped' && needs.skip_build_sha.outputs.last-successful-build-sha != ''))
+        uses: ./.github/workflows/deploy-k8s.yml
+        needs:
+            - skip_build_sha
+            - build-all
+        permissions:
+            contents: read
+        with:
+            action: deploy
+            image_tag: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || github.event.pull_request.head.sha }}
+            namespace: preview-pr-${{ github.event.pull_request.number }}
+            hostname: pr-${{ github.event.pull_request.number }}.k3s.pubstar.org
+            env_file: .env.preview.enc
+            overlay: preview
+            pr_number: ${{ github.event.pull_request.number }}
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_K3S }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+    close-preview-k3s:
+        if: (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+        uses: ./.github/workflows/deploy-k8s.yml
+        permissions:
+            contents: read
+        with:
+            action: teardown
+            namespace: preview-pr-${{ github.event.pull_request.number }}
+            hostname: pr-${{ github.event.pull_request.number }}.k3s.pubstar.org
+            env_file: .env.preview.enc
+            overlay: preview
+            pr_number: ${{ github.event.pull_request.number }}
+        secrets:
+            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+            SSH_USER: ${{ secrets.SSH_USER }}
+            SSH_HOST: ${{ secrets.SSH_HOST_K3S }}
+            GHCR_USER: ${{ secrets.GHCR_USER }}
+            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
     deploy-docs-preview:
         permissions:
             contents: write

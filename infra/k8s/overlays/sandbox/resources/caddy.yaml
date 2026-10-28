@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: caddy
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: caddy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: caddy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pubstar
+        app.kubernetes.io/component: caddy
+    spec:
+      containers:
+        - name: caddy
+          image: caddy:2
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: caddy-config
+              mountPath: /etc/caddy/Caddyfile
+              subPath: Caddyfile
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: caddy-config
+          configMap:
+            name: caddy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy
+  labels:
+    app.kubernetes.io/name: pubstar
+    app.kubernetes.io/component: caddy
+spec:
+  selector:
+    app.kubernetes.io/component: caddy
+  ports:
+    - port: 80
+      targetPort: 80

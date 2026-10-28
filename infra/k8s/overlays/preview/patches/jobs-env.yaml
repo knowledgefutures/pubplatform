@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobs
+spec:
+  template:
+    spec:
+      containers:
+        - name: jobs
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PUBSTAR_URL
+              value: http://core:3000
+            - name: S3_BACKUP_REGION
+              value: us-east-1
+            - name: S3_BACKUP_ENDPOINT
+              value: https://pr-__PR_NUMBER__-assets.k3s.pubstar.org
+            - name: S3_BACKUP_KEY_PREFIX
+              value: pg-backups
