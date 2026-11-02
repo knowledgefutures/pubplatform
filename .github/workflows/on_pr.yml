@@ -4,7 +4,6 @@ on:
     pull_request:
         types: [labeled, unlabeled, synchronize, closed, reopened, opened]
 
-# No id-token here: only deploy-stack.yml's deploy jobs ask for one.
 permissions:
     contents: read
     packages: write
@@ -112,10 +111,7 @@ jobs:
         with:
             image-tag-override: ${{ needs.skip_build_sha.outputs.last-successful-build-sha || '' }}
 
-    # Previews are deployed and torn down by reset-preview-envs.yml, a run of
-    # main's own workflow, for open PRs labeled `preview`: the KF console hands
-    # deploy values and SSH keys to no pull request's run, so this workflow
-    # (which runs from the PR's branch) can do neither.
+    # Previews are deployed and pruned by reset-preview-envs.yml.
 
     deploy-docs-preview:
         permissions:

@@ -1,10 +1,5 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/swarmlibs/dockerstack-schema/main/schema/dockerstack-spec.json
-# The app's values are not an env_file: infra/deploy-remote.sh gets them from the
-# KF console on stdin and hands them to `docker stack deploy` in its environment,
-# with a generated compose file, given before this one, that names which
-# services get which keys (its SERVICES list). An `environment:` entry here
-# wins over a value of the same name. A service that needs the values goes in
-# that list.
+# The app's values come from infra/deploy-remote.sh (its SERVICES list), not an env_file.
 
 services:
   platform:

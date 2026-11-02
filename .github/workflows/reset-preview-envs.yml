@@ -1,13 +1,7 @@
 # this workflow redeploys the sandbox and preview environments every 6 hours
 # to ensure that the environments are always in a clean state
 #
-# It is also the only way a PR preview is deployed or torn down: run on main
-# (by the schedule, or dispatched on main after labeling a PR `preview`), it
-# deploys each open PR labeled `preview` that has an image, and removes every
-# other preview stack. The KF console hands values only to main's own
-# workflows, never to a pull request's run. Previews get the sandbox
-# environment's values, and the PR's code runs with them: keep sandbox's
-# values disposable, and only maintainers can label.
+# Also deploys PRs labeled `preview` and prunes the rest, with sandbox's values.
 name: Reset preview environments
 
 on:
@@ -63,7 +57,6 @@ jobs:
 
           echo "found $count PR(s) with preview label"
 
-          # Their stacks stay; every other preview stack is torn down.
           echo "keep=$(echo "$prs" | jq -r '[.[].number] | map(tostring) | join(" ")')" >> "$GITHUB_OUTPUT"
 
           if [ "$count" -eq 0 ]; then
@@ -127,8 +120,7 @@ jobs:
             fi
           done
 
-          # The sandbox environment's deploy policy allows 12 hand-outs a run:
-          # the sandbox, ten previews and the prune.
+          # Sandbox's deploy policy allows 12 hand-outs a run.
           if [ "$(echo "$results" | jq length)" -gt 10 ]; then
             echo "::warning::more than 10 previews; deploying the first 10"
             results=$(echo "$results" | jq -c '.[:10]')
@@ -150,7 +142,6 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.find-active-previews.outputs.matrix) }}
       fail-fast: false
-      # Two at a time: the console hands a project out at most 20 times a minute.
       max-parallel: 2
     permissions:
       contents: read
@@ -166,7 +157,6 @@ jobs:
       stack_file: stack.preview.yml
       uses_gateway: true
 
-  # Tears down the preview of every PR that is closed or no longer labeled.
   prune-previews:
     needs: [find-active-previews, reset-previews]
     if: always() && needs.find-active-previews.result == 'success'

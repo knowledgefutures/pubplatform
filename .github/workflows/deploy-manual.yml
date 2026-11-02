@@ -15,9 +15,7 @@ on:
                 required: false
                 type: string
 
-# The KF console hands values only to a run on the environment's ref:
-# sandbox from main, production from a v* tag (in the GitHub Environment
-# production). Dispatch on any other ref and the deploy is refused.
+# Values come from the KF console: sandbox on main, production on a v* tag.
 
 permissions: {}
 
@@ -26,7 +24,6 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
-    # Said before anything is built: the console would refuse it anyway.
     check-ref:
         runs-on: ubuntu-latest
         permissions: {}

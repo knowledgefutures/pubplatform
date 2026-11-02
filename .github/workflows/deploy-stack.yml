@@ -1,16 +1,6 @@
 name: Deploy Stack
 
-# Deploys one stack, or prunes the preview stacks, on a server. Called from
-# on_main_2, on_tag, deploy-manual and reset-preview-envs, always as
-# ./.github/workflows/deploy-stack.yml, so it runs at the caller's ref.
-#
-# The values, the server's address and host key and the SSH key come from the
-# KF console (kf.project.jsonc: production and sandbox are deployed elsewhere,
-# by this file). The console hands them only to a run its deploy policy for the
-# environment allows: production on a v* tag, called by on_tag or
-# deploy-manual; sandbox (the sandbox and every PR preview) on main, called by
-# on_main_2, deploy-manual or reset-preview-envs. Never to a pull request's run.
-# Nothing here reads a GitHub secret but the job's own GITHUB_TOKEN.
+# Deploys a stack or prunes previews; values and SSH key come from the KF console.
 
 on:
     workflow_call:
@@ -53,8 +43,6 @@ on:
 permissions: {}
 
 jobs:
-    # The only job with an OIDC token: it runs checkout, kf and ssh, nothing
-    # from the repo's build.
     deploy:
         if: inputs.action == 'deploy'
         runs-on: ubuntu-latest
@@ -73,7 +61,6 @@ jobs:
               with:
                   persist-credentials: false
 
-            # Every one of these goes into the server's command line.
             - name: Check inputs
               env:
                   ENVIRONMENT: ${{ inputs.environment }}
@@ -95,18 +82,13 @@ jobs:
               with:
                   node-version: 24
 
-            # The environment's SSH key into an ssh-agent, from a pipe, for an
-            # hour; DEPLOY_KNOWN_HOSTS into known_hosts (no ssh-keyscan);
-            # DEPLOY_HOST and DEPLOY_USER, checked, as outputs.
             - name: Load the deploy key
               id: ssh
               env:
                   ENVIRONMENT: ${{ inputs.environment }}
               run: $KF ci ssh-agent -e "$ENVIRONMENT"
 
-            # The app's values go from the console to the server through this
-            # pipe: never to a file here, never to one there. The first line is
-            # this job's GITHUB_TOKEN, for the server's image pull.
+            # Registry token, then the values, on stdin.
             - name: Deploy stack
               env:
                   ENVIRONMENT: ${{ inputs.environment }}
@@ -130,8 +112,7 @@ jobs:
                   } | ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -l "$DEPLOY_USER" -- "$DEPLOY_HOST" \
                     "bash -c \"\$(echo $remote | base64 -d)\" deploy-remote deploy '$REPO' '$SHA' '$IMAGE_TAG' '$STACK_NAME' '$PUBLIC_HOST' '$STACK_FILE' '$USES_GATEWAY' '$REGISTRY_USER'"
 
-    # Removes every preview-pr-<n> stack whose PR is not in keep_previews: a
-    # closed or unlabeled PR's preview. It needs only the SSH key.
+    # Removes preview stacks of PRs not in keep_previews.
     prune-previews:
         if: inputs.action == 'prune-previews'
         runs-on: ubuntu-latest

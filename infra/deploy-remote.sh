@@ -1,22 +1,5 @@
 #!/usr/bin/env bash
-# Runs on the server, sent by .github/workflows/deploy-stack.yml over ssh:
-#
-#   bash -c "<this file>" deploy-remote deploy <repo> <commit> <image tag> <stack name> \
-#     <public host> <stack file> <uses gateway> <registry user>
-#   bash -c "<this file>" deploy-remote prune-previews "<PR numbers to keep>"
-#
-# deploy's stdin carries what must never be on a command line or on disk:
-#   line 1     the job's GITHUB_TOKEN, to pull the images from ghcr.io
-#   the rest   the app's values from the KF console (`kf ci secrets --runtime`):
-#              KEY=value lines, ending with "# kf: end"
-#
-# The values stay in this shell's memory and reach Docker as the environment of
-# `docker stack deploy`. Which services get which of them is a compose file
-# generated here from their names alone and given on stdin, before the stack
-# file: the stack file's own `environment:` entries win, as they did over the
-# env_file this replaces. Swarm then keeps the values in each service's spec,
-# which is how it passes environment to a container: `docker service inspect`
-# on this host shows them to anyone with Docker here.
+# Run by deploy-stack.yml over ssh. stdin: registry token, then KEY=value lines to "# kf: end".
 set -euo pipefail
 
 ACTION="${1:?missing action}"
@@ -54,8 +37,7 @@ USES_GATEWAY="${7:?missing uses gateway}"
 REGISTRY_USER="${8:?missing registry user}"
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "not a commit: $SHA" >&2; exit 1; }
 
-# Which services get the app's values, by stack file: the ones that read
-# .env.<stack> before. Every key, unless a list is given (`svc=KEY,KEY`).
+# Services that get the values: all keys, or `svc=KEY,KEY`.
 case "$STACK_FILE" in
   stack.yml)
     SERVICES=(proxy=PUBSTAR_HOSTNAME platform platform-jobs site-builder "db=POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB")
@@ -86,9 +68,6 @@ while IFS= read -r line; do
     echo "a line from kf is not KEY=value; nothing deployed" >&2
     exit 1
   fi
-  # Names the shell, sudo, the dynamic loader, Go or the docker CLI read for
-  # their own behaviour, and the ones this script interpolates into the stack
-  # files, are never the app's: they would change the deploy, not the app.
   case "$key" in
     DOCKER_* | LD_* | SUDO_* | BASH_* | PATH | HOME | ENV | IFS | SHELLOPTS | PS4 | TMPDIR | \
       [Hh][Tt][Tt][Pp]_[Pp][Rr][Oo][Xx][Yy] | [Hh][Tt][Tt][Pp][Ss]_[Pp][Rr][Oo][Xx][Yy] | \
@@ -106,7 +85,6 @@ if [[ "$complete" != 1 ]]; then
   echo "the values from kf were cut short; nothing deployed" >&2
   exit 1
 fi
-# Nothing after this reads the job's stdin.
 exec </dev/null
 echo "values for the app: ${!VALUES[*]}"
 
@@ -153,7 +131,6 @@ acquire_lock() {
 
 cleanup() {
   rm -f "$LOCK_FILE"
-  # The job's token expires with the job; nothing needs it stored.
   sudo docker logout ghcr.io >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -176,8 +153,7 @@ git checkout --detach "${SHA}"
 
 cd infra
 
-# The plaintext env file an earlier deploy decrypted here with the server's age
-# key. Nothing reads it now.
+# Left by the old sops deploy.
 rm -f ".env.${STACK_NAME}"
 
 for entry in "${SERVICES[@]}"; do
@@ -199,7 +175,7 @@ fi
 printf '%s\n' "$REGISTRY_TOKEN" | sudo docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
 sudo docker pull ghcr.io/knowledgefutures/platform:"$IMAGE_TAG"
 
-# --- the compose file that hands the values on: names only, no values
+# --- environment names per service, given before the stack file
 app_env_compose() {
   local entry svc names k set
   echo "services:"
@@ -253,7 +229,6 @@ if [[ "$USES_GATEWAY" == "true" ]]; then
   )
 fi
 
-# A subshell, so the values are in no other command's environment.
 deploy_stack() (
   local k p keep=(IMAGE_TAG STACK_NAME DEPLOY_HOST ASSETS_HOST)
   for k in "${!VALUES[@]}"; do
@@ -278,7 +253,6 @@ dump_failure_info() {
   local svc="$1"
   echo ""
   echo "::group::service inspect ($svc)"
-  # --pretty would print the service's environment: its values.
   sudo docker service inspect "$svc" --format '{{json .UpdateStatus}} {{json .Spec.Mode}}' 2>&1 || true
   echo "::endgroup::"
 

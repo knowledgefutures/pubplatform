@@ -5,21 +5,14 @@
 	"name": "PubStar",
 	"account": "kf",
 
-	// Deployed by .github/workflows/deploy-stack.yml (called by on_tag,
-	// on_main_2, deploy-manual and reset-preview-envs), not by the console: the
-	// console keeps each environment's key and SSH deploy key, and hands its
-	// values to that workflow's run on its ref (kf ci ssh-agent, kf ci secrets
-	// --runtime). Each environment's file holds DEPLOY_HOST, DEPLOY_USER and
-	// DEPLOY_KNOWN_HOSTS beside the app's values.
+	// Deployed by .github/workflows/deploy-stack.yml with values from the console.
 	"environments": {
 		"production": {
 			"ref": "tags/v*", // on_tag's v1.2.3 tags (and their pre-releases)
 			"secrets": ["infra/.env.enc"],
 			"elsewhere": { "workflow": ".github/workflows/deploy-stack.yml" }
 		},
-		// The sandbox and every PR preview: one environment, since both deploy
-		// from main and an environment owns its ref. A preview runs the PR's
-		// code with these values, so they are disposable.
+		// Also the PR previews.
 		"sandbox": {
 			"ref": "heads/main",
 			"secrets": ["infra/.env.sandbox.enc"],
