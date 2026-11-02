@@ -1,7 +1,13 @@
+# The app's values are not an env_file: infra/deploy-remote.sh gets them from the
+# KF console on stdin and hands them to `docker stack deploy` in its environment,
+# with a generated compose file, given before this one, that names which
+# services get which keys (its SERVICES list). An `environment:` entry here
+# wins over a value of the same name. A service that needs the values goes in
+# that list.
+
 services:
   proxy:
     image: caddy:2.11.2-alpine
-    env_file: ['.env.${STACK_NAME}']
     ports:
       - target: 80
         published: 80
@@ -23,7 +29,6 @@ services:
 
   platform:
     image: ghcr.io/knowledgefutures/platform:${IMAGE_TAG}
-    env_file: ['.env.${STACK_NAME}']
     environment:
       HOSTNAME: '0.0.0.0'
       NODE_ENV: production
@@ -58,7 +63,6 @@ services:
 
   platform-jobs:
     image: ghcr.io/knowledgefutures/platform-jobs:${IMAGE_TAG}
-    env_file: ['.env.${STACK_NAME}']
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
@@ -76,7 +80,6 @@ services:
 
   site-builder:
     image: ghcr.io/knowledgefutures/platform-site-builder:${IMAGE_TAG}
-    env_file: ['.env.${STACK_NAME}']
     environment:
       NODE_ENV: production
       DEPLOY_VERSION: ${IMAGE_TAG}
@@ -98,7 +101,6 @@ services:
     image: postgres:17
     tmpfs:
       - /dev/shm:size=2147483648
-    env_file: ['.env.${STACK_NAME}']
     command: >
       -c shared_buffers=2GB
       -c effective_cache_size=6GB

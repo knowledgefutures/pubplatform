@@ -5,8 +5,8 @@ on:
         tags:
             - "v[0-9]*.[0-9]*.[0-9]*"
 
+# No id-token here: only deploy-stack.yml's deploy jobs ask for one.
 permissions:
-    id-token: write
     contents: write
     packages: write
     pull-requests: write
@@ -75,21 +75,18 @@ jobs:
         needs:
             - validate-tag
             - build-all
+        # Production's values and SSH key come from the KF console, to a run
+        # on a v* tag in the GitHub Environment production (deploy-stack.yml).
         permissions:
             contents: read
+            packages: read
+            id-token: write
         uses: ./.github/workflows/deploy-stack.yml
         with:
             action: deploy
+            environment: production
             image_tag: ${{ github.ref_name }}
             stack_name: pubstar
             hostname: app.pubstar.org
-            env_file: .env.enc
             stack_file: stack.yml
             uses_gateway: false
-            ssh_host_secret: SSH_HOST_PROD
-        secrets:
-            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-            SSH_USER: ${{ secrets.SSH_USER }}
-            SSH_HOST: ${{ secrets.SSH_HOST_PROD }}
-            GHCR_USER: ${{ secrets.GHCR_USER }}
-            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
