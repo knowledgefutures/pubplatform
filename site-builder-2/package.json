@@ -36,6 +36,7 @@
 		"@types/mime-types": "^2.1.4",
 		"@types/node": "22",
 		"dotenv-cli": "^5.0.1",
-		"pino-pretty": "^13.0.0"
+		"pino-pretty": "^13.0.0",
+		"typescript": "catalog:"
 	}
 }
