@@ -6,7 +6,12 @@
 #       # example:
 #       # - age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 creation_rules:
-  - path_regex: \.env(\.preview|\.sandbox)?(\.enc)?$
+  - path_regex: \.env(\.enc)?$
+    age:
+      - age14zl823kejslgnpcjyr6ytme2vzpflegra520zr2zpu38kwmnp9usuxguvk # console.knowledgefutures.org production
+      - age1yubikey1qdetc45zkjk33sz9zxpl3tl9kp7qsrp9y36v40m4xkc7cewacr7dudst2nv # kf-break-glass-1
+      - age1yubikey1qf7pngj2vx5dcjmd5wrkaqdzwk32vdmpdkqk2cj86s038kgp3m7wycjzgdx # kf-break-glass-2
+  - path_regex: \.env\.sandbox(\.enc)?$
     age:
       - age1wravpjmed26772xfjhawmnsnc4933htapg6y5xseqml0jdv8z9hqemzhcr
       - age1vhftscteyrwphx0jpp0yl60xxrjs77jq05mkzv88js7ckc926vcqepp2cj
@@ -18,3 +23,4 @@ creation_rules:
       - age14dssfufn8n0n7lcvyxxp4rq7zuf5pv0ek4zl9h7atsy85ceynfvqa0qz59
       - age1yubikey1qdetc45zkjk33sz9zxpl3tl9kp7qsrp9y36v40m4xkc7cewacr7dudst2nv # kf-break-glass-1
       - age1yubikey1qf7pngj2vx5dcjmd5wrkaqdzwk32vdmpdkqk2cj86s038kgp3m7wycjzgdx # kf-break-glass-2
+      - age1lfenzmhchj9h6ak30pnnu3y7tl5yf7edx6nd7cl7zt668c2ys56srjwfzx # console.knowledgefutures.org sandbox

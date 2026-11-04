@@ -11,23 +11,40 @@ on:
                     - sandbox
                     - production
             image_tag:
-                description: "Existing image tag to deploy (leave empty to build from current branch)"
+                description: "sandbox: an existing image tag to deploy (leave empty to build from main). production deploys the tag it is dispatched on."
                 required: false
                 type: string
 
-permissions:
-    id-token: write
-    contents: read
-    packages: write
-    # pull-requests: write
+# Values come from the KF console: sandbox on main, production on a v* tag.
+
+permissions: {}
 
 concurrency:
     group: deploy-${{ inputs.environment == 'production' && 'pubstar' || 'sandbox' }}
     cancel-in-progress: false
 
 jobs:
+    check-ref:
+        runs-on: ubuntu-latest
+        permissions: {}
+        steps:
+            - name: Check the ref
+              env:
+                  ENVIRONMENT: ${{ inputs.environment }}
+                  REF: ${{ github.ref }}
+                  IMAGE_TAG: ${{ inputs.image_tag }}
+              run: |
+                  set -euo pipefail
+                  if [[ "$ENVIRONMENT" == production ]]; then
+                    [[ "$REF" == refs/tags/v* ]] || { echo "::error::production deploys from a v* tag: dispatch this on the tag, not ${REF}"; exit 1; }
+                    [[ -z "$IMAGE_TAG" || "refs/tags/$IMAGE_TAG" == "$REF" ]] || { echo "::error::production deploys the tag's own image, not ${IMAGE_TAG}"; exit 1; }
+                  else
+                    [[ "$REF" == refs/heads/main ]] || { echo "::error::sandbox deploys from main: dispatch this on main, not ${REF}"; exit 1; }
+                  fi
+
     build-all:
-        if: inputs.image_tag == ''
+        if: inputs.image_tag == '' && inputs.environment == 'sandbox'
+        needs: check-ref
         permissions:
             contents: read
             packages: write
@@ -36,47 +53,35 @@ jobs:
             SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     deploy-sandbox:
-        if: always() && inputs.environment == 'sandbox' && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
-        needs: build-all
+        if: always() && needs.check-ref.result == 'success' && inputs.environment == 'sandbox' && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
+        needs: [check-ref, build-all]
         permissions:
             contents: read
-            pull-requests: write
+            packages: read
+            id-token: write
         uses: ./.github/workflows/deploy-stack.yml
         with:
             action: deploy
+            environment: sandbox
             image_tag: ${{ inputs.image_tag || github.sha }}
             stack_name: sandbox
             hostname: sandbox.pubstar.org
-            env_file: .env.sandbox.enc
             stack_file: stack.preview.yml
             uses_gateway: true
-            ssh_host_secret: SSH_HOST_PREVIEW
-        secrets:
-            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-            SSH_USER: ${{ secrets.SSH_USER }}
-            SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
-            GHCR_USER: ${{ secrets.GHCR_USER }}
-            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-
 
     deploy-prod:
-        if: always() && inputs.environment == 'production' && (needs.build-all.result == 'success' || needs.build-all.result == 'skipped')
-        needs: build-all
+        if: inputs.environment == 'production'
+        needs: check-ref
         permissions:
             contents: read
+            packages: read
+            id-token: write
         uses: ./.github/workflows/deploy-stack.yml
         with:
             action: deploy
-            image_tag: ${{ inputs.image_tag || github.sha }}
+            environment: production
+            image_tag: ${{ github.ref_name }}
             stack_name: pubstar
             hostname: app.pubstar.org
-            env_file: .env.enc
             stack_file: stack.yml
             uses_gateway: false
-            ssh_host_secret: SSH_HOST_PROD
-        secrets:
-            SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-            SSH_USER: ${{ secrets.SSH_USER }}
-            SSH_HOST: ${{ secrets.SSH_HOST_PROD }}
-            GHCR_USER: ${{ secrets.GHCR_USER }}
-            GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}

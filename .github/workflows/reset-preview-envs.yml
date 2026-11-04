@@ -1,5 +1,7 @@
 # this workflow redeploys the sandbox and preview environments every 6 hours
 # to ensure that the environments are always in a clean state
+#
+# Also deploys PRs labeled `preview` and prunes the rest, with sandbox's values.
 name: Reset preview environments
 
 on:
@@ -9,10 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
-  packages: write
-  pull-requests: write
 
 concurrency:
   group: reset-preview-envs
@@ -20,28 +19,31 @@ concurrency:
 
 jobs:
   reset-sandbox:
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     uses: ./.github/workflows/deploy-stack.yml
     with:
       action: deploy
+      environment: sandbox
       image_tag: latest
       stack_name: sandbox
       hostname: sandbox.pubstar.org
-      env_file: .env.sandbox.enc
       stack_file: stack.preview.yml
       uses_gateway: true
-      ssh_host_secret: SSH_HOST_PREVIEW
-    secrets:
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
-      GHCR_USER: ${{ secrets.GHCR_USER }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
   find-active-previews:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      packages: read
     outputs:
       matrix: ${{ steps.find.outputs.matrix }}
       has_previews: ${{ steps.find.outputs.has_previews }}
+      keep: ${{ steps.find.outputs.keep }}
     steps:
       - uses: actions/checkout@v6
 
@@ -54,6 +56,8 @@ jobs:
           count=$(echo "$prs" | jq length)
 
           echo "found $count PR(s) with preview label"
+
+          echo "keep=$(echo "$prs" | jq -r '[.[].number] | map(tostring) | join(" ")')" >> "$GITHUB_OUTPUT"
 
           if [ "$count" -eq 0 ]; then
             echo "has_previews=false" >> "$GITHUB_OUTPUT"
@@ -116,6 +120,12 @@ jobs:
             fi
           done
 
+          # Sandbox's deploy policy allows 12 hand-outs a run.
+          if [ "$(echo "$results" | jq length)" -gt 10 ]; then
+            echo "::warning::more than 10 previews; deploying the first 10"
+            results=$(echo "$results" | jq -c '.[:10]')
+          fi
+
           count=$(echo "$results" | jq length)
 
           if [ "$count" -eq 0 ]; then
@@ -132,19 +142,29 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.find-active-previews.outputs.matrix) }}
       fail-fast: false
+      max-parallel: 2
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     uses: ./.github/workflows/deploy-stack.yml
     with:
       action: deploy
+      environment: sandbox
       image_tag: ${{ matrix.sha }}
       stack_name: preview-pr-${{ matrix.pr_number }}
       hostname: pr-${{ matrix.pr_number }}.pubstar.org
-      env_file: .env.preview.enc
       stack_file: stack.preview.yml
       uses_gateway: true
-      ssh_host_secret: SSH_HOST_PREVIEW
-    secrets:
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_HOST: ${{ secrets.SSH_HOST_PREVIEW }}
-      GHCR_USER: ${{ secrets.GHCR_USER }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+  prune-previews:
+    needs: [find-active-previews, reset-previews]
+    if: always() && needs.find-active-previews.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-stack.yml
+    with:
+      action: prune-previews
+      environment: sandbox
+      keep_previews: ${{ needs.find-active-previews.outputs.keep }}

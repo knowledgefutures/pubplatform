@@ -3,8 +3,20 @@
 	"version": 2,
 	"slug": "kf-pubstar",
 	"name": "PubStar",
-	"account": "kf"
+	"account": "kf",
 
-	// No environments yet: the console registers the project and deploys
-	// nothing. Add "environments" (with at least "production") to deploy.
+	// Deployed by .github/workflows/deploy-stack.yml with values from the console.
+	"environments": {
+		"production": {
+			"ref": "tags/v*", // on_tag's v1.2.3 tags (and their pre-releases)
+			"secrets": ["infra/.env.enc"],
+			"elsewhere": { "workflow": ".github/workflows/deploy-stack.yml" }
+		},
+		// Also the PR previews.
+		"sandbox": {
+			"ref": "heads/main",
+			"secrets": ["infra/.env.sandbox.enc"],
+			"elsewhere": { "workflow": ".github/workflows/deploy-stack.yml" }
+		}
+	}
 }
