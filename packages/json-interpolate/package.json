@@ -14,7 +14,7 @@
 	},
 	"dependencies": {
 		"json5": "^2.2.3",
-		"jsonata": "^2.1.0"
+		"jsonata": "^2.2.2"
 	},
 	"devDependencies": {
 		"@types/json5": "^2.2.0",

@@ -1,10 +1,11 @@
+import type { Transporter } from "nodemailer"
 import type SMTPPool from "nodemailer/lib/smtp-pool"
 
 import nodemailer from "nodemailer"
 
 import { env } from "~/lib/env/env"
 
-let smtpclient: nodemailer.Transporter
+let smtpclient: Transporter
 
 const TLS_CONFIG = {
 	secure: false,
