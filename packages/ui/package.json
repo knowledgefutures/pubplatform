@@ -202,7 +202,7 @@
 		"cmdk": "^1.1.1",
 		"date-fns": "catalog:",
 		"db": "workspace:*",
-		"jsonata": "^2.0.5",
+		"jsonata": "^2.2.2",
 		"lexical": "^0.23.1",
 		"lucide-react": "^0.469.0",
 		"monaco-editor": "^0.55.1",

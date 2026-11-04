@@ -14,7 +14,7 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.525.0",
 		"@aws-sdk/lib-storage": "^3.787.0",
-		"@hono/node-server": "^1.14.1",
+		"@hono/node-server": "^1.19.18",
 		"@hono/zod-validator": "^0.4.3",
 		"@t3-oss/env-core": "^0.12.0",
 		"@ts-rest/core": "catalog:",
@@ -23,7 +23,7 @@
 		"@pubstar/json-interpolate": "workspace:",
 		"contracts": "workspace:",
 		"dotenv": "^16.4.5",
-		"hono": "^4.9.7",
+		"hono": "^4.13.16",
 		"logger": "workspace:*",
 		"mime-types": "^2.1.35",
 		"tsconfig": "workspace:*",

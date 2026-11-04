@@ -28,10 +28,10 @@
 		"@aws-sdk/s3-request-presigner": "^3.864.0",
 		"@chromatic-com/storybook": "^4.1.1",
 		"@playwright/test": "catalog:",
-		"@storybook/addon-docs": "^9.1.2",
-		"@storybook/addon-links": "^9.1.2",
-		"@storybook/addon-onboarding": "^9.1.2",
-		"@storybook/react-vite": "^9.1.2",
+		"@storybook/addon-docs": "^9.1.21",
+		"@storybook/addon-links": "^9.1.21",
+		"@storybook/addon-onboarding": "^9.1.21",
+		"@storybook/react-vite": "^9.1.21",
 		"@tailwindcss/forms": "^0.5.10",
 		"@tailwindcss/postcss": "^4.1.17",
 		"@tailwindcss/typography": "^0.5.16",
@@ -43,7 +43,7 @@
 		"@uiw/react-json-view": "2.0.0-alpha.27",
 		"@vitejs/plugin-react": "catalog:",
 		"prosemirror-dev-tools": "^4.2.0",
-		"storybook": "^9.1.2",
+		"storybook": "^9.1.21",
 		"styled-jsx": "^5.1.7",
 		"tailwindcss": "catalog:",
 		"tsconfig": "workspace:*",
@@ -116,7 +116,7 @@
 		"schemas": "workspace:*",
 		"ui": "workspace:*",
 		"utils": "workspace:*",
-		"uuid": "^11.1.0"
+		"uuid": "^11.1.1"
 	},
 	"preconstruct": {
 		"exports": {
